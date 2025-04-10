@@ -82,6 +82,8 @@ contract DexRouter is
     /// @param newAdmin The address of the new admin.
     event AdminChanged(address newAdmin);
 
+    event ValidSignerChanged(address signer, bool valid);
+
     //-------------------------------
     //------- Modifier --------------
     //-------------------------------
@@ -430,6 +432,12 @@ contract DexRouter is
         emit AdminChanged(_newAdmin);
     }
 
+    function setValidSigner(address _signer, bool valid) external {
+        require(msg.sender == admin || msg.sender == owner(), "na");
+        validSigner[_signer] = valid;
+        emit ValidSignerChanged(_signer, valid);
+    }
+
     //-------------------------------
     //------- Users Functions -------
     //-------------------------------
@@ -636,6 +644,7 @@ contract DexRouter is
             }
         }
         baseRequest.fromTokenAmount = amount;
+        _verify_sig();
         return
             _smartSwapInternal(
                 baseRequest,
@@ -694,16 +703,16 @@ contract DexRouter is
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
         CommissionInfo memory commissionInfo = _getCommissionInfo();
-        
+
         // get token from pool
         address srcToken;
-        
+
         if (msg.value > 0) {
             srcToken = _ETH;
         } else {
             address poolAddr = address(uint160(pools[0] & _ADDRESS_MASK));
             bool zeroForOne = (pools[0] & _ONE_FOR_ZERO_MASK) == 0;
-            
+
             if (zeroForOne) {
                 srcToken = IUniV3(poolAddr).token0();
             } else {

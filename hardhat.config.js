@@ -156,7 +156,17 @@ module.exports = {
       },
     },
     eth: {
-      url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+      url: "https://ethereum-rpc.publicnode.com",
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
+    eth_stg: {
+      url: "https://ethereum-rpc.publicnode.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -540,6 +550,16 @@ module.exports = {
         },
       }
     },
+    sonic_stg: {
+      url: 'https://rpc.soniclabs.com',
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     berachain: {
       url: 'https://rpc.berachain-apis.com',
       accounts: [`${PRIVATE_KEY}`],
@@ -643,6 +663,14 @@ module.exports = {
         urls: {
           apiURL: "https://api.scrollscan.com/api",
           browserURL: "https://scrollscan.com"
+        }
+      },
+      {
+        network: "sonic",
+        chainId: 146,
+        urls: {
+          apiURL: "https://api.sonicscan.org/api",
+          browserURL: "https://sonicscan.org/"
         }
       },
       {

@@ -1,3 +1,4 @@
+
 module.exports = {
     wNativeToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wNativeRelayer: "0xF4858d71e5d7D27e3F7270390Cd57545DcA35aa9",
@@ -11,5 +12,7 @@ module.exports = {
     marketMaker: "",
     pmmAdapter: "",
     uniV2Factory: "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-    impl: "0x9e7481C8F8D9c4E07f11AbaDB2e00A917CDB1e5f"
+    impl: "0x9e7481C8F8D9c4E07f11AbaDB2e00A917CDB1e5f",
+    newImpl: "0x4aAFF823C74a3C0548aB871c77Fc4e99A92BB5c7"
+
 }

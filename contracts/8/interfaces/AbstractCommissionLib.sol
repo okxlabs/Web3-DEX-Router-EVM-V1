@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 /// @title Abstract base contract with virtual functions
 abstract contract AbstractCommissionLib {
-
     struct CommissionInfo {
         bool isFromTokenCommission;
         bool isToTokenCommission;
@@ -16,7 +15,7 @@ abstract contract AbstractCommissionLib {
 
     function _getCommissionInfo()
         internal
-        pure
+        view
         virtual
         returns (CommissionInfo memory commissionInfo);
 

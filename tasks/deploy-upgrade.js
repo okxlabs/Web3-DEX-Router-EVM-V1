@@ -21,17 +21,25 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
         throw new Error(`Insufficient balance. Need at least 0.01 ${network === 'bsc' ? 'BNB' : 'ETH'} to deploy`);
       }
 
-      // Step 1: Run ureplace.js
-      console.log("\nStep 1: Running ureplace.js...");
+      // Step 0: Clean
+      await hre.run("clean");
+
+      // Step 1: Git operations - Save current state
+      console.log("\nStep 1: Saving current state...");
+      await execPromise('git add contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+
+      // Step 2: Run ureplace.js
+      console.log("\nStep 2: Running ureplace.js...");
+
       await hre.run("run", {
         script: "scripts/tools/ureplace.js",
         network: network
       });
+      await hre.run("compile");
 
-      // Step 2: Deploy new implementation
-      console.log("\nStep 2: Deploying new implementation...");
+      // Step 3: Deploy new implementation
+      console.log("\nStep 3: Deploying new implementation...");
 
-      // Import and run the deployment script directly
       const deployDexImp = require('../scripts/deploy_dex_imp');
       const newDexRouterAddress = await deployDexImp();
 
@@ -39,12 +47,11 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
         throw new Error("Could not get newly deployed dexRouter address");
       }
 
-      // Step 3: Update base.js with new implementation address
-      console.log("\nStep 3: Updating implementation address...");
+      // Step 4: Update base.js with new implementation address
+      console.log("\nStep 4: Updating implementation address...");
       const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + network + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
 
-      // Update the newImpl address with the newly deployed address
       baseContent = baseContent.replace(
         /newImpl:\s*["'].*["']/,
         `newImpl: "${newDexRouterAddress}"`
@@ -53,16 +60,20 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       fs.writeFileSync(baseBasePath, baseContent);
       console.log(`Updated newImpl address to: ${newDexRouterAddress}`);
 
-      // Step 4: Verify contracts
-      console.log("\nStep 4: Verifying contracts...");
+      // Step 5: Verify contracts
+      console.log("\nStep 5: Verifying contracts...");
+
       await hre.run("run", {
         script: "scripts/verify_etherscan_oklink.js",
         network: network
       });
 
+      // Step 6: Restore original files
+      console.log("\nStep 6: Restoring original files...");
+      await execPromise('git checkout -- contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+
       console.log("\nDeployment and upgrade process completed successfully!");
     } catch (error) {
       console.error("Error during deployment:", error);
-      process.exit(1);
-    }
+      
   });

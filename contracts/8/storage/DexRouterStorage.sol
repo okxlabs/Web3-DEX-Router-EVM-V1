@@ -7,7 +7,8 @@ contract DexRouterStorage {
     address public wNativeRelayer;
     mapping(address => bool) public priorityAddresses;
 
-    uint256[19] internal _dexRouterGap;
+    uint256[18] internal _dexRouterGap;
+    mapping(address => bool) public validSigner;
 
     address public admin;
 }

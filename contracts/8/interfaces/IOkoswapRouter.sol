@@ -32,4 +32,19 @@ interface IOkoswapRouter {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
+
+    /// @notice Swaps exact tokens for tokens along a specified path
+    /// @dev Path must start with token and end with token, deducts 2% fee from output tokens
+    /// @param amountIn Exact amount of input tokens to swap
+    /// @param amountOutMin Minimum amount of output tokens that must be received
+    /// @param path Array of token addresses representing the swap route (must start with token and end with token)
+    /// @param to Recipient address of the output tokens
+    /// @param deadline Unix timestamp after which the transaction will revert
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) external returns (uint256[] memory amounts);
 }

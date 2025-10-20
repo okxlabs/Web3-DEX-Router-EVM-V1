@@ -245,8 +245,8 @@ contract PancakeSwapInfinityHookAdapter is IAdapter, SafeCallback {
             int128 amountSpecifiedActual = (zeroForOne == (amountIn < 0))
                 ? swapDelta.amount0()
                 : swapDelta.amount1();
-            if (amountSpecifiedActual != amountIn)
-                revert NotEnoughLiquidity(poolKey.toId());
+            // if (amountSpecifiedActual != amountIn)
+            //     revert NotEnoughLiquidity(poolKey.toId());
             // update next amountIn for next swap using the amountOut of the current swap
             amountIn = zeroForOne
                 ? int256(swapDelta.amount1())

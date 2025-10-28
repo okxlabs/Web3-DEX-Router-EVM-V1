@@ -135,12 +135,18 @@ contract AngstromAdapter is IAdapter, IAngstromAdapter, SafeCallback {
                 pathKeys[i]
             );
 
-            IAngstromAdapter.Attestation[] memory bundle = abi.decode(
-                pathKeys[i].hookData,
-                (IAngstromAdapter.Attestation[])
-            );
-            // Select the correct attestation for the current block
-            bytes memory hookData = _selectAttestation(bundle);
+            // Check if hookData is empty, if so, use empty bytes
+            bytes memory hookData;
+            if (pathKeys[i].hookData.length == 0) {
+                hookData = "";
+            } else {
+                IAngstromAdapter.Attestation[] memory bundle = abi.decode(
+                    pathKeys[i].hookData,
+                    (IAngstromAdapter.Attestation[])
+                );
+                // Select the correct attestation for the current block
+                hookData = _selectAttestation(bundle);
+            }
 
             amountIn = -amountIn;
             swapDelta = poolManager.swap(

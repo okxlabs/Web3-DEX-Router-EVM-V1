@@ -141,8 +141,7 @@ contract AngstormAdapter is IAdapter, IAngstormAdapter, SafeCallback {
             );
             // Select the correct attestation for the current block
             bytes memory hookData = _selectAttestation(bundle);
-            // // Select the correct attestation for the current block
-            // bytes memory hookData = _selectAttestation(pathKeys[i].bundle);
+
             amountIn = -amountIn;
             swapDelta = poolManager.swap(
                 poolKey,

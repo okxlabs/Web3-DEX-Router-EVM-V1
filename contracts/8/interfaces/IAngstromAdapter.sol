@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 pragma abicoder v2;
-interface IAngstormAdapter {
+interface IAngstromAdapter {
     /// @notice Attestation data for a specific block
     struct Attestation {
         uint64 blockNumber; // The block number this attestation is valid for

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.17;
 
-import {AngstormAdapter} from "@dex/adapter/AngstormAdapter.sol";
+import {AngstromAdapter} from "@dex/adapter/AngstromAdapter.sol";
 import {AbstractAdapterTest} from "../common/AbstractAdapterTest.t.sol";
 import {Currency} from "@dex/types/Currency.sol";
-import {IAngstormAdapter} from "@dex/interfaces/IAngstormAdapter.sol";
-/// @title UniV4AdapterV2Test
-/// @notice Adapter tests for UniV4AdapterV2
+import {IAngstromAdapter} from "@dex/interfaces/IAngstromAdapter.sol";
+/// @title AngstromAdapterTest
+/// @notice Adapter tests for AngstromAdapter
 /// @dev Uses the new AbstractAdapterTest harness to minimise boilerplate.
-contract AngstormAdapterTest is AbstractAdapterTest {
+contract AngstromAdapterTest is AbstractAdapterTest {
 
     // Mapping of network IDs to their pool managers and wrapped tokens
     mapping(string => address) internal poolManagers;
@@ -37,7 +37,7 @@ contract AngstormAdapterTest is AbstractAdapterTest {
         require(wrappedToken != address(0), "Unsupported network");
         
         return address(
-            new AngstormAdapter(
+            new AngstromAdapter(
                 poolManager,
                 wrappedToken
             )
@@ -54,32 +54,32 @@ contract AngstormAdapterTest is AbstractAdapterTest {
         returns (SwapTestCase[][] memory)
     {
         SwapTestCase[][] memory cases = new SwapTestCase[][](1);
-        cases[0] = getAngstormTestCases();
+        cases[0] = getAngstromTestCases();
 
         return cases;
     }
 
-    function getAngstormTestCases() 
+    function getAngstromTestCases() 
         internal
         pure
         returns (SwapTestCase[] memory)
     {
         address usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
         address weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-        address angstormHook = 0x0000000aa232009084Bd71A5797d089AA4Edfad4;
+        address angstromHook = 0x0000000aa232009084Bd71A5797d089AA4Edfad4;
         SwapTestCase[] memory cases = new SwapTestCase[](2);
         
         // Create attestation bundle
-        IAngstormAdapter.Attestation[] memory attestations = new IAngstormAdapter.Attestation[](3);
-        attestations[0] = IAngstormAdapter.Attestation({
+        IAngstromAdapter.Attestation[] memory attestations = new IAngstromAdapter.Attestation[](3);
+        attestations[0] = IAngstromAdapter.Attestation({
             blockNumber: 23672782,
             unlockData: hex"1234abcd5678ef014c8d1e2f3a5b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
         });
-        attestations[1] = IAngstormAdapter.Attestation({
+        attestations[1] = IAngstromAdapter.Attestation({
             blockNumber: 23672783,
             unlockData: hex"1234abcd5678ef014c8d1e2f3a5b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
         });
-        attestations[2] = IAngstormAdapter.Attestation({
+        attestations[2] = IAngstromAdapter.Attestation({
             blockNumber: 23672783,
             unlockData: hex"1234abcd5678ef014c8d1e2f3a5b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
         });
@@ -87,13 +87,13 @@ contract AngstormAdapterTest is AbstractAdapterTest {
         bytes memory hookData = abi.encode(attestations);
         
         // Test 1: USDC -> WETH
-        AngstormAdapter.PathKey[] memory pathKeys = new AngstormAdapter.PathKey[](1);
-        pathKeys[0] = AngstormAdapter.PathKey({
+        AngstromAdapter.PathKey[] memory pathKeys = new AngstromAdapter.PathKey[](1);
+        pathKeys[0] = AngstromAdapter.PathKey({
             inputCurrency: Currency.wrap(usdc),
             intermediateCurrency: Currency.wrap(weth),        
             fee: 8388608,
             tickSpacing: 10,
-            hook: angstormHook,
+            hook: angstromHook,
             hookData: hookData
         });
         cases[0] = SwapTestCase({
@@ -101,7 +101,7 @@ contract AngstormAdapterTest is AbstractAdapterTest {
             forkBlock: 23672783, // Block from the actual transaction
             fromToken: usdc,
             toToken: weth,
-            pool: angstormHook, // actually hook address
+            pool: angstromHook, // actually hook address
             amount: 1 * 10 ** 6,
             expectedOutput: 0,
             sellBase: true,
@@ -112,13 +112,13 @@ contract AngstormAdapterTest is AbstractAdapterTest {
         });
 
         // Test 2: WETH -> USDC (reverse direction)
-        AngstormAdapter.PathKey[] memory pathKeys2 = new AngstormAdapter.PathKey[](1);
-        pathKeys2[0] = AngstormAdapter.PathKey({
+        AngstromAdapter.PathKey[] memory pathKeys2 = new AngstromAdapter.PathKey[](1);
+        pathKeys2[0] = AngstromAdapter.PathKey({
             inputCurrency: Currency.wrap(weth),
             intermediateCurrency: Currency.wrap(usdc),        
             fee: 8388608,
             tickSpacing: 10,
-            hook: angstormHook,
+            hook: angstromHook,
             hookData: hookData
         });
         cases[1] = SwapTestCase({
@@ -126,7 +126,7 @@ contract AngstormAdapterTest is AbstractAdapterTest {
             forkBlock: 23672783, // Block from the actual transaction
             fromToken: weth,
             toToken: usdc,
-            pool: angstormHook, // actually hook address
+            pool: angstromHook, // actually hook address
             amount: 0.001 ether, // 0.001 WETH
             expectedOutput: 0,
             sellBase: true,

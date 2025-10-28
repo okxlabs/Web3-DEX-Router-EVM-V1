@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 import "../interfaces/IAdapter.sol";
-import "../interfaces/IAngstormAdapter.sol";
+import "../interfaces/IAngstromAdapter.sol";
 import "../interfaces/IERC20.sol";
 import "../libraries/SafeERC20.sol";
 import "../interfaces/IWETH.sol";
@@ -12,9 +12,9 @@ import {Currency, equals, lessThan} from "../types/Currency.sol";
 import {BalanceDelta} from "../types/BalanceDelta.sol";
 import {SafeCallback} from "../libraries/SafeCallback.sol";
 import "../libraries/TransientStateLibrary.sol";
-/// @title AngstormAdapter
+/// @title AngstromAdapter
 /// @notice Interacts with PoolManager to facilitate Uniswap V4 swaps
-contract AngstormAdapter is IAdapter, IAngstormAdapter, SafeCallback {
+contract AngstromAdapter is IAdapter, IAngstromAdapter, SafeCallback {
     using SafeERC20 for IERC20;
     using TransientStateLibrary for IPoolManager;
     address public immutable WETH;
@@ -135,9 +135,9 @@ contract AngstormAdapter is IAdapter, IAngstormAdapter, SafeCallback {
                 pathKeys[i]
             );
 
-            IAngstormAdapter.Attestation[] memory bundle = abi.decode(
+            IAngstromAdapter.Attestation[] memory bundle = abi.decode(
                 pathKeys[i].hookData,
-                (IAngstormAdapter.Attestation[])
+                (IAngstromAdapter.Attestation[])
             );
             // Select the correct attestation for the current block
             bytes memory hookData = _selectAttestation(bundle);
@@ -185,7 +185,7 @@ contract AngstormAdapter is IAdapter, IAngstormAdapter, SafeCallback {
     /// @notice Selects the correct attestation for the current block
     /// @param bundle Array of attestations to choose from
     /// @return unlockData The attestation data for the current block
-    function _selectAttestation(IAngstormAdapter.Attestation[] memory bundle)
+    function _selectAttestation(IAngstromAdapter.Attestation[] memory bundle)
         internal
         view
         returns (bytes memory unlockData)

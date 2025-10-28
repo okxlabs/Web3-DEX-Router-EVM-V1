@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "forge-std/test.sol";
 import "forge-std/console2.sol";
 
-import "@dex/adapter/AngstormAdapter.sol";
+import "@dex/adapter/AngstromAdapter.sol";
 
 contract Deploy is Test {
     address deployer = vm.rememberKey(vm.envUint("DEPLOY_PRIVATE_KEY"));
@@ -24,8 +24,8 @@ contract Deploy is Test {
         vm.startBroadcast(deployer);
         console2.log("block.chainID", block.chainid);
 
-        address adapter = address(new AngstormAdapter(poolManager, WETH));
-        console2.log("AngstormAdapter deployed: %s", adapter);
+        address adapter = address(new AngstromAdapter(poolManager, WETH));
+        console2.log("AngstromAdapter deployed: %s", adapter);
         vm.stopBroadcast();
     }
 }

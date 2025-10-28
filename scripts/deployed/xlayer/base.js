@@ -9,12 +9,12 @@ module.exports = {
     investEntrance: "0x7251FEbEABB01eC9dE53ECe7a96f1C951F886Dd2",
     limitOrder: "",
     protocolAdmin: "",
-    _FF_FACTORY: "0xffb4C8fD3E0053f043D67DDac4eA47693c2a43Dbc60000000000000000000000",
+    _FF_FACTORY: "0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000",
     _CACHED_DOMAIN_SEPARATOR: "",
     _HASHED_NAME: "",
     _HASHED_VERSION: "",
     _TYPE_HASH: "",
     nftmarketplace: "",
 
-    newImpl: "0x0e98C4837C73EFc97E0Dad405F4CE37e7e6A61B6",
+    newImpl: "0xC259de94F6bedDec5Ed1C024b0283082ffa50cca",
 }

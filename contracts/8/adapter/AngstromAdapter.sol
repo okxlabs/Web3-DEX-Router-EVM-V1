@@ -23,6 +23,7 @@ contract AngstromAdapter is IAdapter, IAngstromAdapter, SafeCallback {
         1461446703485210103287273052203988822378723970342;
     uint256 constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     error NotEnoughLiquidity(PoolId poolId);
+    error MissingHookData();
     event Received(address, uint256);
     struct PathKey {
         // pool details to getId
@@ -135,18 +136,17 @@ contract AngstromAdapter is IAdapter, IAngstromAdapter, SafeCallback {
                 pathKeys[i]
             );
 
-            // Check if hookData is empty, if so, use empty bytes
-            bytes memory hookData;
+            // Check if hookData is empty, revert if missing
             if (pathKeys[i].hookData.length == 0) {
-                hookData = "";
-            } else {
-                IAngstromAdapter.Attestation[] memory bundle = abi.decode(
-                    pathKeys[i].hookData,
-                    (IAngstromAdapter.Attestation[])
-                );
-                // Select the correct attestation for the current block
-                hookData = _selectAttestation(bundle);
+                revert MissingHookData();
             }
+            
+            IAngstromAdapter.Attestation[] memory bundle = abi.decode(
+                pathKeys[i].hookData,
+                (IAngstromAdapter.Attestation[])
+            );
+            // Select the correct attestation for the current block
+            bytes memory hookData = _selectAttestation(bundle);
 
             amountIn = -amountIn;
             swapDelta = poolManager.swap(

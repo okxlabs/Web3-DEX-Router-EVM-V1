@@ -72,12 +72,12 @@ contract AngstromAdapterTest is AbstractAdapterTest {
         // Create attestation bundle
         IAngstromAdapter.Attestation[] memory attestations = new IAngstromAdapter.Attestation[](3);
         attestations[0] = IAngstromAdapter.Attestation({
-            blockNumber: 23672782,
-            unlockData: hex"1234abcd5678ef014c8d1e2f3a5b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
+            blockNumber: 23686825,
+            unlockData: hex"d437f3372f3add2c2bc3245e6bd6f9c202e61bb302f37419b2aa01ef13a85dc3caf5adba38be09743cea2b147de67c4e1e0c9464652d946deb46b4792329c473c6db411ac7e4a02e41a9aa95801b27c506c8b9ff1c"
         });
         attestations[1] = IAngstromAdapter.Attestation({
-            blockNumber: 23672783,
-            unlockData: hex"1234abcd5678ef014c8d1e2f3a5b7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b"
+            blockNumber: 23686826,
+            unlockData: hex"d437f3372f3add2c2bc3245e6bd6f9c202e61bb3230711a4cdfb2e37fc803e279e59a8906d3a5500b3bcae9305565a38c181322877d58cf3c70726abdc9d4ba1b058ed3a94cfc3d66a260516edc86613509a08251b"
         });
         attestations[2] = IAngstromAdapter.Attestation({
             blockNumber: 23672783,
@@ -98,7 +98,7 @@ contract AngstromAdapterTest is AbstractAdapterTest {
         });
         cases[0] = SwapTestCase({
             networkId: "eth", // Uses eth network from foundry.toml
-            forkBlock: 23672783, // Block from the actual transaction
+            forkBlock: 23686825, // Block from the actual transaction
             fromToken: usdc,
             toToken: weth,
             pool: angstromHook, // actually hook address

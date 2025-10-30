@@ -16,6 +16,7 @@ interface IPMMProtocol {
         uint256 makerAmount; // 0xa0
         uint256 takerAmount; // 0xc0
         bool usePermit2; // 0xe0;
+        bytes permit2Signature; // 0x100
     }
     function fillOrderRFQTo(
         OrderRFQ memory order,

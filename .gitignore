@@ -31,4 +31,5 @@ artifacts/
 .qodo
 requirement
 .cursor
+out/
 

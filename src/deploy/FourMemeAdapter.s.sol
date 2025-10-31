@@ -10,7 +10,7 @@ contract Deploy is Script {
     address deployer = vm.rememberKey(vm.envUint("DEPLOY_PRIVATE_KEY"));
 
     function run() public {
-        require(deployer == 0x399EfA78cAcD7784751CD9FBf2523eDf9EFDf6Ad, "wrong deployer! change the private key");
+        // require(deployer == 0x399EfA78cAcD7784751CD9FBf2523eDf9EFDf6Ad, "wrong deployer! change the private key");
 
         // deploy on BSC chain
         vm.createSelectFork(vm.envString("BSC_RPC_URL"));

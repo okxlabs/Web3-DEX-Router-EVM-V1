@@ -3,6 +3,29 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 interface ITokenManager2 {
+    struct TokenInfo {
+        address base;
+        address quote;
+        uint256 template;
+        uint256 totalSupply;
+        uint256 maxOffers;
+        uint256 maxRaising;
+        uint256 launchTime;
+        uint256 offers;
+        uint256 funds;
+        uint256 lastPrice;
+        uint256 K;
+        uint256 T;
+        uint256 statu;
+    }
+
+    function buyToken(
+        bytes memory args,
+        uint256 time,
+        bytes memory signature
+    ) external payable;
+
+    function _tokenInfos(address token) external view returns (TokenInfo memory tokenInfo);
 
     function buyTokenAMAP(
         address token,

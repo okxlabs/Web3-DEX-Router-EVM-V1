@@ -55,19 +55,29 @@ contract FourMemeAdapter is IAdapter {
             if (tradeInfo.fundAddress == WNATIVE){
                 amountIn = IERC20(WNATIVE).balanceOf(address(this));
                 IWETH(WNATIVE).withdraw(amountIn);
-                ITokenManager2(TOKENMANAGER2).buyTokenAMAP{value: amountIn}(tradeInfo.tokenAddress, to, amountIn, MINAMOUNT);
+                if (isXMode(tradeInfo.tokenAddress)) {
+                    bytes memory args = abi.encode(uint256(0), tradeInfo.tokenAddress, to, uint256(0), uint256(0), amountIn, MINAMOUNT);
+                    ITokenManager2(TOKENMANAGER2).buyToken{value: amountIn}(args, 0, bytes("0x"));
+                } else {
+                    ITokenManager2(TOKENMANAGER2).buyTokenAMAP{value: amountIn}(tradeInfo.tokenAddress, to, amountIn, MINAMOUNT);
+                }
                 dust = address(this).balance;
                 if (dust > 0) {
-                    (bool success, ) = to.call{value: dust}("");
+                    (bool success, ) = _getPayerOrigin().call{value: dust}("");
                     require(success, "Transfer failed");
                 }
             }else{
                 amountIn = IERC20(tradeInfo.fundAddress).balanceOf(address(this));
                 IERC20(tradeInfo.fundAddress).approve(TOKENMANAGER2, amountIn);
-                ITokenManager2(TOKENMANAGER2).buyTokenAMAP(tradeInfo.tokenAddress, to, amountIn, MINAMOUNT);
+                if (isXMode(tradeInfo.tokenAddress)) {
+                    bytes memory args = abi.encode(uint256(0), tradeInfo.tokenAddress, to, uint256(0), uint256(0), amountIn, MINAMOUNT);
+                    ITokenManager2(TOKENMANAGER2).buyToken(args, 0, bytes("0x"));
+                } else {
+                    ITokenManager2(TOKENMANAGER2).buyTokenAMAP(tradeInfo.tokenAddress, to, amountIn, MINAMOUNT);
+                }
                 dust = IERC20(tradeInfo.fundAddress).balanceOf(address(this));
                 if (dust > 0) {
-                    IERC20(tradeInfo.fundAddress).transfer(to, dust);
+                    IERC20(tradeInfo.fundAddress).transfer(_getPayerOrigin(), dust);
                 }
             }
             amountOut = IERC20(tradeInfo.tokenAddress).balanceOf(to) - amountOut;
@@ -96,6 +106,23 @@ contract FourMemeAdapter is IAdapter {
             require(amountOut >= tradeInfo.minReturnAmount, "Min return not reached");
             emit OrderRecord(false, tradeInfo.tokenAddress, tradeInfo.fundAddress, amountIn, amountOut);
         }
+    }
+
+    function _getPayerOrigin() internal pure returns (address payerOriginAddr) {
+        uint256 payerOrigin;
+        assembly {
+            let size := calldatasize()
+            payerOrigin := calldataload(sub(size, 32))
+            
+        }
+        if (payerOrigin & 0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000 == 0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000) {
+            payerOriginAddr = address(uint160(payerOrigin & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff));
+        }
+    }
+
+    function isXMode(address token) internal view returns (bool) {
+        ITokenManager2.TokenInfo memory tokenInfo = ITokenManager2(TOKENMANAGER2)._tokenInfos(token);
+        return tokenInfo.template & 0x10000 > 0;
     }
 
     function _getBalance(address token, address user) internal view returns (uint256) {

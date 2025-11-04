@@ -599,9 +599,8 @@ contract DexRouter is
         // validate token info
         (address fromToken, address toToken) = _getUnxswapTokenInfo(msg.value > 0, pools);
         address srcTokenAddr = _bytes32ToAddress(srcToken);
-        srcTokenAddr = srcTokenAddr == address(0) ? _ETH : srcTokenAddr;
         require(
-            srcTokenAddr == fromToken,
+            (srcTokenAddr == fromToken) || (srcTokenAddr == address(0) && fromToken == _ETH),
             "unxswap: token mismatch"
         );
         

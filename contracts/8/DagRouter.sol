@@ -153,14 +153,12 @@ abstract contract DagRouter is CommonLib {
                     _fromTokenAmount = (nodeBalance * weight) / 10_000;
                     accAmount += _fromTokenAmount;
                 }
-                if (_fromTokenAmount > 0) {
-                    _transferInternal(
-                        payer,
-                        path.assetTo[i],
-                        path.fromToken,
-                        _fromTokenAmount
-                    );
-                }
+                _transferInternal(
+                    payer,
+                    path.assetTo[i],
+                    path.fromToken,
+                    _fromTokenAmount
+                );
             }
 
             // 3. execute single swap

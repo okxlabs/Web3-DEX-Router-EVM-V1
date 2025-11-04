@@ -79,7 +79,6 @@ contract VirtualsV2Adapter is IAdapter {
         uint256 payerOrigin = _getPayerOrigin();        
         address _payerOrigin = address(uint160(uint256(payerOrigin) & ADDRESS_MASK));
         if (amount > 0 && _payerOrigin != address(0)) {
-            // IERC20(token).transfer(_payerOrigin, amount);
             SafeERC20.safeTransfer(IERC20(token), _payerOrigin, amount);
         }
     }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/IERC20.sol";
+import "../libraries/SafeERC20.sol";
 import "../interfaces/IAdapter.sol";
 import "../interfaces/IVirtuals.sol";
 
@@ -38,19 +39,19 @@ contract VirtualsV2Adapter is IAdapter {
 
         if (buyMeme) {
             amountIn = IERC20(VIRTUALTOKEN).balanceOf(address(this));
-            IERC20(VIRTUALTOKEN).approve(FROUTER, amountIn);
+            SafeERC20.safeApprove(IERC20(VIRTUALTOKEN), FROUTER, amountIn);
             IBonding(BONDING).buy(amountIn, tokenAddress, MINRETURN, deadline);
             amountOut = IERC20(tokenAddress).balanceOf(address(this));
-            IERC20(tokenAddress).transfer(to, amountOut);
+            SafeERC20.safeTransfer(IERC20(tokenAddress), to, amountOut);
             
             // Refund remaining VIRTUALTOKEN to origin payer if any
             _refundRemainingTokens(VIRTUALTOKEN);
         } else {
             amountIn = IERC20(tokenAddress).balanceOf(address(this));
-            IERC20(tokenAddress).approve(FROUTER, amountIn);
+            SafeERC20.safeApprove(IERC20(tokenAddress), FROUTER, amountIn);
             IBonding(BONDING).sell(amountIn, tokenAddress, MINRETURN, deadline);
             amountOut = IERC20(VIRTUALTOKEN).balanceOf(address(this));
-            IERC20(VIRTUALTOKEN).transfer(to, amountOut);
+            SafeERC20.safeTransfer(IERC20(VIRTUALTOKEN), to, amountOut);
             
             // Refund remaining tokenAddress to origin payer if any
             _refundRemainingTokens(tokenAddress);
@@ -78,7 +79,8 @@ contract VirtualsV2Adapter is IAdapter {
         uint256 payerOrigin = _getPayerOrigin();        
         address _payerOrigin = address(uint160(uint256(payerOrigin) & ADDRESS_MASK));
         if (amount > 0 && _payerOrigin != address(0)) {
-            IERC20(token).transfer(_payerOrigin, amount);
+            // IERC20(token).transfer(_payerOrigin, amount);
+            SafeERC20.safeTransfer(IERC20(token), _payerOrigin, amount);
         }
     }
     

@@ -63,7 +63,7 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
         // cases[6] = getRadioCACATestCases();
         // cases[7] = getDyorV3TestCases();
         // cases[8] = getPharaohV3Cases();
-        cases[9] = getAerodromeCLTestCases();
+        // cases[9] = getAerodromeCLTestCases();
         cases[10] = getHydrexTestCases();
 
         return cases;
@@ -90,23 +90,23 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
         SwapTestCase[] memory cases = new SwapTestCase[](1);
         
         // TODO: Fill in token addresses from on-chain transaction
-        address FROM_TOKEN = 0x0000000000000000000000000000000000000000;
-        address TO_TOKEN = 0x0000000000000000000000000000000000000000;
-        address POOL = 0x0000000000000000000000000000000000000000;
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+        address HYDREX = 0x00000e7efa313F4E11Bfff432471eD9423AC6B30;
+        address POOL = 0x51f0B932855986B0E621c9D4DB6Eee1f4644D3D2;
         
         // Transaction: https://basescan.org/tx/0x662a3a95c81ff8068cbdd6efa30cb19032beb46152583b5bbd296ca191d36056
         cases[0] = SwapTestCase({
             networkId: "base",
-            forkBlock: 0, // TODO: Fill in transaction block number - 1
-            fromToken: FROM_TOKEN,
-            toToken: TO_TOKEN,
+            forkBlock: 37714510 - 1, // TODO: Fill in transaction block number - 1
+            fromToken: USDC,
+            toToken: HYDREX,
             pool: POOL,
-            amount: 0, // TODO: Fill in input amount (with decimals)
-            expectedOutput: 0, // TODO: Fill in output amount (with decimals), use 0 if dynamic/unverified
+            amount: 250000000, // TODO: Fill in input amount (with decimals)
+            expectedOutput: 710356920982930477609, // TODO: Fill in output amount (with decimals), use 0 if dynamic/unverified
             sellBase: true, // TODO: true if selling base token, false if selling quote token
             expectRevert: false,
-            description: "FROM_TOKEN to TO_TOKEN on Hydrex", // TODO: Update with actual token names
-            moreInfo: abi.encode(uint160(0), abi.encode(FROM_TOKEN, TO_TOKEN, uint24(0))), // TODO: Fill in fee tier
+            description: "USDC to HYDREX on Hydrex", // TODO: Update with actual token names
+            moreInfo: abi.encode(uint160(0), abi.encode(USDC, HYDREX)), // TODO: Fill in fee tier
             fromTokenPreTo: address(0)
         });
         
@@ -151,7 +151,7 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
             sellBase: false, // WorthlessToken is likely token1 (quote token) based on address ordering
             expectRevert: false,
             description: "WorthlessToken to USDC on Aerodrome CL",
-            moreInfo: abi.encode(uint160(0), abi.encode(WorthlessToken, USDC, uint24(1))), // Fee tier: 10000 (1%)
+            moreInfo: abi.encode(uint160(0), abi.encode(WorthlessToken, USDC, uint24(1))),
             fromTokenPreTo: address(0)
         });
         

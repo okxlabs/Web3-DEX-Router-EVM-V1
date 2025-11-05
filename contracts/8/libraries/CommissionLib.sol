@@ -848,26 +848,80 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         address toToken,
         uint256 mode
     ) internal pure override {
-        if ((
-            (mode & _MODE_NO_TRANSFER) != 0 
-         || (mode & _MODE_BY_INVEST) != 0
-         || (mode & _MODE_PERMIT2) != 0
-        )
-         && commissionInfo.isFromTokenCommission) {
-            revert("From token commission not supported");
+        assembly ("memory-safe") {
+            function _revertWithReason(m, len) {
+                mstore(
+                    0,
+                    0x08c379a000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(
+                    0x20,
+                    0x0000002000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(0x40, m)
+                revert(0, len)
+            }
+
+            // if ((
+            //     (mode & _MODE_NO_TRANSFER) != 0 
+            // || (mode & _MODE_BY_INVEST) != 0
+            // || (mode & _MODE_PERMIT2) != 0
+            // )
+            // && commissionInfo.isFromTokenCommission) {
+            //     revert("From commission not support");
+            // }
+            let flag := or(
+                or(
+                    gt(and(mode, _MODE_NO_TRANSFER), 0),
+                    gt(and(mode, _MODE_BY_INVEST), 0)
+                ),
+                gt(and(mode, _MODE_PERMIT2), 0)
+            )
+            let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
+            if and(flag, isFromTokenCommission) {
+                _revertWithReason(
+                    0x0000001b46726f6d20636f6d6d697373696f6e206e6f7420737570706f727400,
+                    0x5f
+                ) // "From commission not support"
+            }
+
+            // if(fromToken == toToken) {
+            //     revert("Invalid tokens");
+            // }
+            if eq(fromToken, toToken) {
+                _revertWithReason(
+                    0x0000000e496e76616c696420746f6b656e730000000000000000000000000000,
+                    0x52
+                ) // "Invalid tokens"
+            }
+
+            // if (commissionInfo.isFromTokenCommission && commissionInfo.isToTokenCommission) {
+            //     revert("Invalid commission direction");
+            // }
+            let isToTokenCommission := mload(add(commissionInfo, 0x20)) // commissionInfo.isToTokenCommission
+            if and(isToTokenCommission, isFromTokenCommission) {
+                _revertWithReason(
+                    0x0000001c496e76616c696420636f6d6d697373696f6e20646972656374696f6e,
+                    0x60
+                ) // "Invalid commission direction"
+            }
+
+            // require(
+            //     (commissionInfo.isFromTokenCommission && commissionInfo.token == fromToken)
+            //         || (commissionInfo.isToTokenCommission && commissionInfo.token == toToken)
+            //         || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
+            //     "Invalid commission info"
+            // );
+            let token := mload(add(commissionInfo, 0x80)) // commissionInfo.token
+            flag := and(isFromTokenCommission, eq(token, fromToken))
+            flag := or(flag, and(isToTokenCommission, eq(token, toToken)))
+            flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))
+            if iszero(flag) {
+                _revertWithReason(
+                    0x00000017496e76616c696420636f6d6d697373696f6e20696e666f0000000000,
+                    0x5b
+                ) // "Invalid commission info"
+            }
         }
-        if(fromToken == toToken) {
-            revert("Invalid tokens");
-        }
-        if (commissionInfo.isFromTokenCommission && commissionInfo.isToTokenCommission) {
-            revert("Invalid commission direction");
-        }
-        
-        require(
-            (commissionInfo.isFromTokenCommission && commissionInfo.token == fromToken)
-                || (commissionInfo.isToTokenCommission && commissionInfo.token == toToken)
-                || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
-            "Invalid commission info"
-        );
     }
 }

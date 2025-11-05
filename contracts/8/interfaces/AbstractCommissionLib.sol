@@ -12,6 +12,8 @@ abstract contract AbstractCommissionLib {
         uint256 commissionRate2; //0xa0
         address refererAddress2; //0xc0
         bool isToBCommission; //0xe0
+        uint256 commissionRate3; //0x100
+        address refererAddress3; //0x120
     }
 
     struct TrimInfo {

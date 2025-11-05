@@ -1,7 +1,7 @@
 [profile.default]
 src = "contracts/8"
 out = "artifacts"
-test = "src/tests/fix"
+test = "src/tests/trim"
 
 libs = ["node_modules", "lib"]
 optimizer = true

@@ -593,68 +593,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             return 0;
         }
         uint256 balanceAfter = _getBalanceOf(toToken, address(this));
-        require(balanceAfter >= balanceBefore, "invalid balance after");
-        uint256 inputAmount = balanceAfter - balanceBefore;
-
-        // process commission
-        if (commissionInfo.isToTokenCommission) {
-            require(commissionInfo.commissionRate + commissionInfo.commissionRate2 <= commissionRateLimit, "error commission rate limit");
-            uint256 commissionAmount = inputAmount * (commissionInfo.commissionRate + commissionInfo.commissionRate2) / DENOMINATOR;
-            _doCommissionOrTrimToTokenInternal(
-                true,
-                toToken,
-                commissionAmount,
-                commissionInfo.commissionRate,
-                commissionInfo.refererAddress,
-                commissionInfo.commissionRate2,
-                commissionInfo.refererAddress2
-            );
-            totalAmount = commissionAmount;
-            inputAmount -= commissionAmount;
-        }
-
-        // process trim
-        if (trimInfo.hasTrim && inputAmount > trimInfo.expectAmountOut) {
-            require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate limit");
-            require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
-            uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
-            uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR;
-            if (trimAmount > allowedMaxTrimAmount) {
-                trimAmount = allowedMaxTrimAmount;
-            }
-            _doCommissionOrTrimToTokenInternal(
-                false,
-                toToken,
-                trimAmount,
-                (TRIM_DENOMINATOR - trimInfo.chargeRate),
-                trimInfo.trimAddress,
-                trimInfo.chargeRate,
-                trimInfo.chargeAddress
-            );
-            totalAmount += trimAmount;
-            inputAmount -= trimAmount;
-        }
-
-        // transfer toToken to receiver
-        _sendETHOrToken(toToken, receiver, inputAmount);
-    }
-
-    // Process commission or trim to token
-    function _doCommissionOrTrimToTokenInternal(
-        bool isCommission,
-        address toToken,
-        uint256 totalAmount,
-        uint256 rate1,
-        address address1,
-        uint256 rate2,
-        address address2
-    ) private {
         assembly ("memory-safe") {
-            // a << 4 | b => 0xab
-            function _getStatus(flag, token) -> c {
-                let a := mul(gt(flag, 0), 16)
-                let b := eq(token, _ETH)
-                c := add(a, b)
+            // https://github.com/Vectorized/solady/blob/701406e8126cfed931645727b274df303fbcd94d/src/utils/FixedPointMathLib.sol#L595
+            function _mulDiv(x, y, d) -> z {
+                z := mul(x, y)
+                // Equivalent to `require(d != 0 && (y == 0 || x <= type(uint256).max / y))`.
+                if iszero(mul(or(iszero(x), eq(div(z, x), y)), d)) {
+                    mstore(0x00, 0xad251c27) // `MulDivFailed()`.
+                    revert(0x1c, 0x04)
+                }
+                z := div(z, d)
             }
             function _revertWithReason(m, len) {
                 mstore(
@@ -746,129 +694,150 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     0xfd08115c8e43d2a49d95ee18d7f69b8bbac60bd368c73cf22d30664a22a0626d
                 ) // emit PositiveSlippageChargeRecord(address,uint256,address)
             }
-
-            let amount1 := div(mul(totalAmount, rate1), add(rate1, rate2))
-            let amount2 := sub(totalAmount, amount1)
-            address1 := shr(96, shl(96, address1))
-            address2 := shr(96, shl(96, address2))
-
-            let status := _getStatus(isCommission, toToken)
-            switch status
-            case 0x11 { // commission with ETH
-                if gt(rate1, 0) {
-                    _sendETH(address1, amount1)
-                    _emitCommissionToToken(_ETH, amount1, address1)
-                }
-                if gt(rate2, 0) {
-                    _sendETH(address2, amount2)
-                    _emitCommissionToToken(_ETH, amount2, address2)
-                }
-            }
-            case 0x10 { // commission with token
-                if gt(rate1, 0) {
-                    _sendToken(toToken, address1, amount1)
-                    _emitCommissionToToken(toToken, amount1, address1)
-                }
-                if gt(rate2, 0) {
-                    _sendToken(toToken, address2, amount2)
-                    _emitCommissionToToken(toToken, amount2, address2)
-                }
-            }
-            case 0x01 { // trim with ETH
-                if gt(rate1, 0) {
-                    _sendETH(address1, amount1)
-                    _emitPositiveSlippageTrimRecord(_ETH, amount1, address1)
-                }
-                if gt(rate2, 0) {
-                    _sendETH(address2, amount2)
-                    _emitPositiveSlippageChargeRecord(_ETH, amount2, address2)
-                }
-            }
-            case 0x00 { // trim with token
-                if gt(rate1, 0) {
-                    _sendToken(toToken, address1, amount1)
-                    _emitPositiveSlippageTrimRecord(toToken, amount1, address1)
-                }
-                if gt(rate2, 0) {
-                    _sendToken(toToken, address2, amount2)
-                    _emitPositiveSlippageChargeRecord(toToken, amount2, address2)
-                }
-            }
-            default {
-                _revertWithReason(
-                    0x0000000e696e76616c6964207374617475730000000000000000000000000000,
-                    0x52
-                ) // invalid status
-            }
-        }
-    }
-
-    function _sendETHOrToken(
-        address token,
-        address to,
-        uint256 amount
-    ) private {
-        assembly ("memory-safe") {
-            function _revertWithReason(m, len) {
-                mstore(
-                    0,
-                    0x08c379a000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(
-                    0x20,
-                    0x0000002000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(0x40, m)
-                revert(0, len)
-            }
-            function _sendETH(_to, _amount) {
-                let success := call(gas(), _to, _amount, 0, 0, 0, 0)
-                if eq(success, 0) {
+            function _processCommission(commissionInfo_, toToken_, inputAmount) -> commissionAmount {
+                let rate1 := mload(add(commissionInfo_, 0x40)) // commissionInfo.commissionRate
+                let rate2 := mload(add(commissionInfo_, 0xa0)) // commissionInfo.commissionRate2
+                let rate3 := mload(add(commissionInfo_, 0x100)) // commissionInfo.commissionRate3
+                let totalRate := add(add(rate1, rate2), rate3)
+                if gt(totalRate, commissionRateLimit) {
                     _revertWithReason(
-                        0x0000001173656e64206574686572206661696c65640000000000000000000000,
-                        0x55
-                    ) // "send ether failed"
+                        0x0000001b6572726f7220636f6d6d697373696f6e2072617465206c696d697400,
+                        0x5f
+                    ) // "error commission rate limit"
                 }
-            }
-            function _sendToken(_token, _to, _amount) {
-                let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x44))
-                mstore(
-                    freePtr,
-                    0xa9059cbb00000000000000000000000000000000000000000000000000000000
-                ) // transfer
-                mstore(add(freePtr, 0x04), _to)
-                mstore(add(freePtr, 0x24), _amount)
-                let success := call(
-                    gas(),
-                    _token,
-                    0,
-                    freePtr,
-                    0x44,
-                    0,
-                    0x20
-                )
-                if and(
-                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
-                    success
-                ) {
-                    success := iszero(
-                        or(iszero(extcodesize(_token)), returndatasize())
-                    )
+                commissionAmount := _mulDiv(inputAmount, totalRate, DENOMINATOR)
+
+                // send token and emit events
+                let amount1 := _mulDiv(commissionAmount, rate1, totalRate)
+                let amount2 := _mulDiv(commissionAmount, rate2, totalRate)
+                let amount3 := sub(commissionAmount, add(amount1, amount2))
+                switch eq(toToken_, _ETH)
+                case 1 {
+                    if gt(rate1, 0) {
+                        let referrer1 := mload(add(commissionInfo_, 0x60)) // commissionInfo.refererAddress
+                        _sendETH(referrer1, amount1)
+                        _emitCommissionToToken(_ETH, amount1, referrer1)
+                    }
+                    if gt(rate2, 0) {
+                        let referrer2 := mload(add(commissionInfo_, 0xc0)) // commissionInfo.refererAddress2
+                        _sendETH(referrer2, amount2)
+                        _emitCommissionToToken(_ETH, amount2, referrer2)
+                    }
+                    if gt(rate3, 0) {
+                        let referrer3 := mload(add(commissionInfo_, 0x120)) // commissionInfo.refererAddress3
+                        _sendETH(referrer3, amount3)
+                        _emitCommissionToToken(_ETH, amount3, referrer3)
+                    }
                 }
-                if eq(success, 0) {
+                case 0 {
+                    if gt(rate1, 0) {
+                        let referrer1 := mload(add(commissionInfo_, 0x60)) // commissionInfo.refererAddress
+                        _sendToken(toToken_, referrer1, amount1)
+                        _emitCommissionToToken(toToken_, amount1, referrer1)
+                    }
+                    if gt(rate2, 0) {
+                        let referrer2 := mload(add(commissionInfo_, 0xc0)) // commissionInfo.refererAddress2
+                        _sendToken(toToken_, referrer2, amount2)
+                        _emitCommissionToToken(toToken_, amount2, referrer2)
+                    }
+                    if gt(rate3, 0) {
+                        let referrer3 := mload(add(commissionInfo_, 0x120)) // commissionInfo.refererAddress3
+                        _sendToken(toToken_, referrer3, amount3)
+                        _emitCommissionToToken(toToken_, amount3, referrer3)
+                    }
+                }
+            } 
+            function _processTrim(trimInfo_, toToken_, inputAmount) -> trimAmount {
+                let trimRate := mload(add(trimInfo_, 0x20)) // trimInfo.trimRate
+                let chargeRate := mload(add(trimInfo_, 0x80)) // trimInfo.chargeRate
+                // require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate limit");
+                if gt(trimRate, TRIM_RATE_LIMIT) {
                     _revertWithReason(
-                        0x000000157472616e7366657220746f6b656e206661696c656400000000000000,
+                        0x000000156572726f72207472696d2072617465206c696d697400000000000000,
                         0x59
-                    ) // "transfer token failed"
+                    ) // "error trim rate limit"
+                }
+                // require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
+                if gt(chargeRate, TRIM_DENOMINATOR) {
+                    _revertWithReason(
+                        0x000000116572726f722063686172676520726174650000000000000000000000,
+                        0x55
+                    ) // "error charge rate"
+                }
+                // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
+                let expectAmountOut := mload(add(trimInfo_, 0x60)) // trimInfo.expectAmountOut
+                trimAmount := sub(inputAmount, expectAmountOut)
+                // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR;
+                let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR)
+                // trimAmount = min(trimAmount, allowedMaxTrimAmount)
+                if gt(trimAmount, allowedMaxTrimAmount) {
+                    trimAmount := allowedMaxTrimAmount
+                }
+
+                // send token and emit events
+                let amount1 := _mulDiv(trimAmount, sub(TRIM_DENOMINATOR, chargeRate), TRIM_DENOMINATOR)
+                let amount2 := sub(trimAmount, amount1)
+                switch eq(toToken_, _ETH)
+                case 1 { // commission token is ETH
+                    if gt(TRIM_DENOMINATOR, chargeRate) { // TRIM_DENOMINATOR - chargeRate > 0
+                        // chargeAmount = trimAmount * (TRIM_DENOMINATOR - chargeRate) / TRIM_DENOMINATOR
+                        let trimAddress := mload(add(trimInfo_, 0x40)) // trimInfo.trimAddress
+                        _sendETH(trimAddress, amount1)
+                        _emitPositiveSlippageTrimRecord(_ETH, amount1, trimAddress)
+                    }
+                    if gt(chargeRate, 0) {
+                        let chargeAddress := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeAddress
+                        _sendETH(chargeAddress, amount2)
+                        _emitPositiveSlippageChargeRecord(_ETH, amount2, chargeAddress)
+                    }
+                }
+                case 0 { // commission token is ERC20
+                    if gt(TRIM_DENOMINATOR, chargeRate) { // TRIM_DENOMINATOR - chargeRate > 0
+                        let trimAddress := mload(add(trimInfo_, 0x40)) // trimInfo.trimAddress
+                        _sendToken(toToken_, trimAddress, amount1)
+                        _emitPositiveSlippageTrimRecord(toToken_, amount1, trimAddress)
+                    }
+                    if gt(chargeRate, 0) {
+                        let chargeAddress := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeAddress
+                        _sendToken(toToken_, chargeAddress, amount2)
+                        _emitPositiveSlippageChargeRecord(toToken_, amount2, chargeAddress)
+                    }
                 }
             }
-            switch eq(token, _ETH)
+
+            // require(balanceAfter >= balanceBefore, "invalid balance after");
+            if gt(balanceBefore, balanceAfter) {
+                _revertWithReason(
+                    0x00000015696e76616c69642062616c616e636520616674657200000000000000,
+                    0x59
+                ) // "invalid balance after"
+            }
+            let inputAmount := sub(balanceAfter, balanceBefore)
+
+            // process commission
+            let flag := mload(add(commissionInfo, 0x20)) // commissionInfo.isToTokenCommission
+            if gt(flag, 0) { // commissionInfo.isToTokenCommission == True
+                let commissionAmount := _processCommission(commissionInfo, toToken, inputAmount)
+                inputAmount := sub(inputAmount, commissionAmount)
+                totalAmount := commissionAmount
+            }
+
+            // process trim
+            flag := mload(add(trimInfo, 0x00)) // trimInfo.hasTrim
+            let expectAmountOut := mload(add(trimInfo, 0x60)) // trimInfo.expectAmountOut
+            if and(gt(flag, 0), gt(inputAmount, expectAmountOut)) { // trimInfo.hasTrim == True && inputAmount > trimInfo.expectAmountOut
+                let trimAmount := _processTrim(trimInfo, toToken, inputAmount)
+                inputAmount := sub(inputAmount, trimAmount)
+                totalAmount := add(totalAmount, trimAmount)
+            }
+
+            // transfer toToken to receiver
+            switch eq(toToken, _ETH)
             case 1 {
-                _sendETH(shr(96, shl(96, to)), amount)
+                _sendETH(shr(96, shl(96, receiver)), inputAmount)
             }
             default {
-                _sendToken(token, shr(96, shl(96, to)), amount)
+                _sendToken(toToken, shr(96, shl(96, receiver)), inputAmount)
             }
         }
     }

@@ -23,7 +23,7 @@ contract Deploy is Script {
         // weth["xlayer"] = 0xe538905cf8410324e03A5A23C1c177a474D59b2b;
         address WNATIVE = 0xe538905cf8410324e03A5A23C1c177a474D59b2b;
         // address TOKENMANAGER2 = 0x5c952063c7fc8610FFDB798152D69F0B9550762b;
-        address dyorPumpRouterV3 = 0xD983C98D1522731146bAd34078dA0bD966D9EA08;
+        address dyorPumpRouterV3 = 0xDf7143e86c919cb440e6e972bafe0ebD1bb26F56;
         address adapter = address(new DyorPumpRouterV3Adapter(dyorPumpRouterV3, WNATIVE));
         console2.log("DyorPumpRouterV3Adapter deployed on XLayer: %s", adapter);
 

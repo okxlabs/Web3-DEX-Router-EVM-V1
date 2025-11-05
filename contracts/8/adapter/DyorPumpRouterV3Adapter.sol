@@ -42,7 +42,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
 
     /// @inheritdoc IAdapter
     function sellQuote(
-        address to, // to, not used, cause dyor will send token to tx.origin
+        address to,
         address pool,
         bytes memory moreInfo
     ) external override {
@@ -54,7 +54,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
      * @param moreInfo Additional configuration containing swap parameters
      */
     function _universalSwap(
-        address ,
+        address to,
         address pool,
         bool isSellBase,
         bytes memory moreInfo
@@ -86,7 +86,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
         } else { ///@notice sell dyor token is restricted liquidity, have to use tradeInfo to build moreinfo
             path[0] = pool;
             path[1] = WETH;
-            uint256 amountOut = tx.origin.balance; // eth balance
+            uint256 amountOut = address(this).balance; // eth balance
             RestrictedLiquidityLib.TradeInfo memory tradeInfo = abi.decode(moreInfo, (RestrictedLiquidityLib.TradeInfo));
             require(tradeInfo.fundAddress == pool, "DyorPumpRouterV3Adapter: sell token is not meme");
             require(tradeInfo.tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE || 
@@ -98,13 +98,21 @@ contract DyorPumpRouterV3Adapter is IAdapter {
                 amountIn,
                 0,
                 path,
-                tx.origin, // must be tx.origin, and eth will be received by tx.origin
-                tx.origin,
+                tx.origin, // must be tx.origin
+                address(this), // must be address(this), and eth will be received by address(this)
+                address(0),
                 0,
                 block.timestamp + 1000
             );
-            amountOut = tx.origin.balance - amountOut;
+            amountOut = address(this).balance - amountOut;
             require(amountOut >= tradeInfo.minReturnAmount, "DyorPumpRouterV3Adapter: Min return not reached");
+            
+            // Wrap ETH to WETH and transfer to 'to' address for next swap step
+            if (to != address(this)) {
+                IWETH(WETH).deposit{value: amountOut}();
+                SafeERC20.safeTransfer(IERC20(WETH), to, amountOut);
+            }
+            
             emit OrderRecord(false, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn, amountOut);
         }
     }

@@ -344,72 +344,78 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                let success := call(gas(), to, amount, 0, 0, 0, 0)
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x0000001c20636f6d6d697373696f6e2077697468206574686572206572726f72, //commission with ether error
-                        0x60
-                    )
+                if gt(amount, 0) {
+                    let success := call(gas(), to, amount, 0, 0, 0, 0)
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x0000001c20636f6d6d697373696f6e2077697468206574686572206572726f72, //commission with ether error
+                            0x60
+                        )
+                    }
                 }
             }
             function _claimToken(token, _payer, to, amount) {
-                let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x84))
-                mstore(
-                    freePtr,
-                    0x0a5ea46600000000000000000000000000000000000000000000000000000000
-                ) // claimTokens
-                mstore(add(freePtr, 0x04), token)
-                mstore(add(freePtr, 0x24), _payer)
-                mstore(add(freePtr, 0x44), to)
-                mstore(add(freePtr, 0x64), amount)
-                let success := call(
-                    gas(),
-                    _APPROVE_PROXY,
-                    0,
-                    freePtr,
-                    0x84,
-                    0,
-                    0
-                )
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                        0x57
+                if gt(amount, 0) {
+                    let freePtr := mload(0x40)
+                    mstore(0x40, add(freePtr, 0x84))
+                    mstore(
+                        freePtr,
+                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                    ) // claimTokens
+                    mstore(add(freePtr, 0x04), token)
+                    mstore(add(freePtr, 0x24), _payer)
+                    mstore(add(freePtr, 0x44), to)
+                    mstore(add(freePtr, 0x64), amount)
+                    let success := call(
+                        gas(),
+                        _APPROVE_PROXY,
+                        0,
+                        freePtr,
+                        0x84,
+                        0,
+                        0
                     )
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
+                            0x57
+                        )
+                    }
                 }
             }
             function _sendToken(token, to, amount) {
-                let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x44))
-                mstore(
-                    freePtr,
-                    0xa9059cbb00000000000000000000000000000000000000000000000000000000
-                ) // transfer
-                mstore(add(freePtr, 0x04), to)
-                mstore(add(freePtr, 0x24), amount)
-                let success := call(
-                    gas(),
-                    token,
-                    0,
-                    freePtr,
-                    0x44,
-                    0,
-                    0x20
-                )
-                if and(
-                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
-                    success
-                ) {
-                    success := iszero(
-                        or(iszero(extcodesize(token)), returndatasize())
+                if gt(amount, 0) {
+                    let freePtr := mload(0x40)
+                    mstore(0x40, add(freePtr, 0x44))
+                    mstore(
+                        freePtr,
+                        0xa9059cbb00000000000000000000000000000000000000000000000000000000
+                    ) // transfer
+                    mstore(add(freePtr, 0x04), to)
+                    mstore(add(freePtr, 0x24), amount)
+                    let success := call(
+                        gas(),
+                        token,
+                        0,
+                        freePtr,
+                        0x44,
+                        0,
+                        0x20
                     )
-                }
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                        0x5f
-                    ) //transfer token referrer fail
+                    if and(
+                        iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
+                        success
+                    ) {
+                        success := iszero(
+                            or(iszero(extcodesize(token)), returndatasize())
+                        )
+                    }
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                            0x5f
+                        ) //transfer token referrer fail
+                    }
                 }
             }
             // get balance, then scale amount1, amount2 and amount3 according to balance, and send tokens with scaled amount
@@ -617,45 +623,49 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                let success := call(gas(), to, amount, 0, 0, 0, 0)
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x0000001173656e64206574686572206661696c65640000000000000000000000,
-                        0x55
-                    ) // "send ether failed"
+                if gt(amount, 0) {
+                    let success := call(gas(), to, amount, 0, 0, 0, 0)
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x0000001173656e64206574686572206661696c65640000000000000000000000,
+                            0x55
+                        ) // "send ether failed"
+                    }
                 }
             }
             function _sendToken(token, to, amount) {
-                let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x44))
-                mstore(
-                    freePtr,
-                    0xa9059cbb00000000000000000000000000000000000000000000000000000000
-                ) // transfer
-                mstore(add(freePtr, 0x04), to)
-                mstore(add(freePtr, 0x24), amount)
-                let success := call(
-                    gas(),
-                    token,
-                    0,
-                    freePtr,
-                    0x44,
-                    0,
-                    0x20
-                )
-                if and(
-                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
-                    success
-                ) {
-                    success := iszero(
-                        or(iszero(extcodesize(token)), returndatasize())
+                if gt(amount, 0) {
+                    let freePtr := mload(0x40)
+                    mstore(0x40, add(freePtr, 0x44))
+                    mstore(
+                        freePtr,
+                        0xa9059cbb00000000000000000000000000000000000000000000000000000000
+                    ) // transfer
+                    mstore(add(freePtr, 0x04), to)
+                    mstore(add(freePtr, 0x24), amount)
+                    let success := call(
+                        gas(),
+                        token,
+                        0,
+                        freePtr,
+                        0x44,
+                        0,
+                        0x20
                     )
-                }
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x000000157472616e7366657220746f6b656e206661696c656400000000000000,
-                        0x59
-                    ) // "transfer token failed"
+                    if and(
+                        iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
+                        success
+                    ) {
+                        success := iszero(
+                            or(iszero(extcodesize(token)), returndatasize())
+                        )
+                    }
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x000000157472616e7366657220746f6b656e206661696c656400000000000000,
+                            0x59
+                        ) // "transfer token failed"
+                    }
                 }
             }
             function _emitCommissionToToken(token, amount, referrer) {
@@ -775,12 +785,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 }
 
                 // send token and emit events
+                // actualTrimAmount = trimAmount * (TRIM_DENOMINATOR - chargeRate) / TRIM_DENOMINATOR
                 let amount1 := _mulDiv(trimAmount, sub(TRIM_DENOMINATOR, chargeRate), TRIM_DENOMINATOR)
+                // actualChargeAmount = trimAmount * chargeRate / TRIM_DENOMINATOR, here use remaining amount directly
                 let amount2 := sub(trimAmount, amount1)
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
                     if gt(TRIM_DENOMINATOR, chargeRate) { // TRIM_DENOMINATOR - chargeRate > 0
-                        // chargeAmount = trimAmount * (TRIM_DENOMINATOR - chargeRate) / TRIM_DENOMINATOR
                         let trimAddress := mload(add(trimInfo_, 0x40)) // trimInfo.trimAddress
                         _sendETH(trimAddress, amount1)
                         _emitPositiveSlippageTrimRecord(_ETH, amount1, trimAddress)

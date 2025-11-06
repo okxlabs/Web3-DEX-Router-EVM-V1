@@ -6,15 +6,27 @@ abstract contract AbstractCommissionLib {
     struct CommissionInfo {
         bool isFromTokenCommission; //0x00
         bool isToTokenCommission; //0x20
-        uint256 commissionRate; //0x40
-        address refererAddress; //0x60
-        address token; //0x80
-        uint256 commissionRate2; //0xa0
-        address refererAddress2; //0xc0
-        bool isToBCommission; //0xe0
-        uint256 commissionRate3; //0x100
-        address refererAddress3; //0x120
+        address token; // 0x40
+        bool isToBCommission; // 0x60
+        uint256 commissionLength; // 0x80
+        uint256 commissionRate; // 0xa0
+        address referrerAddress; // 0xc0
+        uint256 commissionRate2; // 0xe0
+        address referrerAddress2; // 0x100
+        uint256 commissionRate3; // 0x120
+        address referrerAddress3; // 0x140
+        uint256 commissionRate4; // 0x160
+        address referrerAddress4; // 0x180
+        uint256 commissionRate5; // 0x1a0
+        address referrerAddress5; // 0x1c0
+        uint256 commissionRate6; // 0x1e0
+        address referrerAddress6; // 0x200
+        uint256 commissionRate7; // 0x220
+        address referrerAddress7; // 0x240
+        uint256 commissionRate8; // 0x260
+        address referrerAddress8; // 0x280
     }
+
 
     struct TrimInfo {
         bool hasTrim; // 0x00

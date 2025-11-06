@@ -18,12 +18,10 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
     uint256 internal constant TO_TOKEN_COMMISSION_DUAL =
         0x22220afc2bbb0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant FROM_TOKEN_COMMISSION_TRIPLE =
-        0x33330afc2aaa0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TO_TOKEN_COMMISSION_TRIPLE =
-        0x33330afc2bbb0000000000000000000000000000000000000000000000000000;
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _COMMISSION_PAIR_LENGTH_MASK =
+        0x0000000000000000000000ff0000000000000000000000000000000000000000;
 
     uint256 internal constant _TRIM_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
@@ -40,6 +38,11 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         uint256 commissionRate1,
         uint256 commissionRate2,
         uint256 commissionRate3,
+        uint256 commissionRate4,
+        uint256 commissionRate5,
+        uint256 commissionRate6,
+        uint256 commissionRate7,
+        uint256 commissionRate8,
         bool isToBCommission,
         uint256 trimRate,
         uint256 chargeRate
@@ -74,6 +77,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     // );
 
     // set default value can change when need.
+    uint256 internal constant commissionNumLimit = 8;
     uint256 internal constant commissionRateLimit = 30000000;
     uint256 internal constant DENOMINATOR = 10 ** 9;
     uint256 internal constant WAD = 1 ether;
@@ -86,6 +90,19 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo)
     {
         assembly ("memory-safe") {
+            function _revertWithReason(m, len) {
+                mstore(
+                    0,
+                    0x08c379a000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(
+                    0x20,
+                    0x0000002000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(0x40, m)
+                revert(0, len)
+            }
+
             let commissionData := calldataload(sub(calldatasize(), 0x20))
             let flag := and(commissionData, _COMMISSION_FLAG_MASK)
             let referrerNum := 0
@@ -101,89 +118,71 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             ) {
                 referrerNum := 2
             }
-            if or(
-                eq(flag, FROM_TOKEN_COMMISSION_TRIPLE),
-                eq(flag, TO_TOKEN_COMMISSION_TRIPLE)
-            ) {
-                referrerNum := 3
-            }
             mstore(
                 commissionInfo,
                 or(
-                    or(
-                        eq(flag, FROM_TOKEN_COMMISSION),
-                        eq(flag, FROM_TOKEN_COMMISSION_DUAL)
-                    ),
-                    eq(flag, FROM_TOKEN_COMMISSION_TRIPLE)
+                    eq(flag, FROM_TOKEN_COMMISSION),
+                    eq(flag, FROM_TOKEN_COMMISSION_DUAL)
                 )
             ) // isFromTokenCommission
             mstore(
                 add(0x20, commissionInfo),
                 or(
-                    or(
-                        eq(flag, TO_TOKEN_COMMISSION),
-                        eq(flag, TO_TOKEN_COMMISSION_DUAL)
-                    ),
-                    eq(flag, TO_TOKEN_COMMISSION_TRIPLE)
+                    eq(flag, TO_TOKEN_COMMISSION),
+                    eq(flag, TO_TOKEN_COMMISSION_DUAL)
                 )
             ) // isToTokenCommission
             switch gt(referrerNum, 0)
             case 1 {
                 mstore(
-                    add(0x40, commissionInfo),
+                    add(0xa0, commissionInfo),
                     shr(160, and(commissionData, _COMMISSION_RATE_MASK))
-                ) //commissionRate1
+                ) //commissionPairs[0].commissionRate
                 mstore(
-                    add(0x60, commissionInfo),
+                    add(0xc0, commissionInfo),
                     and(commissionData, _ADDRESS_MASK)
-                ) //referrerAddress1
+                ) //commissionPairs[0].referrerAddress
                 commissionData := calldataload(sub(calldatasize(), 0x40))
                 mstore(
-                    add(0xe0, commissionInfo),
+                    add(0x60, commissionInfo),
                     gt(and(commissionData, _TO_B_COMMISSION_MASK), 0) //isToBCommission
                 )
                 mstore(
-                    add(0x80, commissionInfo),
+                    add(0x40, commissionInfo),
                     and(commissionData, _ADDRESS_MASK) //token
                 )
+                // Encoded commission pair length is only used when flag is FROM_TOKEN_COMMISSION_DUAL or TO_TOKEN_COMMISSION_DUAL
+                // Only encoded length >= 2 is valid and used to cover referrerNum
+                let length := shr(160, and(commissionData, _COMMISSION_PAIR_LENGTH_MASK))
+                if and(eq(referrerNum, 2), gt(length, 1)) {
+                    referrerNum := length
+                }
+                if gt(referrerNum, commissionNumLimit) {
+                    _revertWithReason(
+                        0x0000001a7265666572726572206e756d2065786365656473206c696d69740000,
+                        0x5e
+                    ) // "referrer num exceeds limit"
+                }
+                mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
             }
             default {
-                mstore(add(0x40, commissionInfo), 0) //commissionRate1
-                mstore(add(0x60, commissionInfo), 0) //referrerAddress1
-                mstore(add(0xe0, commissionInfo), 0) //isToBCommission
-                mstore(add(0x80, commissionInfo), 0) //token
+                let eraseNum := add(mul(commissionNumLimit, 2), 3)
+                for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
+                    mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
+                }
             }
-            switch gt(referrerNum, 1)
-            case 1 {
-                let commissionData2 := calldataload(sub(calldatasize(), 0x60))
-                mstore(
-                    add(0xa0, commissionInfo),
-                    shr(160, and(commissionData2, _COMMISSION_RATE_MASK))
-                ) //commissionRate2
-                mstore(
-                    add(0xc0, commissionInfo),
-                    and(commissionData2, _ADDRESS_MASK)
-                ) //referrerAddress2
-            }
-            default {
-                mstore(add(0xa0, commissionInfo), 0) //commissionRate2
-                mstore(add(0xc0, commissionInfo), 0) //referrerAddress2
-            }
-            switch gt(referrerNum, 2)
-            case 1 {
-                let commissionData3 := calldataload(sub(calldatasize(), 0x80))
-                mstore(
-                    add(0x100, commissionInfo),
-                    shr(160, and(commissionData3, _COMMISSION_RATE_MASK))
-                ) //commissionRate3
-                mstore(
-                    add(0x120, commissionInfo),
-                    and(commissionData3, _ADDRESS_MASK)
-                ) //referrerAddress3
-            }
-            default {
-                mstore(add(0x100, commissionInfo), 0) //commissionRate3
-                mstore(add(0x120, commissionInfo), 0) //referrerAddress3
+            if gt(referrerNum, 1) {
+                for { let i := 1 } lt(i, referrerNum) { i := add(i, 1) } {
+                    commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
+                    mstore(
+                        add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
+                        shr(160, and(commissionData, _COMMISSION_RATE_MASK))
+                    ) //i-th commissionRate
+                    mstore(
+                        add(add(0xc0, commissionInfo), mul(i, 0x40)), // 0xc0: referrerAddress0, 0xc0 + 0x40 * i: i-th referrerAddress
+                        and(commissionData, _ADDRESS_MASK)
+                    ) //i-th referrerAddress
+                }
             }
             // calculate offset based on referrerNum
             let offset := 0
@@ -243,7 +242,19 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         }
 
         if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
-            emit CommissionAndTrimInfo(commissionInfo.commissionRate, commissionInfo.commissionRate2, commissionInfo.commissionRate3, commissionInfo.isToBCommission, trimInfo.trimRate, trimInfo.chargeRate);
+            emit CommissionAndTrimInfo(
+                commissionInfo.commissionRate,
+                commissionInfo.commissionRate2,
+                commissionInfo.commissionRate3,
+                commissionInfo.commissionRate4,
+                commissionInfo.commissionRate5,
+                commissionInfo.commissionRate6,
+                commissionInfo.commissionRate7,
+                commissionInfo.commissionRate8,
+                commissionInfo.isToBCommission,
+                trimInfo.trimRate,
+                trimInfo.chargeRate
+            );
         }
     }
 
@@ -418,8 +429,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                 }
             }
-            // get balance, then scale amount1, amount2 and amount3 according to balance, and send tokens with scaled amount
-            function _sendTokenWithinBalanceAndEmitEvents(token, to1, rate1, to2, rate2, to3, rate3)
+            // get balance, then scale each amount according to balance, and send tokens with scaled amount
+            function _sendTokenWithinBalanceAndEmitEvents(token, totalRate, referrerNum, commissionInfo_)
             {
                 let freePtr := mload(0x40)
                 mstore(0x40, add(freePtr, 0x48))
@@ -444,45 +455,33 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     )
                 }
                 let balanceAfter := mload(0x00)
-                let rateTotal := add(add(rate1, rate2), rate3) // amount = 0.0000001
-                let amount1Scaled, amount2Scaled, amount3Scaled
-                // send token to referrer1
-                if gt(rate1, 0) {
-                    amount1Scaled := _mulDiv(
-                        _mulDiv(rate1, WAD, rateTotal),
-                        balanceAfter,
-                        WAD
-                    ) // WARNING: Precision issues may also exist!!
-                    if gt(amount1Scaled, balanceAfter) {
-                        _revertWithReason(
-                            0x00000015696e76616c696420616d6f756e74315363616c656400000000000000,
-                            0x59
-                        ) //invalid amount1Scaled
+                let totalAmountScaled := 0
+                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                    let rate := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
+                    if gt(rate, 0) {
+                        let amountScaled
+                        switch eq(i, sub(referrerNum, 1))
+                        case 1 { // last referrer
+                            amountScaled := _safeSub(balanceAfter, totalAmountScaled)
+                        }
+                        default { // not last referrer
+                            amountScaled := _mulDiv(
+                                _mulDiv(rate, WAD, totalRate),
+                                balanceAfter,
+                                WAD
+                            )
+                            if gt(amountScaled, balanceAfter) {
+                                _revertWithReason(
+                                    0x00000015696e76616c696420616d6f756e745363616c65640000000000000000,
+                                    0x58
+                                ) //invalid amountScaled
+                            }
+                            totalAmountScaled := add(totalAmountScaled, amountScaled)
+                        }
+                        let referrer := mload(add(commissionInfo_, add(0xe0, mul(i, 0x40))))
+                        _sendToken(token, referrer, amountScaled)
+                        _emitCommissionFromToken(token, amountScaled, referrer)
                     }
-                    _sendToken(token, to1, amount1Scaled)
-                    _emitCommissionFromToken(token, amount1Scaled, to1)
-                }
-                // send token to referrer2
-                if gt(rate2, 0) {
-                    amount2Scaled := _mulDiv(
-                        _mulDiv(rate2, WAD, rateTotal),
-                        balanceAfter,
-                        WAD
-                    ) // WARNING: Precision issues may also exist!!
-                    if gt(amount2Scaled, balanceAfter) {
-                        _revertWithReason(
-                            0x00000015696e76616c696420616d6f756e74325363616c656400000000000000,
-                            0x59
-                        ) //invalid amount2Scaled
-                    }
-                    _sendToken(token, to2, amount2Scaled)
-                    _emitCommissionFromToken(token, amount2Scaled, to2)
-                }
-                // send token to referrer3
-                if gt(rate3, 0) {
-                    amount3Scaled := _safeSub(balanceAfter, add(amount1Scaled, amount2Scaled))
-                    _sendToken(token, to3, amount3Scaled)
-                    _emitCommissionFromToken(token, amount3Scaled, to3)
                 }
             }
             function _emitCommissionFromToken(token, amount, referrer) {
@@ -498,75 +497,46 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 ) //emit CommissionFromTokenRecord(address,uint256,address)
             }
 
-            let token := mload(add(commissionInfo, 0x80))
-            let isToB := mload(add(commissionInfo, 0xe0))            
-            let referrer1, referrer2, referrer3, rate1, rate2, rate3, totalRate
-            {
-                rate1 := mload(add(commissionInfo, 0x40))
-                rate2 := mload(add(commissionInfo, 0xa0))
-                rate3 := mload(add(commissionInfo, 0x100))
-                totalRate := add(add(rate1, rate2), rate3)
-                if gt(totalRate, commissionRateLimit) {
-                    _revertWithReason(
-                        0x0000001b6572726f7220636f6d6d697373696f6e2072617465206c696d697400,
-                        0x5f
-                    ) //"error commission rate limit"
-                }
-                referrer1 := mload(add(commissionInfo, 0x60))
-                referrer2 := mload(add(commissionInfo, 0xc0))
-                referrer3 := mload(add(commissionInfo, 0x120))
+            let token := mload(add(commissionInfo, 0x40))
+            let isToB := mload(add(commissionInfo, 0x60))
+            let totalRate := 0
+            let referrerNum := mload(add(commissionInfo, 0x80))
+            for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+                totalRate := add(totalRate, rate)
             }
-
+            if gt(totalRate, commissionRateLimit) {
+                _revertWithReason(
+                    0x0000001b6572726f7220636f6d6d697373696f6e2072617465206c696d697400,
+                    0x5f
+                ) //"error commission rate limit"
+            }
             if eq(token, _ETH) { // commission token is ETH, the process is same between no toB mode and toB mode
-                if gt(rate1, 0) {
-                    let amount1 := div(
-                        mul(inputAmount, rate1),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _sendETH(referrer1, amount1)
-                    _emitCommissionFromToken(_ETH, amount1, referrer1)
-                }
-                if gt(rate2, 0) {
-                    let amount2 := div(
-                        mul(inputAmount, rate2),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _sendETH(referrer2, amount2)
-                    _emitCommissionFromToken(_ETH, amount2, referrer2)
-                }
-                if gt(rate3, 0) {
-                    let amount3 := div(
-                        mul(inputAmount, rate3),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _sendETH(referrer3, amount3)
-                    _emitCommissionFromToken(_ETH, amount3, referrer3)
+                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                    let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+                    if gt(rate, 0) {
+                        let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+                        let amount := div(
+                            mul(inputAmount, rate),
+                            sub(DENOMINATOR, totalRate)
+                        )
+                        _sendETH(referrer, amount)
+                        _emitCommissionFromToken(_ETH, amount, referrer)
+                    }
                 }
             }
             if and(iszero(eq(token, _ETH)), iszero(isToB)) { // commission token is ERC20 with no toB mode
-                if gt(rate1, 0) {
-                    let amount1 := div(
-                        mul(inputAmount, rate1),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _claimToken(token, payer, referrer1, amount1)
-                    _emitCommissionFromToken(token, amount1, referrer1)
-                }
-                if gt(rate2, 0) {
-                    let amount2 := div(
-                        mul(inputAmount, rate2),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _claimToken(token, payer, referrer2, amount2)
-                    _emitCommissionFromToken(token, amount2, referrer2)
-                }
-                if gt(rate3, 0) {
-                    let amount3 := div(
-                        mul(inputAmount, rate3),
-                        sub(DENOMINATOR, totalRate)
-                    )
-                    _claimToken(token, payer, referrer3, amount3)
-                    _emitCommissionFromToken(token, amount3, referrer3)
+                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                    let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+                    if gt(rate, 0) {
+                        let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+                        let amount := div(
+                            mul(inputAmount, rate),
+                            sub(DENOMINATOR, totalRate)
+                        )
+                        _claimToken(token, payer, referrer, amount)
+                        _emitCommissionFromToken(token, amount, referrer)
+                    }
                 }
             }
             if and(iszero(eq(token, _ETH)), isToB) { // commission token is ERC20 with toB mode
@@ -577,12 +547,9 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 _claimToken(token, payer, address(), totalAmount)
                 _sendTokenWithinBalanceAndEmitEvents(
                     token,
-                    referrer1,
-                    rate1,
-                    referrer2,
-                    rate2,
-                    referrer3,
-                    rate3
+                    totalRate,
+                    referrerNum,
+                    commissionInfo
                 )
             }
         }
@@ -609,6 +576,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     revert(0x1c, 0x04)
                 }
                 z := div(z, d)
+            }
+            function _safeSub(x, y) -> z {
+                if lt(x, y) {
+                    mstore(0x00, 0x46e72d03) // `SafeSubFailed()`.
+                    revert(0x1c, 0x04)
+                }
+                z := sub(x, y)
             }
             function _revertWithReason(m, len) {
                 mstore(
@@ -705,10 +679,12 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 ) // emit PositiveSlippageChargeRecord(address,uint256,address)
             }
             function _processCommission(commissionInfo_, toToken_, inputAmount) -> commissionAmount {
-                let rate1 := mload(add(commissionInfo_, 0x40)) // commissionInfo.commissionRate
-                let rate2 := mload(add(commissionInfo_, 0xa0)) // commissionInfo.commissionRate2
-                let rate3 := mload(add(commissionInfo_, 0x100)) // commissionInfo.commissionRate3
-                let totalRate := add(add(rate1, rate2), rate3)
+                let referrerNum := mload(add(commissionInfo_, 0x80)) // commissionInfo.referrerNum
+                let totalRate := 0
+                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                    let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
+                    totalRate := add(totalRate, rate)
+                }
                 if gt(totalRate, commissionRateLimit) {
                     _revertWithReason(
                         0x0000001b6572726f7220636f6d6d697373696f6e2072617465206c696d697400,
@@ -716,44 +692,44 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     ) // "error commission rate limit"
                 }
                 commissionAmount := _mulDiv(inputAmount, totalRate, DENOMINATOR)
-
-                // send token and emit events
-                let amount1 := _mulDiv(commissionAmount, rate1, totalRate)
-                let amount2 := _mulDiv(commissionAmount, rate2, totalRate)
-                let amount3 := sub(commissionAmount, add(amount1, amount2))
+                let sendAmount := 0
                 switch eq(toToken_, _ETH)
-                case 1 {
-                    if gt(rate1, 0) {
-                        let referrer1 := mload(add(commissionInfo_, 0x60)) // commissionInfo.refererAddress
-                        _sendETH(referrer1, amount1)
-                        _emitCommissionToToken(_ETH, amount1, referrer1)
-                    }
-                    if gt(rate2, 0) {
-                        let referrer2 := mload(add(commissionInfo_, 0xc0)) // commissionInfo.refererAddress2
-                        _sendETH(referrer2, amount2)
-                        _emitCommissionToToken(_ETH, amount2, referrer2)
-                    }
-                    if gt(rate3, 0) {
-                        let referrer3 := mload(add(commissionInfo_, 0x120)) // commissionInfo.refererAddress3
-                        _sendETH(referrer3, amount3)
-                        _emitCommissionToToken(_ETH, amount3, referrer3)
+                case 1 { // commission token is ETH
+                    for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                        let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
+                        if gt(rate, 0) {
+                            let amount
+                            switch eq(i, sub(referrerNum, 1))
+                            case 1 { // last referrer
+                                amount := _safeSub(commissionAmount, sendAmount)
+                            }
+                            default { // not last referrer
+                                amount := _mulDiv(commissionAmount, rate, totalRate)
+                                sendAmount := add(sendAmount, amount)
+                            }
+                            let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
+                            _sendETH(referrer, amount)
+                            _emitCommissionToToken(_ETH, amount, referrer)
+                        }
                     }
                 }
-                case 0 {
-                    if gt(rate1, 0) {
-                        let referrer1 := mload(add(commissionInfo_, 0x60)) // commissionInfo.refererAddress
-                        _sendToken(toToken_, referrer1, amount1)
-                        _emitCommissionToToken(toToken_, amount1, referrer1)
-                    }
-                    if gt(rate2, 0) {
-                        let referrer2 := mload(add(commissionInfo_, 0xc0)) // commissionInfo.refererAddress2
-                        _sendToken(toToken_, referrer2, amount2)
-                        _emitCommissionToToken(toToken_, amount2, referrer2)
-                    }
-                    if gt(rate3, 0) {
-                        let referrer3 := mload(add(commissionInfo_, 0x120)) // commissionInfo.refererAddress3
-                        _sendToken(toToken_, referrer3, amount3)
-                        _emitCommissionToToken(toToken_, amount3, referrer3)
+                default { // commission token is ERC20
+                    for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                        let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
+                        if gt(rate, 0) {
+                            let amount
+                            switch eq(i, sub(referrerNum, 1))
+                            case 1 { // last referrer
+                                amount := _safeSub(commissionAmount, sendAmount)
+                            }
+                            default { // not last referrer
+                                amount := _mulDiv(commissionAmount, rate, totalRate)
+                                sendAmount := add(sendAmount, amount)
+                            }
+                            let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
+                            _sendToken(toToken_, referrer, amount)
+                            _emitCommissionToToken(toToken_, amount, referrer)
+                        }
                     }
                 }
             } 
@@ -923,7 +899,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             //         || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
             //     "Invalid commission info"
             // );
-            let token := mload(add(commissionInfo, 0x80)) // commissionInfo.token
+            let token := mload(add(commissionInfo, 0x40)) // commissionInfo.token
             flag := and(isFromTokenCommission, eq(token, fromToken))
             flag := or(flag, and(isToTokenCommission, eq(token, toToken)))
             flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))

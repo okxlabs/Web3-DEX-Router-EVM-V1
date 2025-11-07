@@ -157,6 +157,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 if and(eq(referrerNum, 2), gt(length, 1)) {
                     referrerNum := length
                 }
+                // The referrerNum must <= commissionNumLimit
                 if gt(referrerNum, commissionNumLimit) {
                     _revertWithReason(
                         0x0000001a7265666572726572206e756d2065786365656473206c696d69740000,
@@ -166,22 +167,29 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
             }
             default {
-                let eraseNum := add(mul(commissionNumLimit, 2), 3)
+                let eraseNum := add(mul(commissionNumLimit, 2), 3) // 2 * commissionNumLimit + 3: token, isToBCommission, commissionLength and all commission pairs
                 for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
                     mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
                 }
             }
             if gt(referrerNum, 1) {
-                for { let i := 1 } lt(i, referrerNum) { i := add(i, 1) } {
-                    commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
-                    mstore(
-                        add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
-                        shr(160, and(commissionData, _COMMISSION_RATE_MASK))
-                    ) //i-th commissionRate
-                    mstore(
-                        add(add(0xc0, commissionInfo), mul(i, 0x40)), // 0xc0: referrerAddress0, 0xc0 + 0x40 * i: i-th referrerAddress
-                        and(commissionData, _ADDRESS_MASK)
-                    ) //i-th referrerAddress
+                for { let i := 1 } lt(i, commissionNumLimit) { i := add(i, 1) } {
+                    switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
+                    case 1 {
+                        commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
+                        mstore(
+                            add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
+                            shr(160, and(commissionData, _COMMISSION_RATE_MASK))
+                        ) //i-th commissionRate
+                        mstore(
+                            add(add(0xc0, commissionInfo), mul(i, 0x40)), // 0xc0: referrerAddress0, 0xc0 + 0x40 * i: i-th referrerAddress
+                            and(commissionData, _ADDRESS_MASK)
+                        ) //i-th referrerAddress
+                    }
+                    default { // if i >= referrerNum, the i-th commission pair is invalid, and erase it
+                        mstore(add(add(0xa0, commissionInfo), mul(i, 0x40)), 0) // erase i-th commissionRate
+                        mstore(add(add(0xc0, commissionInfo), mul(i, 0x40)), 0) // erase i-th referrerAddress
+                    }
                 }
             }
             // calculate offset based on referrerNum

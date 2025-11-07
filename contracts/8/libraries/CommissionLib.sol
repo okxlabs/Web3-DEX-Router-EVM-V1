@@ -18,10 +18,15 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
     uint256 internal constant TO_TOKEN_COMMISSION_DUAL =
         0x22220afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant FROM_TOKEN_COMMISSION_MULTIPLE =
+        0x34560afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TO_TOKEN_COMMISSION_MULTIPLE =
+        0x34560afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _COMMISSION_LENGTH_MASK =
+        0x0000000000000000000000ff0000000000000000000000000000000000000000;
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _COMMISSION_PAIR_LENGTH_MASK =
-        0x0000000000000000000000ff0000000000000000000000000000000000000000;
+
 
     uint256 internal constant _TRIM_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
@@ -29,21 +34,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 internal constant _TRIM_RATE_MASK =
         0x000000000000ffffffffffff0000000000000000000000000000000000000000;
+    uint256 internal constant _TO_B_TRIM_MASK =
+        0x0000000000008000000000000000000000000000000000000000000000000000;
     uint256 internal constant TRIM_FLAG =
         0x7777777711110000000000000000000000000000000000000000000000000000;
     uint256 internal constant TRIM_DUAL_FLAG =
         0x7777777722220000000000000000000000000000000000000000000000000000;
 
     event CommissionAndTrimInfo(
-        uint256 commissionRate1,
-        uint256 commissionRate2,
-        uint256 commissionRate3,
-        uint256 commissionRate4,
-        uint256 commissionRate5,
-        uint256 commissionRate6,
-        uint256 commissionRate7,
-        uint256 commissionRate8,
         bool isToBCommission,
+        bool isToBTrim,
         uint256 trimRate,
         uint256 chargeRate
     );
@@ -52,14 +52,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     // event CommissionFromTokenRecord(
     //     address fromTokenAddress,
     //     uint256 commissionAmount,
-    //     address referrerAddress
+    //     address referrerAddress,
+    //     uint256 commissionRate
     // );
 
     // @notice CommissionToTokenRecord is emitted in assembly, commentted out for contract size saving
     // event CommissionToTokenRecord(
     //     address toTokenAddress,
     //     uint256 commissionAmount,
-    //     address referrerAddress
+    //     address referrerAddress,
+    //     uint256 commissionRate
     // );
 
     // @notice PositiveSlippageTrimRecord is emitted in assembly, commentted out for contract size saving
@@ -77,7 +79,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     // );
 
     // set default value can change when need.
-    uint256 internal constant commissionNumLimit = 8;
+    uint256 internal constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
+    uint256 internal constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
     uint256 internal constant commissionRateLimit = 30000000;
     uint256 internal constant DENOMINATOR = 10 ** 9;
     uint256 internal constant WAD = 1 ether;
@@ -118,6 +121,12 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             ) {
                 referrerNum := 2
             }
+            if or(
+                eq(flag, FROM_TOKEN_COMMISSION_MULTIPLE),
+                eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
+            ) {
+                referrerNum := 3 // default referrer num to load real encoded referrer num
+            }
             mstore(
                 commissionInfo,
                 or(
@@ -137,11 +146,11 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 mstore(
                     add(0xa0, commissionInfo),
                     shr(160, and(commissionData, _COMMISSION_RATE_MASK))
-                ) //commissionPairs[0].commissionRate
+                ) // 1st commissionRate
                 mstore(
                     add(0xc0, commissionInfo),
                     and(commissionData, _ADDRESS_MASK)
-                ) //commissionPairs[0].referrerAddress
+                ) // 1st referrerAddress
                 commissionData := calldataload(sub(calldatasize(), 0x40))
                 mstore(
                     add(0x60, commissionInfo),
@@ -151,29 +160,27 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     add(0x40, commissionInfo),
                     and(commissionData, _ADDRESS_MASK) //token
                 )
-                // Encoded commission pair length is only used when flag is FROM_TOKEN_COMMISSION_DUAL or TO_TOKEN_COMMISSION_DUAL
-                // Only encoded length >= 2 is valid and used to cover referrerNum
-                let length := shr(160, and(commissionData, _COMMISSION_PAIR_LENGTH_MASK))
-                if and(eq(referrerNum, 2), gt(length, 1)) {
-                    referrerNum := length
-                }
-                // The referrerNum must <= commissionNumLimit
-                if gt(referrerNum, commissionNumLimit) {
-                    _revertWithReason(
-                        0x0000001a7265666572726572206e756d2065786365656473206c696d69740000,
-                        0x5e
-                    ) // "referrer num exceeds limit"
+                // For multiple commission mode, load the encoded commission length and validate
+                if gt(referrerNum, 2) {
+                    referrerNum := shr(160, and(commissionData, _COMMISSION_LENGTH_MASK))
+                    // require(referrerNum >= MIN_COMMISSION_MULTIPLE_NUM && referrerNum <= MAX_COMMISSION_MULTIPLE_NUM, "invalid referrer num")
+                    if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
+                        _revertWithReason(
+                            0x00000014696e76616c6964207265666572726572206e756d0000000000000000,
+                            0x58
+                        ) // "invalid referrer num"
+                    }
                 }
                 mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
             }
             default {
-                let eraseNum := add(mul(commissionNumLimit, 2), 3) // 2 * commissionNumLimit + 3: token, isToBCommission, commissionLength and all commission pairs
+                let eraseNum := add(mul(MAX_COMMISSION_MULTIPLE_NUM, 2), 3) // 2 * MAX_COMMISSION_MULTIPLE_NUM + 3: token, isToBCommission, commissionLength and all commission pairs
                 for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
                     mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
                 }
             }
             if gt(referrerNum, 1) {
-                for { let i := 1 } lt(i, commissionNumLimit) { i := add(i, 1) } {
+                for { let i := 1 } lt(i, MAX_COMMISSION_MULTIPLE_NUM) { i := add(i, 1) } {
                     switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
                     case 1 {
                         commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
@@ -222,44 +229,42 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 trimData := calldataload(sub(calldatasize(), add(offset, 64)))
                 mstore(
                     add(0x60, trimInfo),
+                    gt(and(trimData, _TO_B_TRIM_MASK), 0) //isToBTrim
+                )
+                mstore(
+                    add(0x80, trimInfo),
                     and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
                 ) // expectAmountOut
             }
             default {
                 mstore(add(0x20, trimInfo), 0) // trimRate
                 mstore(add(0x40, trimInfo), 0) // trimAddress
-                mstore(add(0x60, trimInfo), 0) // expectAmountOut
+                mstore(add(0x60, trimInfo), 0) // isToBTrim
+                mstore(add(0x80, trimInfo), 0) // expectAmountOut
             }
             switch eq(flag, TRIM_DUAL_FLAG)
             case 1 {
                 // get third bytes32 of trim data
                 trimData := calldataload(sub(calldatasize(), add(offset, 96)))
                 mstore(
-                    add(0x80, trimInfo),
+                    add(0xa0, trimInfo),
                     shr(160, and(trimData, _TRIM_RATE_MASK))
                 ) // chargeRate
                 mstore(
-                    add(0xa0, trimInfo),
+                    add(0xc0, trimInfo),
                     and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
                 ) // chargeAddress
             }
             default {
-                mstore(add(0x80, trimInfo), 0) // chargeRate
-                mstore(add(0xa0, trimInfo), 0) // chargeAddress
+                mstore(add(0xa0, trimInfo), 0) // chargeRate
+                mstore(add(0xc0, trimInfo), 0) // chargeAddress
             }
         }
 
         if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
             emit CommissionAndTrimInfo(
-                commissionInfo.commissionRate,
-                commissionInfo.commissionRate2,
-                commissionInfo.commissionRate3,
-                commissionInfo.commissionRate4,
-                commissionInfo.commissionRate5,
-                commissionInfo.commissionRate6,
-                commissionInfo.commissionRate7,
-                commissionInfo.commissionRate8,
                 commissionInfo.isToBCommission,
+                trimInfo.isToBTrim,
                 trimInfo.trimRate,
                 trimInfo.chargeRate
             );
@@ -463,14 +468,14 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     )
                 }
                 let balanceAfter := mload(0x00)
-                let totalAmountScaled := 0
+                let sendAmount := 0 // the amount of tokens already sent
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                     if gt(rate, 0) {
                         let amountScaled
                         switch eq(i, sub(referrerNum, 1))
                         case 1 { // last referrer
-                            amountScaled := _safeSub(balanceAfter, totalAmountScaled)
+                            amountScaled := _safeSub(balanceAfter, sendAmount)
                         }
                         default { // not last referrer
                             amountScaled := _mulDiv(
@@ -484,25 +489,26 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                                     0x58
                                 ) //invalid amountScaled
                             }
-                            totalAmountScaled := add(totalAmountScaled, amountScaled)
+                            sendAmount := add(sendAmount, amountScaled)
                         }
                         let referrer := mload(add(commissionInfo_, add(0xe0, mul(i, 0x40))))
                         _sendToken(token, referrer, amountScaled)
-                        _emitCommissionFromToken(token, amountScaled, referrer)
+                        _emitCommissionFromToken(token, amountScaled, referrer, rate)
                     }
                 }
             }
-            function _emitCommissionFromToken(token, amount, referrer) {
+            function _emitCommissionFromToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
                 mstore(0x40, add(freePtr, 0x60))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)
+                mstore(add(freePtr, 0x60), rate)
                 log1(
                     freePtr,
-                    0x60,
-                    0x0d3b1268ca3dbb6d3d8a0ea35f44f8f9d58cf578d732680b71b6904fb2733e0d
-                ) //emit CommissionFromTokenRecord(address,uint256,address)
+                    0x80,
+                    0xcd5eae9d9d0b96532bd1b7dbf6628ce436b2af735829087a03c548439f8bf850
+                ) //emit CommissionFromTokenRecord(address,uint256,address,uint256)
             }
 
             let token := mload(add(commissionInfo, 0x40))
@@ -529,7 +535,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                             sub(DENOMINATOR, totalRate)
                         )
                         _sendETH(referrer, amount)
-                        _emitCommissionFromToken(_ETH, amount, referrer)
+                        _emitCommissionFromToken(_ETH, amount, referrer, rate)
                     }
                 }
             }
@@ -543,7 +549,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                             sub(DENOMINATOR, totalRate)
                         )
                         _claimToken(token, payer, referrer, amount)
-                        _emitCommissionFromToken(token, amount, referrer)
+                        _emitCommissionFromToken(token, amount, referrer, rate)
                     }
                 }
             }
@@ -650,17 +656,18 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                 }
             }
-            function _emitCommissionToToken(token, amount, referrer) {
+            function _emitCommissionToToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
                 mstore(0x40, add(freePtr, 0x60))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)
+                mstore(add(freePtr, 0x60), rate)
                 log1(
                     freePtr,
-                    0x60,
-                    0xf171268de859ec269c52bbfac94dcb7715e784de194342abb284bf34fd30b32d
-                ) //emit CommissionToTokenRecord(address,uint256,address)
+                    0x80,
+                    0x3cfb523a4c38d88561dd3bf04805a31715c8b5fc468a03b8d684356f360dea99
+                ) //emit CommissionToTokenRecord(address,uint256,address,uint256)
             }
             function _emitPositiveSlippageTrimRecord(token, trimAmount, trimAddress) {
                 let freePtr := mload(0x40)
@@ -700,7 +707,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     ) // "error commission rate limit"
                 }
                 commissionAmount := _mulDiv(inputAmount, totalRate, DENOMINATOR)
-                let sendAmount := 0
+                let sendAmount := 0 // the amount of tokens already sent
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
@@ -717,7 +724,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                             }
                             let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                             _sendETH(referrer, amount)
-                            _emitCommissionToToken(_ETH, amount, referrer)
+                            _emitCommissionToToken(_ETH, amount, referrer, rate)
                         }
                     }
                 }
@@ -736,14 +743,14 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                             }
                             let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                             _sendToken(toToken_, referrer, amount)
-                            _emitCommissionToToken(toToken_, amount, referrer)
+                            _emitCommissionToToken(toToken_, amount, referrer, rate)
                         }
                     }
                 }
             } 
             function _processTrim(trimInfo_, toToken_, inputAmount) -> trimAmount {
                 let trimRate := mload(add(trimInfo_, 0x20)) // trimInfo.trimRate
-                let chargeRate := mload(add(trimInfo_, 0x80)) // trimInfo.chargeRate
+                let chargeRate := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeRate
                 // require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate limit");
                 if gt(trimRate, TRIM_RATE_LIMIT) {
                     _revertWithReason(
@@ -759,7 +766,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     ) // "error charge rate"
                 }
                 // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
-                let expectAmountOut := mload(add(trimInfo_, 0x60)) // trimInfo.expectAmountOut
+                let expectAmountOut := mload(add(trimInfo_, 0x80)) // trimInfo.expectAmountOut
                 trimAmount := sub(inputAmount, expectAmountOut)
                 // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR;
                 let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR)
@@ -781,7 +788,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         _emitPositiveSlippageTrimRecord(_ETH, amount1, trimAddress)
                     }
                     if gt(chargeRate, 0) {
-                        let chargeAddress := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeAddress
+                        let chargeAddress := mload(add(trimInfo_, 0xc0)) // trimInfo.chargeAddress
                         _sendETH(chargeAddress, amount2)
                         _emitPositiveSlippageChargeRecord(_ETH, amount2, chargeAddress)
                     }
@@ -793,7 +800,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         _emitPositiveSlippageTrimRecord(toToken_, amount1, trimAddress)
                     }
                     if gt(chargeRate, 0) {
-                        let chargeAddress := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeAddress
+                        let chargeAddress := mload(add(trimInfo_, 0xc0)) // trimInfo.chargeAddress
                         _sendToken(toToken_, chargeAddress, amount2)
                         _emitPositiveSlippageChargeRecord(toToken_, amount2, chargeAddress)
                     }

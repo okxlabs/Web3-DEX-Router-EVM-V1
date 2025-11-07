@@ -18,10 +18,12 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
     uint256 internal constant TO_TOKEN_COMMISSION_DUAL =
         0x22220afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant FROM_TOKEN_COMMISSION_TRIPLE =
+        0x33330afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TO_TOKEN_COMMISSION_TRIPLE =
+        0x33330afc2bbb0000000000000000000000000000000000000000000000000000;
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _COMMISSION_PAIR_LENGTH_MASK =
-        0x0000000000000000000000ff0000000000000000000000000000000000000000;
 
     uint256 internal constant _TRIM_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
@@ -38,11 +40,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         uint256 commissionRate1,
         uint256 commissionRate2,
         uint256 commissionRate3,
-        uint256 commissionRate4,
-        uint256 commissionRate5,
-        uint256 commissionRate6,
-        uint256 commissionRate7,
-        uint256 commissionRate8,
         bool isToBCommission,
         uint256 trimRate,
         uint256 chargeRate
@@ -77,7 +74,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     // );
 
     // set default value can change when need.
-    uint256 internal constant commissionNumLimit = 8;
     uint256 internal constant commissionRateLimit = 30000000;
     uint256 internal constant DENOMINATOR = 10 ** 9;
     uint256 internal constant WAD = 1 ether;
@@ -90,19 +86,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo)
     {
         assembly ("memory-safe") {
-            function _revertWithReason(m, len) {
-                mstore(
-                    0,
-                    0x08c379a000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(
-                    0x20,
-                    0x0000002000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(0x40, m)
-                revert(0, len)
-            }
-
             let commissionData := calldataload(sub(calldatasize(), 0x20))
             let flag := and(commissionData, _COMMISSION_FLAG_MASK)
             let referrerNum := 0
@@ -117,6 +100,12 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 eq(flag, TO_TOKEN_COMMISSION_DUAL)
             ) {
                 referrerNum := 2
+            }
+            if or(
+                eq(flag, FROM_TOKEN_COMMISSION_TRIPLE),
+                eq(flag, TO_TOKEN_COMMISSION_TRIPLE)
+            ) {
+                referrerNum := 3
             }
             mstore(
                 commissionInfo,
@@ -151,29 +140,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     add(0x40, commissionInfo),
                     and(commissionData, _ADDRESS_MASK) //token
                 )
-                // Encoded commission pair length is only used when flag is FROM_TOKEN_COMMISSION_DUAL or TO_TOKEN_COMMISSION_DUAL
-                // Only encoded length >= 2 is valid and used to cover referrerNum
-                let length := shr(160, and(commissionData, _COMMISSION_PAIR_LENGTH_MASK))
-                if and(eq(referrerNum, 2), gt(length, 1)) {
-                    referrerNum := length
-                }
-                // The referrerNum must <= commissionNumLimit
-                if gt(referrerNum, commissionNumLimit) {
-                    _revertWithReason(
-                        0x0000001a7265666572726572206e756d2065786365656473206c696d69740000,
-                        0x5e
-                    ) // "referrer num exceeds limit"
-                }
                 mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
             }
             default {
-                let eraseNum := add(mul(commissionNumLimit, 2), 3) // 2 * commissionNumLimit + 3: token, isToBCommission, commissionLength and all commission pairs
+                let eraseNum := 8 // token, isToBCommission, commissionLength and all 3 commission pairs
                 for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
                     mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
                 }
             }
             if gt(referrerNum, 1) {
-                for { let i := 1 } lt(i, commissionNumLimit) { i := add(i, 1) } {
+                for { let i := 1 } lt(i, 3) { i := add(i, 1) } { // max referrerNum is 3
                     switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
                     case 1 {
                         commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
@@ -254,11 +230,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 commissionInfo.commissionRate,
                 commissionInfo.commissionRate2,
                 commissionInfo.commissionRate3,
-                commissionInfo.commissionRate4,
-                commissionInfo.commissionRate5,
-                commissionInfo.commissionRate6,
-                commissionInfo.commissionRate7,
-                commissionInfo.commissionRate8,
                 commissionInfo.isToBCommission,
                 trimInfo.trimRate,
                 trimInfo.chargeRate

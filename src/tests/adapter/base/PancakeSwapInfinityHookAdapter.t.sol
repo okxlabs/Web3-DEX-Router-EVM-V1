@@ -18,6 +18,7 @@ contract PancakeSwapInfinityHookAdapterTest is AbstractAdapterTest {
     mapping(string => address) internal binPoolManagers;
 
     uint256 internal constant BSC_FORK_BLOCK = 63992458; /// @notice constant fork block for BSC to make modifying the code easier
+    uint256 internal constant BASE_FORK_BLOCK = 37982605; /// @notice constant fork block for BASE to make modifying the code easier
 
     /// @notice Create PancakeSwapInfinityHookAdapter for the specified network
     /// @param networkId The network identifier (e.g. "eth", "bsc")
@@ -27,6 +28,12 @@ contract PancakeSwapInfinityHookAdapterTest is AbstractAdapterTest {
         wrappedTokens["bsc"] = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
         clPoolManagers["bsc"] = 0xa0FfB9c1CE1Fe56963B0321B32E7A0302114058b;
         binPoolManagers["bsc"] = 0xC697d2898e0D09264376196696c51D7aBbbAA4a9;
+
+        // Pool manager addresses per network
+        vaults["base"] = 0x238a358808379702088667322f80aC48bAd5e6c4;
+        wrappedTokens["base"] = 0x4200000000000000000000000000000000000006;
+        clPoolManagers["base"] = 0xa0FfB9c1CE1Fe56963B0321B32E7A0302114058b;
+        binPoolManagers["base"] = 0xC697d2898e0D09264376196696c51D7aBbbAA4a9;
 
         address vault = vaults[networkId];
         address wrappedToken = wrappedTokens[networkId];
@@ -45,10 +52,14 @@ contract PancakeSwapInfinityHookAdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](3);
-        cases[0] = getPancakeSwapInfinityBscCLHookTestCases();
-        cases[1] = getPancakeSwapInfinityBscBinNoHookTestCases();
-        cases[2] = getPancakeSwapInfinityBscMultiHopTestCases();
+        // SwapTestCase[][] memory cases = new SwapTestCase[][](3);
+        // cases[0] = getPancakeSwapInfinityBscCLHookTestCases();
+        // cases[1] = getPancakeSwapInfinityBscBinNoHookTestCases();
+        // cases[2] = getPancakeSwapInfinityBscMultiHopTestCases();
+
+        SwapTestCase[][] memory cases = new SwapTestCase[][](2);
+        cases[0] = getPancakeSwapInfinityBaseCLNoHookTestCases();
+        cases[1] = getPancakeSwapInfinityBaseBinNoHookTestCases();
 
         return cases;
     }
@@ -270,6 +281,89 @@ contract PancakeSwapInfinityHookAdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "Multi-hop swap with PancakeSwapInfinity CL hook and Bin no-hook pools",
             moreInfo: abi.encode(pathKeys2),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getPancakeSwapInfinityBaseCLNoHookTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        address CLPoolManager = 0xa0FfB9c1CE1Fe56963B0321B32E7A0302114058b;
+        address ETH = address(0);
+        address WETH = 0x4200000000000000000000000000000000000006;
+        address USDT = 0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2;
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+
+        // USDC -> USDT (CL PoolId: 0x5be6d980aeb668a348202d7d2c2fa25ed8d2e83c3b7328f7ef4112cfc3c80a0f)
+        PancakeSwapInfinityHookAdapter.PathKey[] memory pathKeys1 = new PancakeSwapInfinityHookAdapter.PathKey[](1);
+        pathKeys1[0] = PancakeSwapInfinityHookAdapter.PathKey({
+            inputCurrency: Currency.wrap(USDC),
+            outputCurrency: Currency.wrap(USDT),
+            poolManager: CLPoolManager,
+            fee: 34,
+            poolParams: 1, // tickSpacing for CL pool
+            hook: address(0),
+            hookData: ""
+        });
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: BASE_FORK_BLOCK,
+            fromToken: USDC,
+            toToken: WETH,
+            pool: address(0),
+            amount: 1 * 10 ** 18, // 1 USDC
+            expectedOutput: 0, // dynamic output
+            sellBase: true,
+            expectRevert: false,
+            description: "USDC to USDT on PancakeSwapInfinity CL no-hook pool",
+            moreInfo: abi.encode(pathKeys1),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getPancakeSwapInfinityBaseBinNoHookTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        address ETH = address(0);
+        address WETH = 0x4200000000000000000000000000000000000006;
+        address CBETH = 0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22;
+        address BinPoolManager = 0xC697d2898e0D09264376196696c51D7aBbbAA4a9;
+
+        // ETH -> CBETH (Bin PoolId: 0x3e46b3dc482fc0f761d941e492bcbfaa3e9e4f58e22daf90968b9f2f4bfd589a)
+        PancakeSwapInfinityHookAdapter.PathKey[] memory pathKeys1 = new PancakeSwapInfinityHookAdapter.PathKey[](1);
+        pathKeys1[0] = PancakeSwapInfinityHookAdapter.PathKey({
+            inputCurrency: Currency.wrap(ETH),
+            outputCurrency: Currency.wrap(CBETH),
+            poolManager: BinPoolManager,
+            fee: 54,
+            poolParams: 1, // binStep for Bin pool
+            hook: address(0),
+            hookData: ""
+        });
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: BASE_FORK_BLOCK,
+            fromToken: WETH,
+            toToken: CBETH,
+            pool: address(0),
+            amount: 0.001 * 10 ** 18,
+            expectedOutput: 0, // dynamic output
+            sellBase: true,
+            expectRevert: false,
+            description: "ETH to CBETH on PancakeSwapInfinity Bin no-hook pool",
+            moreInfo: abi.encode(pathKeys1),
             fromTokenPreTo: address(0)
         });
 

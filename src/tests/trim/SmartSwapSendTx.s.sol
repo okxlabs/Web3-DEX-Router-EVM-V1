@@ -78,15 +78,19 @@ contract SendTx is Test, CommissionHelper, TrimHelper {
         console2.log("ownedAddress USDC balance before", IERC20(USDC).balanceOf(address(ownedAddress)));
 
         bytes memory swapData = _generateETH2USDCSmartSwapData();
+        uint256[] memory commissionRates = new uint256[](2);
+        commissionRates[0] = 10000000;
+        commissionRates[1] = 20000000;
+        address[] memory referrerAddresses = new address[](2);
+        referrerAddresses[0] = ownedAddress;
+        referrerAddresses[1] = deployer;
         bytes memory commissionData = _buildCommissionInfoUnified(
             true, // isFromTokenCommission
             false, // isToBCommission
             ETH, // commissionToken
-            10000000, // commissionRate1
-            ownedAddress, // refer1
-            20000000, // commissionRate2
-            deployer, // refer2
-            true // isToBCommission
+            true, // isToBCommission
+            commissionRates,
+            referrerAddresses
         );
         bytes memory trimData = _buildTrimInfoUnified(
             100, // trimRate

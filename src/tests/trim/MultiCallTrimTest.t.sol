@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./TrimTestBase.t.sol";
+import "../common/TrimAndCommissionTestBase.t.sol";
 
 contract MultiCall {
     function multiCall(address[] calldata targets, uint256[] calldata values, bytes[] calldata datas) external payable {
@@ -12,30 +12,30 @@ contract MultiCall {
     }
 }
 
-contract MultiCallTrimTest is TrimTestBase {
+contract MultiCallTrimTest is TrimAndCommissionTestBase {
     MultiCall multiCall;
 
     modifier tokenLog() {
         deal(arnaud, 5 * 10 ** 18);
         console2.log("eth balance of arnaud before: %d", address(arnaud).balance);
-        console2.log("eth balance of referrer1: %d", address(referrerAddress).balance);
-        console2.log("eth balance of referrer2: %d", address(referrerAddress2).balance);
+        console2.log("eth balance of referrer1: %d", address(referrerAddresses[0]).balance);
+        console2.log("eth balance of referrer2: %d", address(referrerAddresses[1]).balance);
         console2.log("eth balance of trim: %d", address(trimAddress).balance);
         console2.log("eth balance of charge: %d", address(chargeAddress).balance);
         console2.log("USDT balance of arnaud: %d", IERC20(USDT).balanceOf(address(arnaud)));
-        console2.log("USDT balance of referrer1: %d", IERC20(USDT).balanceOf(address(referrerAddress)));
-        console2.log("USDT balance of referrer2: %d", IERC20(USDT).balanceOf(address(referrerAddress2)));
+        console2.log("USDT balance of referrer1: %d", IERC20(USDT).balanceOf(address(referrerAddresses[0])));
+        console2.log("USDT balance of referrer2: %d", IERC20(USDT).balanceOf(address(referrerAddresses[1])));
         console2.log("USDT balance of trim: %d", IERC20(USDT).balanceOf(address(trimAddress)));
         console2.log("USDT balance of charge: %d", IERC20(USDT).balanceOf(address(chargeAddress)));
         _;
         console2.log("eth balance of arnaud after: %d", address(arnaud).balance);
-        console2.log("eth balance of referrer1 after: %d", address(referrerAddress).balance);
-        console2.log("eth balance of referrer2 after: %d", address(referrerAddress2).balance);
+        console2.log("eth balance of referrer1 after: %d", address(referrerAddresses[0]).balance);
+        console2.log("eth balance of referrer2 after: %d", address(referrerAddresses[1]).balance);
         console2.log("eth balance of trim after: %d", address(trimAddress).balance);
         console2.log("eth balance of charge after: %d", address(chargeAddress).balance);
         console2.log("USDT balance of arnaud after: %d", IERC20(USDT).balanceOf(address(arnaud)));
-        console2.log("USDT balance of referrer1 after: %d", IERC20(USDT).balanceOf(address(referrerAddress)));
-        console2.log("USDT balance of referrer2 after: %d", IERC20(USDT).balanceOf(address(referrerAddress2)));
+        console2.log("USDT balance of referrer1 after: %d", IERC20(USDT).balanceOf(address(referrerAddresses[0])));
+        console2.log("USDT balance of referrer2 after: %d", IERC20(USDT).balanceOf(address(referrerAddresses[1])));
         console2.log("USDT balance of trim after: %d", IERC20(USDT).balanceOf(address(trimAddress)));
         console2.log("USDT balance of charge after: %d", IERC20(USDT).balanceOf(address(chargeAddress)));
     }

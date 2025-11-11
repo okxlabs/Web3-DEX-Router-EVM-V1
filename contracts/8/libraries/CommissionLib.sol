@@ -42,8 +42,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x7777777722220000000000000000000000000000000000000000000000000000;
 
     event CommissionAndTrimInfo(
-        bool isToBCommission,
-        bool isToBTrim,
+        uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
+        uint256 toBTrim, // 0 for no trim, 1 for no-toB trim, 2 for toB trim
         uint256 trimRate,
         uint256 chargeRate
     );
@@ -83,6 +83,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
     uint256 internal constant commissionRateLimit = 30000000;
     uint256 internal constant DENOMINATOR = 10 ** 9;
+    uint256 internal constant NO_TO_B_MODE = 1; // value for no-toB commission and no-toB trim when related calldata exists
+    uint256 internal constant TO_B_MODE = 2; // value for toB commission and toB trim when related calldata exists
     uint256 internal constant WAD = 1 ether;
     uint256 internal constant TRIM_RATE_LIMIT = 100;
     uint256 internal constant TRIM_DENOMINATOR = 1000;
@@ -158,9 +160,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     and(commissionData, _ADDRESS_MASK)
                 ) // 1st referrerAddress
                 commissionData := calldataload(sub(calldatasize(), 0x40))
+                let toBCommission := NO_TO_B_MODE // default toBCommission is 1 for no-toB commission when commissionData exists
+                if gt(and(commissionData, _TO_B_COMMISSION_MASK), 0) {
+                    toBCommission := TO_B_MODE // toB commission value when commissionData exists
+                }
                 mstore(
                     add(0x60, commissionInfo),
-                    gt(and(commissionData, _TO_B_COMMISSION_MASK), 0) //isToBCommission
+                    toBCommission //toBCommission
                 )
                 mstore(
                     add(0x40, commissionInfo),
@@ -180,7 +186,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
             }
             default {
-                let eraseNum := add(mul(MAX_COMMISSION_MULTIPLE_NUM, 2), 3) // 2 * MAX_COMMISSION_MULTIPLE_NUM + 3: token, isToBCommission, commissionLength and all commission pairs
+                let eraseNum := add(mul(MAX_COMMISSION_MULTIPLE_NUM, 2), 3) // 2 * MAX_COMMISSION_MULTIPLE_NUM + 3: token, toBCommission, commissionLength and all commission pairs
                 for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
                     mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
                 }
@@ -233,9 +239,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 ) // trimAddress
                 // get second bytes32 of trim data
                 trimData := calldataload(sub(calldatasize(), add(offset, 64)))
+                let toBTrim := NO_TO_B_MODE // default toBTrim is 1 for no-toB trim when trimData exists
+                if gt(and(trimData, _TO_B_TRIM_MASK), 0) {
+                    toBTrim := TO_B_MODE // toB trim value when trimData exists
+                }
                 mstore(
                     add(0x60, trimInfo),
-                    gt(and(trimData, _TO_B_TRIM_MASK), 0) //isToBTrim
+                    toBTrim //toBTrim
                 )
                 mstore(
                     add(0x80, trimInfo),
@@ -245,7 +255,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             default {
                 mstore(add(0x20, trimInfo), 0) // trimRate
                 mstore(add(0x40, trimInfo), 0) // trimAddress
-                mstore(add(0x60, trimInfo), 0) // isToBTrim
+                mstore(add(0x60, trimInfo), 0) // toBTrim
                 mstore(add(0x80, trimInfo), 0) // expectAmountOut
             }
             switch eq(flag, TRIM_DUAL_FLAG)
@@ -269,8 +279,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
 
         if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
             emit CommissionAndTrimInfo(
-                commissionInfo.isToBCommission,
-                trimInfo.isToBTrim,
+                commissionInfo.toBCommission,
+                trimInfo.toBTrim,
                 trimInfo.trimRate,
                 trimInfo.chargeRate
             );
@@ -518,7 +528,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
 
             let token := mload(add(commissionInfo, 0x40))
-            let isToB := mload(add(commissionInfo, 0x60))
+            let toBCommission := mload(add(commissionInfo, 0x60))
             let totalRate := 0
             let referrerNum := mload(add(commissionInfo, 0x80))
             for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
@@ -545,7 +555,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                 }
             }
-            if and(iszero(eq(token, _ETH)), iszero(isToB)) { // commission token is ERC20 with no toB mode
+            if and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)) { // commission token is ERC20 with no toB mode
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
                     if gt(rate, 0) {
@@ -559,7 +569,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                 }
             }
-            if and(iszero(eq(token, _ETH)), isToB) { // commission token is ERC20 with toB mode
+            if and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)) { // commission token is ERC20 with toB mode
                 let totalAmount := div(
                     mul(inputAmount, totalRate),
                     sub(DENOMINATOR, totalRate)

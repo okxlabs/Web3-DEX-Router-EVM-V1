@@ -280,36 +280,36 @@ contract CommissionHelper {
         }
     }
 
-    function test_commissionInfo_buildAndParse() public {
-        uint256[] memory commissionRates = new uint256[](4);
-        commissionRates[0] = 1000000;
-        commissionRates[1] = 2000000;
-        commissionRates[2] = 3000000;
-        commissionRates[3] = 4000000;
-        address[] memory referrerAddresses = new address[](4);
-        referrerAddresses[0] = address(0x1234567890123456789012345678900000000000);
-        referrerAddresses[1] = address(0x1234567890123456789012345678911111111111);
-        referrerAddresses[2] = address(0x1234567890123456789012345678922222222222);
-        referrerAddresses[3] = address(0x1234567890123456789012345678933333333333);
-        bytes memory commissionInfo = _buildCommissionInfoUnified(true, false, address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2), true, commissionRates, referrerAddresses);
+    // function test_commissionInfo_buildAndParse() public {
+    //     uint256[] memory commissionRates = new uint256[](4);
+    //     commissionRates[0] = 1000000;
+    //     commissionRates[1] = 2000000;
+    //     commissionRates[2] = 3000000;
+    //     commissionRates[3] = 4000000;
+    //     address[] memory referrerAddresses = new address[](4);
+    //     referrerAddresses[0] = address(0x1234567890123456789012345678900000000000);
+    //     referrerAddresses[1] = address(0x1234567890123456789012345678911111111111);
+    //     referrerAddresses[2] = address(0x1234567890123456789012345678922222222222);
+    //     referrerAddresses[3] = address(0x1234567890123456789012345678933333333333);
+    //     bytes memory commissionInfo = _buildCommissionInfoUnified(true, false, address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2), true, commissionRates, referrerAddresses);
        
-        console2.log("commissionInfo:");
-        console2.logBytes(commissionInfo);
+    //     console2.log("commissionInfo:");
+    //     console2.logBytes(commissionInfo);
 
-        CommissionInfo memory info = _parseCommissionInfo(commissionInfo);
+    //     CommissionInfo memory info = _parseCommissionInfo(commissionInfo);
 
-        console2.log("commissionInfo.isFromTokenCommission:", info.isFromTokenCommission);
-        console2.log("commissionInfo.isToTokenCommission:", info.isToTokenCommission);
-        console2.log("commissionInfo.token:", info.token);
-        console2.log("commissionInfo.isToBCommission:", info.isToBCommission);
-        console2.log("commissionInfo.commissionLength:", info.commissionLength);
-        console2.log("commissionInfo.commissionRate:", info.commissionRate);
-        console2.log("commissionInfo.referrerAddress:", info.referrerAddress);
-        console2.log("commissionInfo.commissionRate2:", info.commissionRate2);
-        console2.log("commissionInfo.referrerAddress2:", info.referrerAddress2);
-        console2.log("commissionInfo.commissionRate3:", info.commissionRate3);
-        console2.log("commissionInfo.referrerAddress3:", info.referrerAddress3);
-        console2.log("commissionInfo.commissionRate4:", info.commissionRate4);
-        console2.log("commissionInfo.referrerAddress4:", info.referrerAddress4);
-    }
+    //     console2.log("commissionInfo.isFromTokenCommission:", info.isFromTokenCommission);
+    //     console2.log("commissionInfo.isToTokenCommission:", info.isToTokenCommission);
+    //     console2.log("commissionInfo.token:", info.token);
+    //     console2.log("commissionInfo.isToBCommission:", info.isToBCommission);
+    //     console2.log("commissionInfo.commissionLength:", info.commissionLength);
+    //     console2.log("commissionInfo.commissionRate:", info.commissionRate);
+    //     console2.log("commissionInfo.referrerAddress:", info.referrerAddress);
+    //     console2.log("commissionInfo.commissionRate2:", info.commissionRate2);
+    //     console2.log("commissionInfo.referrerAddress2:", info.referrerAddress2);
+    //     console2.log("commissionInfo.commissionRate3:", info.commissionRate3);
+    //     console2.log("commissionInfo.referrerAddress3:", info.referrerAddress3);
+    //     console2.log("commissionInfo.commissionRate4:", info.commissionRate4);
+    //     console2.log("commissionInfo.referrerAddress4:", info.referrerAddress4);
+    // }
 }

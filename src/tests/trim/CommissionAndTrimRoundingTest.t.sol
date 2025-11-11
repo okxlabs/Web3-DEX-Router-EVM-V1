@@ -100,7 +100,8 @@ contract CommissionAndTrimRoundingTest is TrimAndCommissionTestBase {
             trimAddress, // trimAddress
             10, // expectAmountOut 10, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             0, // chargeRate 0%, all for trim
-            address(0) // chargeAddress
+            address(0), // chargeAddress
+            true // isToBTrim
         );
         bytes memory data = bytes.concat(swapData, trimData);
         (bool success, ) = address(dexRouter).call(data);
@@ -117,7 +118,8 @@ contract CommissionAndTrimRoundingTest is TrimAndCommissionTestBase {
             trimAddress, // trimAddress
             10, // expectAmountOut 10, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             0, // chargeRate 0%, all for trim
-            address(0) // chargeAddress
+            address(0), // chargeAddress
+            true // isToBTrim
         );
         bytes memory data = bytes.concat(swapData, trimData);
         (bool success, ) = address(dexRouter).call(data);

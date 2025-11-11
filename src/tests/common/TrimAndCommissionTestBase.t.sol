@@ -288,7 +288,8 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             trimAddress, // trimAddress
             100, // expectAmountOut 100, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             0, // chargeRate 0%, all for trim
-            address(0) // chargeAddress
+            address(0), // chargeAddress,
+            false // isToBTrim
         );
     }
 
@@ -298,7 +299,8 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             address(0), // trimAddress
             100, // expectAmountOut 100, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             1000, // chargeRate 100%, all for charge
-            chargeAddress // chargeAddress
+            chargeAddress, // chargeAddress,
+            false // isToBTrim
         );
     }
 
@@ -307,8 +309,9 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             50, // trimRate 5%
             trimAddress, // trimAddress
             100, // expectAmountOut 100, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
-            40, // chargeRate 40% of trimAmount
-            chargeAddress // chargeAddress
+            400, // chargeRate 40% of trimAmount (400 / 1000)
+            chargeAddress, // chargeAddress,
+            true // isToBTrim
         );
     }
 

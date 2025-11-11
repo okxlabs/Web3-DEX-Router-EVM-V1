@@ -97,7 +97,8 @@ contract SendTx is Test, CommissionHelper, TrimHelper {
             ownedAddress, // trimAddress
             2000, // expectAmountOut
             300, // chargeRate
-            deployer // chargeAddress
+            deployer, // chargeAddress,
+            true // isToBTrim
         );
         bytes memory data = bytes.concat(swapData, trimData, commissionData); /// @notice the trimData should be before the commissionData
         (bool success, ) = address(dexRouter).call{

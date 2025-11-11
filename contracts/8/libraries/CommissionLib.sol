@@ -130,15 +130,21 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             mstore(
                 commissionInfo,
                 or(
-                    eq(flag, FROM_TOKEN_COMMISSION),
-                    eq(flag, FROM_TOKEN_COMMISSION_DUAL)
+                    or(
+                        eq(flag, FROM_TOKEN_COMMISSION),
+                        eq(flag, FROM_TOKEN_COMMISSION_DUAL)
+                    ),
+                    eq(flag, FROM_TOKEN_COMMISSION_MULTIPLE)
                 )
             ) // isFromTokenCommission
             mstore(
                 add(0x20, commissionInfo),
                 or(
-                    eq(flag, TO_TOKEN_COMMISSION),
-                    eq(flag, TO_TOKEN_COMMISSION_DUAL)
+                    or(
+                        eq(flag, TO_TOKEN_COMMISSION),
+                        eq(flag, TO_TOKEN_COMMISSION_DUAL)
+                    ),
+                    eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
                 )
             ) // isToTokenCommission
             switch gt(referrerNum, 0)
@@ -470,7 +476,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 let balanceAfter := mload(0x00)
                 let sendAmount := 0 // the amount of tokens already sent
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-                    let rate := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
+                    let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
                     if gt(rate, 0) {
                         let amountScaled
                         switch eq(i, sub(referrerNum, 1))
@@ -491,7 +497,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                             }
                             sendAmount := add(sendAmount, amountScaled)
                         }
-                        let referrer := mload(add(commissionInfo_, add(0xe0, mul(i, 0x40))))
+                        let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                         _sendToken(token, referrer, amountScaled)
                         _emitCommissionFromToken(token, amountScaled, referrer, rate)
                     }

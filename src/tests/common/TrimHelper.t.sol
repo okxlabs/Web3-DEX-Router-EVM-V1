@@ -20,9 +20,12 @@ contract TrimHelper {
      *  ┌─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┐
      *  │ trim_flag   │ charge_rate │ charge_address  │ trim_flag   │ padding     │ expect_amount   │ trim_flag   │ trim_rate   │ trim_address    │
      *  │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │
-     *  │0x777777772222│            │                 │0x777777772222│0x000000000000│               │0x777777772222│            │                 │
+     *  │0x777777772222│            │                 │0x777777772222│0x800000000000│               │0x777777772222│            │                 │
      *  └─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┘
      *  ←──────────────--- 32 bytes ---──────────────→ ←──────────────--- 32 bytes --──────────────→ ←──────────────--- 32 bytes ---──────────────→
+     *  For both single and dual trim, isToBTrim flag is encoded in padding of the second bytes32.
+     *  - If isToBTrim is true, the padding is 0x800000000000.
+     *  - If isToBTrim is false, the padding is 0x000000000000.
     */
 
     struct TrimInfo {
@@ -39,7 +42,8 @@ contract TrimHelper {
         address trimAddress,
         uint256 expectAmountOut,
         uint256 chargeRate,
-        address chargeAddress
+        address chargeAddress,
+        bool isToBTrim
     ) internal pure returns (bytes memory) {
         // ensure trimRate and chargeRate are valid
         require(trimRate > 0 && trimRate <= 1000);
@@ -50,10 +54,12 @@ contract TrimHelper {
             (chargeRate == 1000 && trimAddress == address(0)) ||
             ((chargeRate > 0 && chargeRate < 1000) && trimAddress != address(0) && chargeAddress != address(0))
         );
+        uint256 toBTrimValue = isToBTrim ? (1 << 207) : 0;
         if (chargeRate == 0) {
             return abi.encodePacked(
                 bytes32(
                     (TRIM_FLAG & 0xffffffffffff0000000000000000000000000000000000000000000000000000) |
+                    toBTrimValue |
                     (uint256(expectAmountOut) & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff)
                 ),
                 bytes32(
@@ -71,6 +77,7 @@ contract TrimHelper {
                 ),
                 bytes32(
                     (TRIM_DUAL_FLAG & 0xffffffffffff0000000000000000000000000000000000000000000000000000) |
+                    toBTrimValue |
                     (uint256(expectAmountOut) & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff)
                 ),
                 bytes32(

@@ -16,6 +16,7 @@ interface IDyorPumpRouterV3 {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        address payer,
         address to,
         address team,
         uint256 teamRatePercent,

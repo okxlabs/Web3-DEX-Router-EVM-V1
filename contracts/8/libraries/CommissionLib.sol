@@ -722,25 +722,17 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         0x5f
                     ) // "error commission rate limit"
                 }
-                commissionAmount := _mulDiv(inputAmount, totalRate, DENOMINATOR)
-                let sendAmount := 0 // the amount of tokens already sent
+                commissionAmount := 0
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
                         if gt(rate, 0) {
-                            let amount
-                            switch eq(i, sub(referrerNum, 1))
-                            case 1 { // last referrer
-                                amount := _safeSub(commissionAmount, sendAmount)
-                            }
-                            default { // not last referrer
-                                amount := _mulDiv(commissionAmount, rate, totalRate)
-                                sendAmount := add(sendAmount, amount)
-                            }
+                            let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
                             let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                             _sendETH(referrer, amount)
                             _emitCommissionToToken(_ETH, amount, referrer, rate)
+                            commissionAmount := add(commissionAmount, amount)
                         }
                     }
                 }
@@ -748,18 +740,11 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
                         if gt(rate, 0) {
-                            let amount
-                            switch eq(i, sub(referrerNum, 1))
-                            case 1 { // last referrer
-                                amount := _safeSub(commissionAmount, sendAmount)
-                            }
-                            default { // not last referrer
-                                amount := _mulDiv(commissionAmount, rate, totalRate)
-                                sendAmount := add(sendAmount, amount)
-                            }
+                            let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
                             let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                             _sendToken(toToken_, referrer, amount)
                             _emitCommissionToToken(toToken_, amount, referrer, rate)
+                            commissionAmount := add(commissionAmount, amount)
                         }
                     }
                 }

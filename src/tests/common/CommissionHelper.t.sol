@@ -21,7 +21,7 @@ contract CommissionHelper {
     uint256 internal constant _COMMISSION_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
     uint256 internal constant _COMMISSION_LENGTH_MASK =
-        0x0000000000000000000000ff0000000000000000000000000000000000000000;
+        0x00ff000000000000000000000000000000000000000000000000000000000000;
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
     uint256 internal constant _ADDRESS_MASK =
@@ -137,7 +137,7 @@ contract CommissionHelper {
             } else {
                 flagValue = TO_TOKEN_COMMISSION_MULTIPLE;
             }
-            lengthValue = commissionLength << 160; // length is only encoded when commissionLength > 2
+            lengthValue = commissionLength << 240; // length is only encoded when commissionLength > 2
         }
 
         // At least one referrer address, assemble the first 2 bytes32
@@ -240,7 +240,7 @@ contract CommissionHelper {
                 )
                 // For multiple commission mode, load the encoded commission length and validate
                 if gt(referrerNum, 2) {
-                    referrerNum := shr(160, and(commissionData, _COMMISSION_LENGTH_MASK))
+                    referrerNum := shr(240, and(commissionData, _COMMISSION_LENGTH_MASK))
                     // require(referrerNum >= MIN_COMMISSION_MULTIPLE_NUM && referrerNum <= MAX_COMMISSION_MULTIPLE_NUM, "invalid referrer num")
                     if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
                         _revertWithReason(
@@ -262,6 +262,13 @@ contract CommissionHelper {
                     switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
                     case 1 {
                         commissionData := mload(sub(add(encodedCommissionInfo, bytesLength), add(0x20, mul(i, 0x20)))) // load the i-th last bytes32 of encodedCommissionInfo
+                        let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
+                        if iszero(eq(flag, flag2)) {
+                            _revertWithReason(
+                                0x00000017696e76616c696420636f6d6d697373696f6e20666c61670000000000,
+                                0x5b
+                            ) // "invalid commission flag"
+                        }
                         mstore(
                             add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
                             shr(160, and(commissionData, _COMMISSION_RATE_MASK))

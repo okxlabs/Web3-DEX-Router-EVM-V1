@@ -23,7 +23,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant TO_TOKEN_COMMISSION_MULTIPLE =
         0x88880afc2bbb0000000000000000000000000000000000000000000000000000;
     uint256 internal constant _COMMISSION_LENGTH_MASK =
-        0x0000000000000000000000ff0000000000000000000000000000000000000000;
+        0x00ff000000000000000000000000000000000000000000000000000000000000;
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
 
@@ -174,7 +174,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 )
                 // For multiple commission mode, load the encoded commission length and validate
                 if gt(referrerNum, 2) {
-                    referrerNum := shr(160, and(commissionData, _COMMISSION_LENGTH_MASK))
+                    referrerNum := shr(240, and(commissionData, _COMMISSION_LENGTH_MASK))
                     // require(referrerNum >= MIN_COMMISSION_MULTIPLE_NUM && referrerNum <= MAX_COMMISSION_MULTIPLE_NUM, "invalid referrer num")
                     if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
                         _revertWithReason(
@@ -196,6 +196,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
                     case 1 {
                         commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
+                        let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
+                        if iszero(eq(flag, flag2)) {
+                            _revertWithReason(
+                                0x00000017696e76616c696420636f6d6d697373696f6e20666c61670000000000,
+                                0x5b
+                            ) // "invalid commission flag"
+                        }
                         mstore(
                             add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
                             shr(160, and(commissionData, _COMMISSION_RATE_MASK))
@@ -239,6 +246,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 ) // trimAddress
                 // get second bytes32 of trim data
                 trimData := calldataload(sub(calldatasize(), add(offset, 0x40)))
+                let flag2 := and(trimData, _TRIM_FLAG_MASK)
+                if iszero(eq(flag, flag2)) {
+                    _revertWithReason(
+                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
+                        0x55
+                    ) // "invalid trim flag"
+                }
                 let toBTrim := NO_TO_B_MODE // default toBTrim is 1 for no-toB trim when trimData exists
                 if gt(and(trimData, _TO_B_TRIM_MASK), 0) {
                     toBTrim := TO_B_MODE // toB trim value when trimData exists
@@ -262,6 +276,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             case 1 {
                 // get third bytes32 of trim data
                 trimData := calldataload(sub(calldatasize(), add(offset, 0x60)))
+                let flag2 := and(trimData, _TRIM_FLAG_MASK)
+                if iszero(eq(flag, flag2)) {
+                    _revertWithReason(
+                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
+                        0x55
+                    ) // "invalid trim flag"
+                }
                 mstore(
                     add(0xa0, trimInfo),
                     shr(160, and(trimData, _TRIM_RATE_MASK))
@@ -827,7 +848,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
 
             // process trim
             flag := mload(add(trimInfo, 0x00)) // trimInfo.hasTrim
-            let expectAmountOut := mload(add(trimInfo, 0x60)) // trimInfo.expectAmountOut
+            let expectAmountOut := mload(add(trimInfo, 0x80)) // trimInfo.expectAmountOut
             if and(gt(flag, 0), gt(inputAmount, expectAmountOut)) { // trimInfo.hasTrim == True && inputAmount > trimInfo.expectAmountOut
                 let trimAmount := _processTrim(trimInfo, toToken, inputAmount)
                 inputAmount := sub(inputAmount, trimAmount)

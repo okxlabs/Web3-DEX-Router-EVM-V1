@@ -630,7 +630,11 @@ module.exports = {
       blast_ok: BLASTSCAN_API_KEY,
       story: 'empty',
       sonic: SONIC_API_KEY,
-      zeta: ZETA_API_KEY
+      zeta: ZETA_API_KEY,
+      zksync: ETHERSCAN_API_KEY,
+      unichain: ETHERSCAN_API_KEY,
+      sei: ETHERSCAN_API_KEY,
+      apechain: ETHERSCAN_API_KEY,
     },
     customChains: [
       {
@@ -642,6 +646,46 @@ module.exports = {
         }
       },
       {
+        network: "optimisticEthereum",
+        chainId: 10,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=10",
+          browserURL: "https://optimistic.etherscan.io"
+        }
+      },
+      {
+        netowrk: "bsc",
+        chainId: 56,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=56",
+          browserURL: "https://bscscan.com"
+        }
+      },
+      {
+        network: "unichain",
+        chainId: 130,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=130",
+          browserURL: "https://unichain.blockscout.com/"
+        }
+      },
+      {
+        network: "zksync",
+        chainId: 324,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=324",
+          browserURL: "https://zkscan.io"
+        }
+      },
+      {
+        network: "sei",
+        chainId: 1329,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=1329",
+          browserURL: "seiscan.io"
+        }
+      },
+      {
         network: "base",
         chainId: 8453,
         urls: {
@@ -649,7 +693,14 @@ module.exports = {
           browserURL: "https://basescan.org"
         }
       },
-
+      {
+        network: "apechain",
+        chainId: 33111,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=33111",
+          browserURL: "https://apescan.io"
+        }
+      },
       {
         network: "arbitrumOne",
         chainId: 42161,

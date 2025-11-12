@@ -11,8 +11,6 @@ require("./scripts/multichain.js");
 require('@okxweb3/hardhat-explorer-verify');
 require("./tasks/deploy-upgrade");
 
-require("@zetachain/toolkit/tasks");
-
 // Note: If no private key is configured in the project, the first test account of Hardhat is used by default
 const PRIVATE_KEY = process.env.PRIVATE_KEY_DEPLOYER || 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY || '';
@@ -69,6 +67,17 @@ module.exports = {
       // {
       //   url: "https://rpc.ankr.com/eth"
       // }
+    },
+    monad: {
+      url: 'https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO',
+      chainId: 143,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
     },
     okc: {
       url: INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`,

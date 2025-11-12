@@ -613,23 +613,23 @@ module.exports = {
   etherscan: {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
-      arbitrumOne: ARBITRUMSCAN_API_KEY,
-      optimisticEthereum: OPSCAN_API_KEY,
-      bsc: BSCSCAN_API_KEY,
-      base: BASESCAN_API_KEY,
+      arbitrumOne: ETHERSCAN_API_KEY,
+      optimisticEthereum: ETHERSCAN_API_KEY,
+      bsc: ETHERSCAN_API_KEY,
+      base: ETHERSCAN_API_KEY,
       polygon: POLYGONSCAN_API_KEY,
-      linea: LINEASCAN_API_KEY,
-      mantle: MANTLESCAN_API_KEY,
+      linea: ETHERSCAN_API_KEY,
+      mantle: ETHERSCAN_API_KEY,
       xlayer: XLAYERSCAN_API_KEY,
       mode: MODESCAN_API_KEY,
       manta: MANTASCAN_API_KEY,
-      scroll: SCROLLSCAN_API_KEY,
-      avalanche: AVAXSCAN_API_KEY,
+      scroll: ETHERSCAN_API_KEY,
+      avalanche: ETHERSCAN_API_KEY,
       avax: AVAXSCAN_API_KEY,
-      blast: BLASTSCAN_API_KEY,
+      blast: ETHERSCAN_API_KEY,
       blast_ok: BLASTSCAN_API_KEY,
       story: 'empty',
-      sonic: SONIC_API_KEY,
+      sonic: ETHERSCAN_API_KEY,
       zeta: ZETA_API_KEY,
       zksync: ETHERSCAN_API_KEY,
       unichain: ETHERSCAN_API_KEY,
@@ -710,6 +710,14 @@ module.exports = {
         }
       },
       {
+        network: "avalanche",
+        chainId: 43114,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=43114",
+          browserURL: "https://avascan.info"
+        }
+      },
+      {
         network: "linea",
         chainId: 59144,
         urls: {
@@ -776,12 +784,18 @@ module.exports = {
       {
         network: "polygon",
         chainId: 137,
-        urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/POLYGON", browserURL: "https://www.oklink.com", }
+        urls: {
+          apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/POLYGON", 
+          browserURL: "https://www.oklink.com"
+        }
       },
       {
         network: "linea",
         chainId: 59144,
-        urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/LINEA", browserURL: "https://www.oklink.com", }
+        urls: { 
+          apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/LINEA", 
+          browserURL: "https://www.oklink.com"
+        }
       },
       {
         network: "manta",

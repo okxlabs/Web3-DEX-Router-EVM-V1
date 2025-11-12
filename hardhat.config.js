@@ -654,7 +654,7 @@ module.exports = {
         }
       },
       {
-        netowrk: "bsc",
+        network: "bsc",
         chainId: 56,
         urls: {
           apiURL: "https://api.etherscan.io/v2/api?chainid=56",

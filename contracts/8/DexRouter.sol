@@ -404,7 +404,7 @@ contract DexRouter is
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
         address receiverAddr = (receiver & _ADDRESS_MASK) == 0 ? msg.sender : _bytes32ToAddress(receiver);
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
         // add permit2
         _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
 
@@ -521,7 +521,7 @@ contract DexRouter is
         RouterPath[][] memory batches
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
         
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
@@ -628,7 +628,7 @@ contract DexRouter is
         bytes32[] calldata pools
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
 
         _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
         returnAmount = _getBalanceOf(toToken, receiver);
@@ -790,7 +790,7 @@ contract DexRouter is
         require(amount > 0, "amount must be > 0");
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
 
         address srcToken = reversed ? _WETH : _ETH;
         address toToken = reversed ? _ETH : _WETH;
@@ -925,7 +925,7 @@ contract DexRouter is
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
         
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         

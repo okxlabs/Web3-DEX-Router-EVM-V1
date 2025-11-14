@@ -27,7 +27,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant _TO_B_COMMISSION_MASK =
         0x8000000000000000000000000000000000000000000000000000000000000000;
 
-
     uint256 internal constant _TRIM_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
     uint256 internal constant _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK =
@@ -40,6 +39,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x7777777711110000000000000000000000000000000000000000000000000000;
     uint256 internal constant TRIM_DUAL_FLAG =
         0x7777777722220000000000000000000000000000000000000000000000000000;
+
+    uint256 internal constant _PERMIT2_INFO_FLAG_MASK =
+        0x0000000000000000000000000000000000000000000000000000ffffffffffff;
+    uint256 internal constant _PERMIT2_INFO_LENGTH_MASK =
+        0x00000000000000000000000000000000000000000000000000ff000000000000;
+    uint256 internal constant PERMIT2_INFO_FLAG =
+        0x000000000000000000000000000000000000000000000000000092527fff1a63; // bytes6(keccak256("Permit2Info"))
 
     event CommissionAndTrimInfo(
         uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
@@ -88,12 +94,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant WAD = 1 ether;
     uint256 internal constant TRIM_RATE_LIMIT = 100;
     uint256 internal constant TRIM_DENOMINATOR = 1000;
+    uint256 internal constant PERMIT2_INFO_VALID_LENGTH_SIG64 = 32 + 32 + 32 + 20 + 64;
+    uint256 internal constant PERMIT2_INFO_VALID_LENGTH_SIG65 = 32 + 32 + 32 + 20 + 65;
 
     function _getCommissionAndTrimInfo()
         internal
         override
-        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo)
+        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info)
     {
+        uint256 permit2InfoLength;
+        uint256[] memory permit2SignatureCache = new uint256[](3); // signature r, signature s, signature v
         assembly ("memory-safe") {
             function _revertWithReason(m, len) {
                 mstore(
@@ -220,6 +230,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             // calculate offset based on referrerNum
             let offset := 0
+            let permit2InfoOffset := 0
             if gt(referrerNum, 0) {
                 offset := mul(add(referrerNum, 1), 0x20)
             }
@@ -265,12 +276,14 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     add(0x80, trimInfo),
                     and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
                 ) // expectAmountOut
+                permit2InfoOffset := add(offset, 0x40)
             }
             default {
                 mstore(add(0x20, trimInfo), 0) // trimRate
                 mstore(add(0x40, trimInfo), 0) // trimAddress
                 mstore(add(0x60, trimInfo), 0) // toBTrim
                 mstore(add(0x80, trimInfo), 0) // expectAmountOut
+                permit2InfoOffset := offset
             }
             switch eq(flag, TRIM_DUAL_FLAG)
             case 1 {
@@ -291,11 +304,48 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     add(0xc0, trimInfo),
                     and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
                 ) // chargeAddress
+                permit2InfoOffset := add(offset, 0x60)
             }
             default {
                 mstore(add(0xa0, trimInfo), 0) // chargeRate
                 mstore(add(0xc0, trimInfo), 0) // chargeAddress
             }
+            // get permit2Info and cache the values to permit2InfoCache
+            let permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x20)))
+            flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
+            switch eq(flag, PERMIT2_INFO_FLAG)
+            case 1 {
+                permit2InfoLength := shr(48, and(permit2InfoData, _PERMIT2_INFO_LENGTH_MASK))
+                //require(permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG64 || permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG65, "invalid permit2Info length")
+                if and(iszero(eq(permit2InfoLength, PERMIT2_INFO_VALID_LENGTH_SIG64)), iszero(eq(permit2InfoLength, PERMIT2_INFO_VALID_LENGTH_SIG65))) {
+                    _revertWithReason(
+                        0x0000001a696e76616c6964207065726d697432496e666f206c656e6774680000,
+                        0x5e
+                    ) // "invalid permit2Info length"
+                }
+                let permitPosition := mload(permit2Info)
+                let permittedPosition := mload(permitPosition)
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 39))) // 32 + 1 + 6
+                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 71))) // 32 + 32 + 1 + 6
+                mstore(add(permitPosition, 0x20), permit2InfoData) // store nonce to [permit2Info.permit + 0x20]
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 103))) // 32 + 32 + 32 + 1 + 6
+                mstore(add(permitPosition, 0x40), permit2InfoData) // store deadline to [permit2Info.permit + 0x40]
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 135))) // 32 + 32 + 32 + 32 + 1 + 6, to load owner as normal bytes32
+                mstore(add(permit2Info, 0x20), and(permit2InfoData, _ADDRESS_MASK)) // store owner to [permit2Info + 0x20]
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 155))) // 32 + 20 + 32 + 32 + 32 + 1 + 6
+                mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 187))) // 32 + 32 + 20 + 32 + 32 + 32 + 1 + 6
+                mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 188))) // 1 + 32 + 32 + 20 + 32 + 32 + 32 + 1 + 6
+                mstore(add(permit2SignatureCache, 0x60), shr(248, permit2InfoData)) // signature v
+            }
+        }
+
+        if (permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG65) {
+            permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]), bytes1(uint8(permit2SignatureCache[2])));
+        } else if (permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG64) {
+            permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]));
         }
 
         if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
@@ -873,17 +923,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             // if ((
             //     (mode & _MODE_NO_TRANSFER) != 0 
             // || (mode & _MODE_BY_INVEST) != 0
-            // || (mode & _MODE_PERMIT2) != 0
             // )
             // && commissionInfo.isFromTokenCommission) {
             //     revert("From commission not support");
             // }
             let flag := or(
-                or(
-                    gt(and(mode, _MODE_NO_TRANSFER), 0),
-                    gt(and(mode, _MODE_BY_INVEST), 0)
-                ),
-                gt(and(mode, _MODE_PERMIT2), 0)
+                gt(and(mode, _MODE_NO_TRANSFER), 0),
+                gt(and(mode, _MODE_BY_INVEST), 0)
             )
             let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
             if and(flag, isFromTokenCommission) {

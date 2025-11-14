@@ -99,7 +99,7 @@ abstract contract CommonLib is CommonUtils {
             }
             SafeERC20.safeTransfer(IERC20(token), to, amount);
             return;
-        } else if (mode == _MODE_PERMIT2) {
+        } else if (mode == _MODE_PERMIT2_ALLOWANCE) {
             // Permit2 mode - reserved for future implementation
             return;
         } else {

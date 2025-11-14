@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./IPermit2.sol";
+
 /// @title Abstract base contract with virtual functions
 abstract contract AbstractCommissionLib {
     struct CommissionInfo {
@@ -37,10 +39,16 @@ abstract contract AbstractCommissionLib {
         address chargeAddress; // 0xc0
     }
 
+    struct Permit2Info {
+        IPermit2.PermitTransferFrom permit;
+        address owner;
+        bytes signature;
+    }
+
     function _getCommissionAndTrimInfo()
         internal
         virtual
-        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo);
+        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info);
 
     // function _getBalanceOf(address token, address user)
     //     internal

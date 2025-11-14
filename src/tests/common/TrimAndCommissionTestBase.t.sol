@@ -8,6 +8,7 @@ import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
 import "@dex/libraries/SafeERC20.sol";
 import "@dex/adapter/UniAdapter.sol";
+import "@dex/interfaces/IPermit2.sol";
 import "./CommissionHelper.t.sol";
 import "./TrimHelper.t.sol";
 
@@ -37,6 +38,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
     // users
     address public admin = vm.rememberKey(1);
     address public arnaud = vm.rememberKey(11111111111111111111);
+    address public bob = vm.rememberKey(11111111110000000000);
     address public trimAddress = vm.rememberKey(22222222222222222222);
     address public chargeAddress = vm.rememberKey(33333333333333333333);
     address[] public referrerAddresses = new address[](8);
@@ -46,6 +48,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f); // ETH
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58); // ETH
     WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757)); // ETH
+    IPermit2 permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3); // ETH
 
     address constant UniversalUniV3Adapter = 0x6747BcaF9bD5a5F0758Cbe08903490E45DdfACB5;
     address public UniV2Adapter;

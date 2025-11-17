@@ -42,6 +42,7 @@ const sonic = require('./sonic')
 const berachain = require('./berachain')
 const unichain = require('./unichain')
 const plasma = require('./plasma')
+const monad = require('./monad')
 let config
 
 console.log('current network.name: ', network.name)
@@ -130,6 +131,8 @@ if (network.name === 'okc') {
     config = unichain
 } else if (network.name == 'plasma') {
     config = plasma
+} else if (network.name == 'monad') {
+    config = monad
 }
 
 module.exports = config

@@ -5,6 +5,8 @@ import "./CommonUtils.sol";
 import "../interfaces/AbstractCommissionLib.sol";
 /// @title Base contract with common permit handling logics
 
+import "forge-std/console2.sol";
+
 abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant _COMMISSION_RATE_MASK =
         0x000000000000ffffffffffff0000000000000000000000000000000000000000;
@@ -87,7 +89,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     // set default value can change when need.
     uint256 internal constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
     uint256 internal constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
-    uint256 internal constant commissionRateLimit = 30000000;
+    uint256 internal constant commissionRateLimit = 10000000;
     uint256 internal constant DENOMINATOR = 10 ** 9;
     uint256 internal constant NO_TO_B_MODE = 1; // value for no-toB commission and no-toB trim when related calldata exists
     uint256 internal constant TO_B_MODE = 2; // value for toB commission and toB trim when related calldata exists
@@ -401,28 +403,28 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
 
     function _doCommissionFromToken(
         CommissionInfo memory commissionInfo,
-        address payer,
-        address receiver,
+        SwapParams memory swapParams,
         uint256 inputAmount,
         bool hasTrim,
-        address toToken
+        Permit2Info memory permit2Info
     ) internal override returns (address middleReceiver, uint256 balanceBefore) {
         if (commissionInfo.isToTokenCommission || hasTrim) {
             middleReceiver = address(this);
-            balanceBefore = _getBalanceOf(toToken, address(this));
+            balanceBefore = _getBalanceOf(swapParams.toToken, address(this));
         } else {
-            middleReceiver = receiver;
+            middleReceiver = swapParams.receiver;
         }
 
         if (commissionInfo.isFromTokenCommission) {
-            _doCommissionFromTokenInternal(commissionInfo, payer, inputAmount);
+            _doCommissionFromTokenInternal(commissionInfo, swapParams.payer, inputAmount, permit2Info);
         }
     }
 
     function _doCommissionFromTokenInternal(
         CommissionInfo memory commissionInfo,
         address payer,
-        uint256 inputAmount
+        uint256 inputAmount,
+        Permit2Info memory permit2Info
     ) private {
         assembly ("memory-safe") {
             // https://github.com/Vectorized/solady/blob/701406e8126cfed931645727b274df303fbcd94d/src/utils/FixedPointMathLib.sol#L595
@@ -595,8 +597,181 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     0xcd5eae9d9d0b96532bd1b7dbf6628ce436b2af735829087a03c548439f8bf850
                 ) //emit CommissionFromTokenRecord(address,uint256,address,uint256)
             }
+            function _transferTokenDirect(token, from, to, amount) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x64)) // calldata size == 0x64
+                mstore(
+                    freePtr,
+                    0x23b872dd00000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint256)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), amount)
+                let success := call(
+                    gas(),
+                    token,
+                    0,
+                    freePtr,
+                    0x64,
+                    0,
+                    0x20
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+            function _transferTokenPermit2Allowance(token, from, to, amount) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84)) // calldata size == 0x84
+                mstore(
+                    freePtr,
+                    0x36c7851600000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint160,address)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), shr(96, shl(96, amount)))
+                mstore(add(freePtr, 0x64), token)
+                let success := call(
+                    gas(),
+                    _PERMIT2,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+            function _transferTokenPermit2Signature(token, to, amount, permit2Info_) {
+                let permit := mload(permit2Info_) // permit2Info.permit
+                let permitted := mload(permit) // permit2Info.permit.permitted
+                let sigPtr := mload(add(permit2Info_, 0x40)) // permit2Info.signature
+                let sigLength := mload(sigPtr)
 
-            let token := mload(add(commissionInfo, 0x40))
+                if and(iszero(eq(sigLength, 64)), iszero(eq(sigLength, 65))) {
+                    _revertWithReason(
+                        0x0,
+                        0x5e
+                    ) // "invalid signature length"
+                }
+
+                let freePtr := mload(0x40) // prepair free memory pointer
+                // construct calldata
+                mstore(freePtr, 0x30f28b7a00000000000000000000000000000000000000000000000000000000)
+                mstore(
+                    add(freePtr, 0x04),
+                    token
+                ) // token
+                mstore(
+                    add(freePtr, 0x24),
+                    mload(add(permitted, 0x20))
+                ) // amount
+                mstore(
+                    add(freePtr, 0x44),
+                    mload(add(permit, 0x20))
+                ) // nonce
+                mstore(
+                    add(freePtr, 0x64),
+                    mload(add(permit, 0x40))
+                ) // deadline
+                mstore(
+                    add(freePtr, 0x84),
+                    to
+                ) // to
+                mstore(
+                    add(freePtr, 0xa4),
+                    amount
+                ) // requestedAmount
+                mstore(
+                    add(freePtr, 0xc4),
+                    mload(add(permit2Info_, 0x20))
+                ) // owner
+                mstore(
+                    add(freePtr, 0xe4),
+                    0x100
+                ) // signature offset
+                mstore(
+                    add(freePtr, 0x104),
+                    sigLength
+                ) // signature length
+                mstore(
+                    add(freePtr, 0x124),
+                    mload(add(sigPtr, 0x20))
+                ) // signature r
+                mstore(
+                    add(freePtr, 0x144),
+                    mload(add(sigPtr, 0x40))
+                ) // signature s
+                let calldataSize
+                switch eq(sigLength, 65)
+                case 1 { // signature length == 65
+                    mstore(
+                        add(freePtr, 0x164),
+                        shl(248, shr(248, mload(add(sigPtr, 0x60))))
+                    ) // signature v
+                    calldataSize := 0x184
+                    mstore(0x40, add(freePtr, calldataSize)) // update free memory pointer, calldata size == 0x165
+                }
+                default { // signature length == 64
+                    calldataSize := 0x164
+                    mstore(0x40, add(freePtr, calldataSize)) // update free memory pointer, calldata size == 0x164
+                }
+                
+                // execute external call
+                let success := call(
+                    gas(),           // all remaining gas
+                    _PERMIT2,         // Permit2 contract address
+                    0,               // no ETH sent
+                    freePtr,         // calldata start position
+                    calldataSize,    // calldata size
+                    0,               // no return data
+                    0                // return data size is 0
+                )
+
+                // check if call is successful
+                if iszero(success) {
+                    // if call failed, copy error information and revert
+                    let returnDataLen := returndatasize()
+                    returndatacopy(0, 0, returnDataLen)
+                    revert(0, returnDataLen)
+                } 
+            }
+            function _transferTokenWithMode(tokenWithMode, _payer, to, amount, permit2Info_) {
+                if gt(amount, 0) {
+                    let mode := and(tokenWithMode, _TRANSFER_MODE_MASK)
+                    let token := and(tokenWithMode, _ADDRESS_MASK)
+                    switch mode
+                    case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
+                        _transferTokenDirect(token, _payer, to, amount)
+                    }
+                    case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
+                        _transferTokenPermit2Allowance(token, _payer, to, amount)
+                    }
+                    case 0x0600000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_SIGNATURE
+                        _transferTokenPermit2Signature(token, to, amount, permit2Info_)
+                    }
+                    case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
+                        _claimToken(token, _payer, to, amount)
+                    }
+                    default {
+                        _revertWithReason(
+                            0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
+                            0x59
+                        ) // "invalid transfer mode"
+                    }
+                }
+            }
+
+            let tokenWithMode := mload(add(commissionInfo, 0x40))
+            let token := and(tokenWithMode, _ADDRESS_MASK)
             let toBCommission := mload(add(commissionInfo, 0x60))
             let totalRate := 0
             let referrerNum := mload(add(commissionInfo, 0x80))
@@ -630,7 +805,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         mul(inputAmount, rate),
                         sub(DENOMINATOR, totalRate)
                     )
-                    _claimToken(token, payer, referrer, amount)
+                    _transferTokenWithMode(tokenWithMode, payer, referrer, amount, permit2Info)
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }
@@ -639,7 +814,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     mul(inputAmount, totalRate),
                     sub(DENOMINATOR, totalRate)
                 )
-                _claimToken(token, payer, address(), totalAmount)
+                _transferTokenWithMode(tokenWithMode, payer, address(), totalAmount, permit2Info)
                 _sendTokenWithinBalanceAndEmitEvents(
                     token,
                     totalRate,
@@ -966,7 +1141,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             //         || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
             //     "Invalid commission info"
             // );
-            let token := mload(add(commissionInfo, 0x40)) // commissionInfo.token
+            let token := and(mload(add(commissionInfo, 0x40)), _ADDRESS_MASK) // commissionInfo.token
             flag := and(isFromTokenCommission, eq(token, fromToken))
             flag := or(flag, and(isToTokenCommission, eq(token, toToken)))
             flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))

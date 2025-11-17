@@ -290,7 +290,7 @@ contract DexRouterExactOut is
             amountOut = (amountOut * DENOMINATOR) / (DENOMINATOR - totalRate);
             targetTokenBefore = _getBalanceOf(
                 /// @notice commissionInfo.token ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-                commissionInfo.token,
+                address(uint160(commissionInfo.tokenWithMode & _ADDRESS_MASK)),
                 address(this)
             );
             middleReceiver = address(this);
@@ -316,17 +316,32 @@ contract DexRouterExactOut is
             ) {
                 commissionAmount = _getBalanceOf(
                     /// @notice commissionInfo.token ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-                    afterSwapParams.commissionInfo.token,
+                    address(uint160(afterSwapParams.commissionInfo.tokenWithMode & _ADDRESS_MASK)),
                     address(this)
                 );
             }
             _doCommissionFromToken(
                 afterSwapParams.commissionInfo,
-                afterSwapParams.payer,
-                afterSwapParams.receiver,
+                SwapParams({
+                    payer: afterSwapParams.payer,
+                    refundTo: address(0),
+                    receiver: afterSwapParams.receiver,
+                    toToken: afterSwapParams.toToken
+                }),
                 afterSwapParams.consumeAmount,
                 false,
-                afterSwapParams.toToken
+                Permit2Info({
+                    permit: IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions({
+                            token: afterSwapParams.toToken,
+                            amount: afterSwapParams.consumeAmount
+                        }),
+                        nonce: 0,
+                        deadline: block.timestamp
+                    }),
+                    owner: afterSwapParams.payer,
+                    signature: ""
+                })
             );
             if (
                 afterSwapParams.srcToken == _ETH &&
@@ -335,7 +350,7 @@ contract DexRouterExactOut is
                 commissionAmount =
                     commissionAmount -
                     _getBalanceOf(
-                        afterSwapParams.commissionInfo.token,
+                        address(uint160(afterSwapParams.commissionInfo.tokenWithMode & _ADDRESS_MASK)),
                         address(this)
                     );
             }

@@ -254,9 +254,12 @@ contract DexRouter is
         emit SwapOrderId(orderId);
         return
             _smartSwapTo(
-                msg.sender,
-                msg.sender,
-                msg.sender,
+                SwapParams({
+                    payer: msg.sender,
+                    refundTo: msg.sender,
+                    receiver: msg.sender,
+                    toToken: baseRequest.toToken
+                }),
                 baseRequest,
                 batchesAmount,
                 batches
@@ -381,12 +384,16 @@ contract DexRouter is
     ) external payable returns (uint256 returnAmount) {
         emit SwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
         (address srcToken, address toToken) = _getUniswapV3TokenInfo(msg.value > 0, pools);
+        SwapParams memory swapParams = SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: (receiver & _ADDRESS_MASK) == 0 ? msg.sender : _bytes32ToAddress(receiver),
+            toToken: toToken
+        });
         return
             _uniswapV3SwapTo(
-                msg.sender,
-                receiver,
+                swapParams,
                 srcToken,
-                toToken,
                 amount,
                 minReturn,
                 pools
@@ -395,34 +402,30 @@ contract DexRouter is
 
     /// @notice If srcToken or toToken is ETH, the address needs to be 0xEeee. And for commission validation, ETH needs to be 0xEeee.
     function _uniswapV3SwapTo(
-        address payer,
-        uint256 receiver,
+        SwapParams memory swapParams,
         address srcToken,
-        address toToken,
         uint256 amount,
         uint256 minReturn,
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
-        address receiverAddr = (receiver & _ADDRESS_MASK) == 0 ? msg.sender : _bytes32ToAddress(receiver);
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
         // add permit2
-        _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
+        _validateCommissionInfo(commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
 
-        returnAmount = _getBalanceOf(toToken, receiverAddr);
+        returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver);
 
         _doUniswapV3Swap(
-            payer,
-            receiverAddr,
+            swapParams,
             amount,
             minReturn,
-            toToken,
             pools,
             commissionInfo,
-            trimInfo
+            trimInfo,
+            permit2Info
         );
 
         // check minReturnAmount
-        returnAmount = _getBalanceOf(toToken, receiverAddr) - returnAmount;
+        returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver) - returnAmount;
         require(
             returnAmount >= minReturn,
             "Min return not reached"
@@ -430,7 +433,7 @@ contract DexRouter is
 
         emit OrderRecord(
             srcToken,
-            toToken,
+            swapParams.toToken,
             tx.origin,
             amount,
             returnAmount
@@ -438,29 +441,27 @@ contract DexRouter is
     }
 
     function _doUniswapV3Swap(
-        address payer,
-        address receiver,
+        SwapParams memory swapParams,
         uint256 amount,
         uint256 minReturn,
-        address toToken,
         uint256[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo
+        TrimInfo memory trimInfo,
+        Permit2Info memory permit2Info
     ) private {
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
-                payer,
-                receiver,
+                swapParams,
                 amount,
                 trimInfo.hasTrim,
-                toToken
+                permit2Info
             );
 
         _uniswapV3Swap(
-            payer,
+            swapParams.payer,
             payable(middleReceiver),
             amount,
             minReturn,
@@ -469,9 +470,9 @@ contract DexRouter is
 
         _doCommissionAndTrimToToken(
             commissionInfo,
-            receiver,
+            swapParams.receiver,
             balanceBefore,
-            toToken,
+            swapParams.toToken,
             trimInfo
         );
     }
@@ -502,9 +503,12 @@ contract DexRouter is
         emit SwapOrderId(orderId);
         return
             _smartSwapTo(
-                msg.sender,
-                msg.sender,
-                receiver,
+                SwapParams({
+                    payer: msg.sender,
+                    refundTo: msg.sender,
+                    receiver: receiver == address(0) ? msg.sender : receiver,
+                    toToken: baseRequest.toToken
+                }),
                 baseRequest,
                 batchesAmount,
                 batches
@@ -513,21 +517,18 @@ contract DexRouter is
 
     /// @notice If fromToken or toToken is ETH, the address needs to be 0xEeee. And for commission validation, ETH needs to be 0xEeee.
     function _smartSwapTo(
-        address payer,
-        address refundTo,
-        address receiver,
+        SwapParams memory swapParams,
         BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,
         RouterPath[][] memory batches
     ) internal returns (uint256 returnAmount) {
-        receiver = receiver == address(0) ? msg.sender : receiver;
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
         
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
         _validateCommissionInfo(commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
 
-        returnAmount = _getBalanceOf(baseRequest.toToken, receiver);
+        returnAmount = _getBalanceOf(baseRequest.toToken, swapParams.receiver);
 
         {
             (
@@ -535,25 +536,24 @@ contract DexRouter is
                 uint256 balanceBefore
             ) = _doCommissionFromToken(
                     commissionInfo,
-                    payer,
-                    receiver,
+                    swapParams,
                     baseRequest.fromTokenAmount,
                     trimInfo.hasTrim,
-                    baseRequest.toToken
+                    permit2Info
                 );
 
             _smartSwapInternal(
                 baseRequest,
                 batchesAmount,
                 batches,
-                payer,
-                refundTo,
+                swapParams.payer,
+                swapParams.refundTo,
                 middleReceiver
             );
 
             _doCommissionAndTrimToToken(
                 commissionInfo,
-                receiver,
+                swapParams.receiver,
                 balanceBefore,
                 baseRequest.toToken,
                 trimInfo
@@ -562,7 +562,7 @@ contract DexRouter is
 
         // check minReturnAmount
         returnAmount =
-            _getBalanceOf(baseRequest.toToken, receiver) -
+            _getBalanceOf(baseRequest.toToken, swapParams.receiver) -
             returnAmount;
         require(
             returnAmount >= baseRequest.minReturnAmount,
@@ -628,12 +628,27 @@ contract DexRouter is
         bytes32[] calldata pools
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
 
         _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
         returnAmount = _getBalanceOf(toToken, receiver);
 
-        _doUnxswap(payer, receiver, srcToken, toToken, amount, minReturn, pools, commissionInfo, trimInfo);
+        SwapParams memory swapParams = SwapParams({
+            payer: payer,
+            refundTo: msg.sender,
+            receiver: receiver,
+            toToken: toToken
+        });
+        _doUnxswap(
+            swapParams,
+            srcToken,
+            amount,
+            minReturn,
+            pools,
+            commissionInfo,
+            trimInfo,
+            permit2Info
+        );
 
         // check minReturnAmount
         returnAmount = _getBalanceOf(toToken, receiver) - returnAmount;
@@ -654,43 +669,41 @@ contract DexRouter is
     }
 
     function _doUnxswap(
-        address payer,
-        address receiver,
+        SwapParams memory swapParams,
         address srcToken,
-        address toToken,
         uint256 amount,
         uint256 minReturn,
         bytes32[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo
+        TrimInfo memory trimInfo,
+        Permit2Info memory permit2Info
     ) private {
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
-                payer,
-                receiver,
+                swapParams,
                 amount,
                 trimInfo.hasTrim,
-                toToken
+                permit2Info
             );
 
-        address _payer = payer;
-        _unxswapInternal(
-            IERC20(srcToken),
-            amount,
-            minReturn,
-            pools,
-            _payer,
-            middleReceiver
-        );
+        // TODO: remove this temporarily to avoid stack too deep
+        // _unxswapInternal(
+        //     IERC20(srcToken),
+        //     amount,
+        //     minReturn,
+        //     pools,
+        //     swapParams.payer,
+        //     middleReceiver
+        // );
 
         _doCommissionAndTrimToToken(
             commissionInfo,
-            receiver,
+            swapParams.receiver,
             balanceBefore,
-            toToken,
+            swapParams.toToken,
             trimInfo
         );
     }
@@ -725,12 +738,16 @@ contract DexRouter is
             "uniswapV3: token mismatch"
         );
 
+        SwapParams memory swapParams = SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: receiver == address(0) ? msg.sender : receiver,
+            toToken: toToken
+        });
         return
             _uniswapV3SwapTo(
-                msg.sender,
-                uint256(uint160(receiver)),
+                swapParams,
                 srcToken,
-                toToken,
                 baseRequest.fromTokenAmount,
                 baseRequest.minReturnAmount,
                 pools
@@ -790,23 +807,28 @@ contract DexRouter is
         require(amount > 0, "amount must be > 0");
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
 
         address srcToken = reversed ? _WETH : _ETH;
         address toToken = reversed ? _ETH : _WETH;
 
         _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
 
+        SwapParams memory swapParams = SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: receiver,
+            toToken: toToken
+        });
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
-                msg.sender,
-                receiver,
+                swapParams,
                 amount,
                 trimInfo.hasTrim,
-                toToken
+                permit2Info
             );
 
         if (reversed) {
@@ -925,7 +947,7 @@ contract DexRouter is
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo,) = _getCommissionAndTrimInfo();
+        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
         
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         
@@ -933,16 +955,21 @@ contract DexRouter is
 
         returnAmount = _getBalanceOf(baseRequest.toToken, receiver);
 
+        SwapParams memory swapParams = SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: receiver,
+            toToken: baseRequest.toToken
+        });
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
-                msg.sender,
-                receiver,
+                swapParams,
                 baseRequest.fromTokenAmount,
                 trimInfo.hasTrim,
-                baseRequest.toToken
+                permit2Info
             );
 
         _dagSwapInternal(

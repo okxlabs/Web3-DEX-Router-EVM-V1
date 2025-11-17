@@ -8,7 +8,7 @@ abstract contract AbstractCommissionLib {
     struct CommissionInfo {
         bool isFromTokenCommission; //0x00
         bool isToTokenCommission; //0x20
-        address token; // 0x40
+        uint256 tokenWithMode; // 0x40, if isToTokenCommission, tokenWithMode is only the token address, otherwise tokenWithMode is the token address with mode encoded in high bits
         uint256 toBCommission; // 0x60, 0 for no commission, 1 for no-toB commission, 2 for toB commission
         uint256 commissionLength; // 0x80
         uint256 commissionRate; // 0xa0
@@ -45,6 +45,13 @@ abstract contract AbstractCommissionLib {
         bytes signature;
     }
 
+    struct SwapParams {
+        address payer;
+        address refundTo;
+        address receiver;
+        address toToken;
+    }
+
     function _getCommissionAndTrimInfo()
         internal
         virtual
@@ -57,11 +64,10 @@ abstract contract AbstractCommissionLib {
 
     function _doCommissionFromToken(
         CommissionInfo memory commissionInfo,
-        address payer,
-        address receiver,
+        SwapParams memory swapParams,
         uint256 inputAmount,
         bool hasTrim,
-        address toToken
+        Permit2Info memory permit2Info
     ) internal virtual returns (address, uint256);
 
     function _doCommissionAndTrimToToken(

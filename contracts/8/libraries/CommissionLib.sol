@@ -1094,15 +1094,15 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
 
             // if ((
-            //     (mode & _MODE_NO_TRANSFER) != 0 
-            // || (mode & _MODE_BY_INVEST) != 0
+            //     (mode == _MODE_NO_TRANSFER)
+            // || (mode == _MODE_BY_INVEST)
             // )
             // && commissionInfo.isFromTokenCommission) {
             //     revert("From commission not support");
             // }
             let flag := or(
-                iszero(eq(mode, _MODE_NO_TRANSFER)),
-                iszero(eq(mode, _MODE_BY_INVEST))
+                eq(mode, _MODE_NO_TRANSFER),
+                eq(mode, _MODE_BY_INVEST)
             )
             let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
             if and(flag, isFromTokenCommission) {

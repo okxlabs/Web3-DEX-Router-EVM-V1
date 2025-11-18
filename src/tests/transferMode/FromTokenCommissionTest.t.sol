@@ -344,7 +344,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
         IPermit2.PermitTransferFrom memory permit = getPermitTransferFrom(
             token, // token
             amount, // amount
-            1, // nonce
+            2, // nonce
             2524579200 // deadline 2050-01-01 00:00:00
         );
         bytes memory signature = getPermitTransferSignature(
@@ -355,9 +355,9 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
         );
 
         bytes memory permit2Info = _buildPermit2InfoUnified(
+            permit.permitted.amount,
             permit.nonce,
             permit.deadline,
-            permit.permitted.amount,
             arnaud,
             signature
         );

@@ -20,6 +20,10 @@ interface ISafeMoon {
     function sellTotalFees() external view returns (uint256);
 }
 
+interface IPermit2Approve {
+    function approve(address token, address spender, uint160 amount, uint48 expiration) external;
+}
+
 contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
     // transfer modes
     uint256 internal constant _MODE_LEGACY =
@@ -172,7 +176,11 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
                 SafeERC20.safeApprove(IERC20(_fromToken), address(dexRouter), _amount);
             } else if (transferMode == _MODE_PERMIT2_ALLOWANCE) {
                 SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
-            } // For other modes (_MODE_NO_TRANSFER/_MODE_BY_INVEST/_MODE_PERMIT2_SIGNATURE), no need to approve
+                IPermit2Approve(address(permit2)).approve(address(_fromToken), address(dexRouter), uint160(_amount), uint48(block.timestamp + 1000));
+            } else if (transferMode == _MODE_PERMIT2_SIGNATURE) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
+            }
+            // For other modes (_MODE_NO_TRANSFER/_MODE_BY_INVEST), no need to approve
         }
         address[] memory tokens = new address[](2);
         tokens[0] = _fromToken;

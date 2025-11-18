@@ -1101,8 +1101,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             //     revert("From commission not support");
             // }
             let flag := or(
-                gt(and(mode, _MODE_NO_TRANSFER), 0),
-                gt(and(mode, _MODE_BY_INVEST), 0)
+                iszero(eq(mode, _MODE_NO_TRANSFER)),
+                iszero(eq(mode, _MODE_BY_INVEST))
             )
             let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
             if and(flag, isFromTokenCommission) {

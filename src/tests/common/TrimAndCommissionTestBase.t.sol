@@ -166,7 +166,13 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             deal(address(arnaud), _amount);
         } else {
             deal(_fromToken, arnaud, _amount);
-            // TODO approve to different address according to transfer mode
+            if (transferMode == _MODE_LEGACY) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(tokenApprove), _amount);
+            } else if (transferMode == _MODE_DIRECT) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(dexRouter), _amount);
+            } else if (transferMode == _MODE_PERMIT2_ALLOWANCE) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
+            } // For other modes (_MODE_NO_TRANSFER/_MODE_BY_INVEST/_MODE_PERMIT2_SIGNATURE), no need to approve
         }
         address[] memory tokens = new address[](2);
         tokens[0] = _fromToken;

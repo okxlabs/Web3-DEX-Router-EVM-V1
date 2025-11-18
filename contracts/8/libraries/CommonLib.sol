@@ -91,11 +91,7 @@ abstract contract CommonLib is CommonUtils {
             return;
         } else if (mode == _MODE_BY_INVEST) {
             if (amount == 0) {
-                if (token == _ETH) {
-                    amount = address(this).balance;
-                } else {
-                    amount = IERC20(token).balanceOf(address(this));
-                }
+                amount = IERC20(token).balanceOf(address(this));
             }
             SafeERC20.safeTransfer(IERC20(token), to, amount);
             return;

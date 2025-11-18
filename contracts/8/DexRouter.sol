@@ -83,11 +83,26 @@ contract DexRouter is
                     uint256 _fromTokenAmount = weight == 10_000
                         ? batchAmount
                         : (batchAmount * weight) / 10_000;
+
+                    // TODO pass valid permit2Info
+                    Permit2Info memory permit2Info = Permit2Info({
+                        permit: IPermit2.PermitTransferFrom({
+                            permitted: IPermit2.TokenPermissions({
+                                token: address(0),
+                                amount: 0
+                            }),
+                            nonce: 0,
+                            deadline: 0
+                        }),
+                        owner: address(0),
+                        signature: ""
+                    });
                     _transferInternal(
                         payer,
                         path.assetTo[i],
                         path.fromToken,
-                        _fromTokenAmount
+                        _fromTokenAmount,
+                        permit2Info
                     );
                 }
             }
@@ -527,6 +542,7 @@ contract DexRouter is
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
         _validateCommissionInfo(commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, swapParams.receiver);
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.17;
 
+import "./IPermit2.sol";
+
 interface IDexRouter {
     struct BaseRequest {
         uint256 fromToken;
@@ -15,6 +17,17 @@ interface IDexRouter {
         uint256[] rawData;
         bytes[] extraData;
         uint256 fromToken;
+    }
+    struct Permit2Info {
+        IPermit2.PermitTransferFrom permit;
+        address owner;
+        bytes signature;
+    }
+    struct SwapParams {
+        address payer;
+        address refundTo;
+        address receiver;
+        address toToken;
     }
     event OrderRecord(
         address fromToken,

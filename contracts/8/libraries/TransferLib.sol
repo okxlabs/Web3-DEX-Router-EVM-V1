@@ -10,7 +10,7 @@ import "../interfaces/IApproveProxy.sol";
 import "../interfaces/AbstractCommissionLib.sol";
 
 /// @title Base contract to handle multi transfer modes including Permit2.
-abstract contract TransferLib is CommonUtils, AbstractCommissionLib {
+abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
     using UniversalERC20 for IERC20;
 
     /// @notice Transfers tokens internally within the contract.
@@ -41,22 +41,24 @@ abstract contract TransferLib is CommonUtils, AbstractCommissionLib {
                 }
             }
             SafeERC20.safeTransfer(IERC20(token), to, amount);
-        } else if (mode == _MODE_DIRECT) {
-            SafeERC20.safeTransferFrom(IERC20(token), payer, to, amount);
-        } else if (mode == _MODE_PERMIT2_ALLOWANCE) {
-            IPermit2(_PERMIT2).transferFrom(payer, to, uint160(amount), token);
-        } else if (mode == _MODE_PERMIT2_SIGNATURE) {
-            IPermit2.SignatureTransferDetails memory transferDetails = IPermit2.SignatureTransferDetails({
-                to: to,
-                requestedAmount: amount
-            });
-            permit2Info.permit.permitted.token = token;
-            IPermit2(_PERMIT2).permitTransferFrom(permit2Info.permit, transferDetails, payer, permit2Info.signature);
-        } else { // _MODE_LEGACY
+        } else { // For other modes, payer needs to be checked. If the payer is address(this), the transfer logic is same.
             if (payer == address(this)) {
                 SafeERC20.safeTransfer(IERC20(token), to, amount);
             } else {
-                IApproveProxy(_APPROVE_PROXY).claimTokens(token, payer, to, amount);
+                if (mode == _MODE_DIRECT) {
+                    SafeERC20.safeTransferFrom(IERC20(token), payer, to, amount);
+                } else if (mode == _MODE_PERMIT2_ALLOWANCE) {
+                    IPermit2(_PERMIT2).transferFrom(payer, to, uint160(amount), token);
+                } else if (mode == _MODE_PERMIT2_SIGNATURE) {
+                    IPermit2.SignatureTransferDetails memory transferDetails = IPermit2.SignatureTransferDetails({
+                        to: to,
+                        requestedAmount: amount
+                    });
+                    permit2Info.permit.permitted.token = token;
+                    IPermit2(_PERMIT2).permitTransferFrom(permit2Info.permit, transferDetails, permit2Info.owner, permit2Info.signature);
+                } else {
+                    IApproveProxy(_APPROVE_PROXY).claimTokens(token, payer, to, amount);
+                }
             }
         }
     }

@@ -21,6 +21,22 @@ interface ISafeMoon {
 }
 
 contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
+    // transfer modes
+    uint256 internal constant _MODE_LEGACY =
+        0x0000000000000000000000000000000000000000000000000000000000000000; // 0b000 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_PERMIT2_ALLOWANCE =
+        0x0200000000000000000000000000000000000000000000000000000000000000; // 0b001 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_PERMIT2_SIGNATURE =
+        0x0600000000000000000000000000000000000000000000000000000000000000; // 0b011 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_BY_INVEST =
+        0x0400000000000000000000000000000000000000000000000000000000000000; // 0b010 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_NO_TRANSFER =
+        0x0800000000000000000000000000000000000000000000000000000000000000; // 0b100 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_DIRECT =
+        0x0A00000000000000000000000000000000000000000000000000000000000000; // 0b101 in [bit251, bit250, bit249]
+    uint256 internal constant _TRANSFER_MODE_MASK =
+        0x0E00000000000000000000000000000000000000000000000000000000000000; // 0b111 in [bit251, bit250, bit249]
+
     // tokens
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // decimals=18
@@ -120,6 +136,37 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         } else {
             deal(_fromToken, arnaud, _amount);
             SafeERC20.safeApprove(IERC20(_fromToken), address(tokenApprove), _amount);
+        }
+        address[] memory tokens = new address[](2);
+        tokens[0] = _fromToken;
+        tokens[1] = _toToken;
+        _beforeSwapCheck(tokens);
+        _;
+        bool[] memory referrerShouldReceive = new bool[](MAX_COMMISSION_MULTIPLE_NUM);
+        for (uint256 i = 0; i < referrerShouldReceiveNum; i++) {
+            referrerShouldReceive[i] = true;
+        }
+        _afterSwapCheck(tokens, trimShouldReceive, chargeShouldReceive, isFromCommission, referrerShouldReceive);
+        vm.stopPrank();
+    }
+
+    modifier tokenLogAndCheck3(
+        address _fromToken,
+        address _toToken,
+        uint256 _amount,
+        bool trimShouldReceive,
+        bool chargeShouldReceive,
+        bool isFromCommission,
+        uint256 referrerShouldReceiveNum,
+        uint256 transferMode
+    ) {
+        vm.startPrank(arnaud);
+        console2.log("User arnaud:", arnaud);
+        if (_fromToken == ETH) {
+            deal(address(arnaud), _amount);
+        } else {
+            deal(_fromToken, arnaud, _amount);
+            // TODO approve to different address according to transfer mode
         }
         address[] memory tokens = new address[](2);
         tokens[0] = _fromToken;

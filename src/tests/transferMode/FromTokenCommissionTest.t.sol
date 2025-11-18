@@ -5,6 +5,7 @@ import "../common/TrimAndCommissionTestBase.t.sol";
 import "../common/Permit2Helper.t.sol";
 import "@dex/interfaces/IPermit2.sol";
 
+// Contract for testing permit2 transfer from
 contract Permit2TokenTransfer {
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
@@ -31,13 +32,98 @@ contract Permit2TokenTransfer {
         address to,
         uint256 amount
     ) public {
+        uint256 sigLength = permit2Info.signature.length;
+        require(sigLength == 64 || sigLength == 65, "signature length must be 64 or 65");
         assembly ("memory-safe") {
+            let permit := mload(permit2Info) // permit2Info.permit
+            let permitted := mload(permit) // permit2Info.permit.permitted
+            let sigPtr := mload(add(permit2Info, 0x40)) // permit2Info.signature
 
+            let freePtr := mload(0x40) // prepair free memory pointer
+            // construct calldata
+            mstore(freePtr, 0x30f28b7a00000000000000000000000000000000000000000000000000000000)
+            mstore(
+                add(freePtr, 0x04),
+                mload(permitted)
+            ) // token
+            mstore(
+                add(freePtr, 0x24),
+                mload(add(permitted, 0x20))
+            ) // amount
+            mstore(
+                add(freePtr, 0x44),
+                mload(add(permit, 0x20))
+            ) // nonce
+            mstore(
+                add(freePtr, 0x64),
+                mload(add(permit, 0x40))
+            ) // deadline
+            mstore(
+                add(freePtr, 0x84),
+                to
+            ) // to
+            mstore(
+                add(freePtr, 0xa4),
+                amount
+            ) // requestedAmount
+            mstore(
+                add(freePtr, 0xc4),
+                mload(add(permit2Info, 0x20))
+            ) // owner
+            mstore(
+                add(freePtr, 0xe4),
+                0x100
+            ) // signature offset
+            mstore(
+                add(freePtr, 0x104),
+                sigLength
+            ) // signature length
+            mstore(
+                add(freePtr, 0x124),
+                mload(add(sigPtr, 0x20))
+            ) // signature r
+            mstore(
+                add(freePtr, 0x144),
+                mload(add(sigPtr, 0x40))
+            ) // signature s
+            let calldataSize
+            switch eq(sigLength, 65)
+            case 1 { // signature length == 65
+                mstore(
+                    add(freePtr, 0x164),
+                    shl(248, shr(248, mload(add(sigPtr, 0x60))))
+                ) // signature v
+                calldataSize := 0x184
+                mstore(0x40, add(freePtr, calldataSize)) // update free memory pointer, calldata size == 0x165
+            }
+            default { // signature length == 64
+                calldataSize := 0x164
+                mstore(0x40, add(freePtr, calldataSize)) // update free memory pointer, calldata size == 0x164
+            }
+            
+            // execute external call
+            let success := call(
+                gas(),           // all remaining gas
+                PERMIT2,         // Permit2 contract address
+                0,               // no ETH sent
+                freePtr,         // calldata start position
+                calldataSize,    // calldata size
+                0,               // no return data
+                0                // return data size is 0
+            )
+
+            // check if call is successful
+            if iszero(success) {
+                // if call failed, copy error information and revert
+                let returnDataLen := returndatasize()
+                returndatacopy(0, 0, returnDataLen)
+                revert(0, returnDataLen)
+            }
         }
     }
 }
 
-contract Permit2FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
+contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
     Permit2TokenTransfer public permit2Transfer;
     uint256 public arnaudPrivateKey = 11111111111111111111;
 
@@ -46,6 +132,7 @@ contract Permit2FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Hel
         super.setUp();
     }
 
+    // ==================== Basic Test for testing getInfo and permit2TransferFrom ====================
     function test_getCommissionAndTrimInfo() tokenLogAndCheck(WETH, USDT, oneEther, false, false, false, false, false)  public {
         bytes memory swapData = _generateWETH2USDTDagSwapData();
         bytes memory permit2Info = _generatePermit2Info();
@@ -53,10 +140,6 @@ contract Permit2FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Hel
         (bool success, ) = address(dexRouter).call(data);
         require(success, "call failed");
     }
-
-    // TODO
-    // 1. 编写辅助合约，测试assembly下如何调用Permit2的permitTransferFrom方法
-    // 2. 在CommissionLib中添加fromToken分佣多模式转账的的逻辑，调整dag接口支持fromToken分佣多模式转账
 
     function test_permit2TransferFrom() public {
         deal(WETH, arnaud, 100 * 10 ** 18);
@@ -120,6 +203,22 @@ contract Permit2FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Hel
     }
 
 
+    // ==================== Test fromToken commission with multi transfer modes ===================
+    // (1) WETH->USDT with legacy mode
+
+    // (2) WETH->USDT with direct mode
+
+    // (3) WETH->USDT with permit2 allowance mode
+
+    // (4) WETH->USDT with permit2 signature mode
+
+    // (5) USDT->WETH with legacy mode
+
+    // (6) USDT->WETH with direct mode
+
+    // (7) USDT->WETH with permit2 allowance mode
+
+    // (8) USDT->WETH with permit2 signature mode
 
 
     // ==================== Internal Functions ====================

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./IPermit2.sol";
+import "./IDexRouter.sol";
 
 /// @title Abstract base contract with virtual functions
-abstract contract AbstractCommissionLib {
+abstract contract AbstractCommissionLib is IDexRouter {
     struct CommissionInfo {
         bool isFromTokenCommission; //0x00
         bool isToTokenCommission; //0x20
@@ -37,19 +37,6 @@ abstract contract AbstractCommissionLib {
         uint256 expectAmountOut; // 0x80
         uint256 chargeRate; // 0xa0
         address chargeAddress; // 0xc0
-    }
-
-    struct Permit2Info {
-        IPermit2.PermitTransferFrom permit;
-        address owner;
-        bytes signature;
-    }
-
-    struct SwapParams {
-        address payer;
-        address refundTo;
-        address receiver;
-        address toToken;
     }
 
     function _getCommissionAndTrimInfo()

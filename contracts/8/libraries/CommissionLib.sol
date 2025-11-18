@@ -5,8 +5,6 @@ import "./CommonUtils.sol";
 import "../interfaces/AbstractCommissionLib.sol";
 /// @title Base contract with common permit handling logics
 
-import "forge-std/console2.sol";
-
 abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant _COMMISSION_RATE_MASK =
         0x000000000000ffffffffffff0000000000000000000000000000000000000000;
@@ -663,7 +661,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     ) // "invalid signature length"
                 }
 
-                let freePtr := mload(0x40) // prepair free memory pointer
+                let freePtr := mload(0x40) // prepare free memory pointer
                 // construct calldata
                 mstore(freePtr, 0x30f28b7a00000000000000000000000000000000000000000000000000000000)
                 mstore(

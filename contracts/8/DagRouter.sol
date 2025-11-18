@@ -2,10 +2,11 @@
 pragma solidity 0.8.17;
 
 import "./libraries/CommonLib.sol";
+import "./libraries/TransferLib.sol";
 import "./libraries/UniversalERC20.sol";
 import "./interfaces/IERC20.sol";
 
-abstract contract DagRouter is CommonLib {
+abstract contract DagRouter is CommonLib, TransferLib {
 
     using UniversalERC20 for IERC20;
 
@@ -153,12 +154,27 @@ abstract contract DagRouter is CommonLib {
                     _fromTokenAmount = (nodeBalance * weight) / 10_000;
                     accAmount += _fromTokenAmount;
                 }
-                _transferInternal(
-                    payer,
-                    path.assetTo[i],
-                    path.fromToken,
-                    _fromTokenAmount
-                );
+
+                // // TODO pass valid permit2Info and call _transferInternal
+                // Permit2Info memory permit2Info = Permit2Info({
+                //     permit: IPermit2.PermitTransferFrom({
+                //         permitted: IPermit2.TokenPermissions({
+                //             token: address(0),
+                //             amount: 0
+                //         }),
+                //         nonce: 0,
+                //         deadline: 0
+                //     }),
+                //     owner: address(0),
+                //     signature: ""
+                // });
+                // _transferInternal(
+                //     swapParams.payer,
+                //     path.assetTo[i],
+                //     path.fromToken,
+                //     _fromTokenAmount,
+                //     permit2Info
+                // );
             }
 
             // 3. execute single swap

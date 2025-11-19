@@ -48,8 +48,7 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
         address payable receiver,
         uint256 amount,
         uint256 minReturn,
-        uint256[] calldata pools,
-        Permit2Info memory permit2Info
+        uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
         assembly {
             function _revertWithReason(m, len) {
@@ -239,6 +238,10 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                     ) // EmptyPools()
                     revert(0, 4)
                 }
+                
+                // 提取 pools[0] 的 transferMode
+                let firstPool := calldataload(firstPoolStart)
+                transferMode := and(firstPool, _TRANSFER_MODE_MASK)
             }
             let refundTo := payer
             {

@@ -48,7 +48,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
         address payable receiver,
         uint256 amount,
         uint256 minReturn,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        Permit2Info memory permit2Info
     ) internal returns (uint256 returnAmount) {
         assembly {
             function _revertWithReason(m, len) {

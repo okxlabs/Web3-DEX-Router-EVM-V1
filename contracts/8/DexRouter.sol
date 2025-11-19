@@ -480,7 +480,8 @@ contract DexRouter is
             payable(middleReceiver),
             amount,
             minReturn,
-            pools
+            pools,
+            permit2Info
         );
 
         _doCommissionAndTrimToToken(

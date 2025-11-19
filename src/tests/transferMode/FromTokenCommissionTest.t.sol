@@ -197,7 +197,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
     // ==================== Test fromToken commission with multi transfer modes ===================
     // (1) WETH->USDT, 3fromCommission, no-toBCommission, legacy mode
     function test_fromTokenCommission_WETH2USDT_3fromCommission_legacy() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_LEGACY)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_LEGACY);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_LEGACY);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -206,7 +206,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (2) WETH->USDT, 3fromCommission, toBCommission, legacy mode
     function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_legacy() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_LEGACY)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_LEGACY);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_LEGACY);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -215,7 +215,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (3) WETH->USDT, 3fromCommission, no-toBCommission, direct mode
     function test_fromTokenCommission_WETH2USDT_3fromCommission_direct() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_DIRECT)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_DIRECT);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_DIRECT);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -224,7 +224,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (4) WETH->USDT, 3fromCommission, toBCommission, direct mode
     function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_direct() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_DIRECT)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_DIRECT);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_DIRECT);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -233,7 +233,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (5) WETH->USDT, 3fromCommission, no-toBCommission, permit2 allowance mode
     function test_fromTokenCommission_WETH2USDT_3fromCommission_permit2Allowance() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_PERMIT2_ALLOWANCE)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_PERMIT2_ALLOWANCE);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_PERMIT2_ALLOWANCE);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -242,7 +242,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (6) WETH->USDT, 3fromCommission, toBCommission, permit2 allowance mode
     function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_permit2Allowance() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_PERMIT2_ALLOWANCE)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_PERMIT2_ALLOWANCE);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_PERMIT2_ALLOWANCE);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -251,7 +251,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (7) WETH->USDT, 3fromCommission, no-toBCommission, permit2 signature mode
     function test_fromTokenCommission_WETH2USDT_3fromCommission_permit2Signature() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_PERMIT2_SIGNATURE)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_PERMIT2_SIGNATURE);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_PERMIT2_SIGNATURE);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
         bytes memory permit2Info = _generatePermit2Info(WETH, 2 * 10 ** 18);
         bytes memory data = bytes.concat(swapData, permit2Info, commissionData);
@@ -261,7 +261,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
     // (8) WETH->USDT, 3fromCommission, toBCommission, permit2 signature mode
     function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_permit2Signature() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_PERMIT2_SIGNATURE)  public {
-        bytes memory swapData = _generateWETH2USDTSmartSwapData(_MODE_PERMIT2_SIGNATURE);
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_PERMIT2_SIGNATURE);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         bytes memory permit2Info = _generatePermit2Info(WETH, 2 * 10 ** 18);
         bytes memory data = bytes.concat(swapData, permit2Info, commissionData);
@@ -271,6 +271,27 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
 
 
     // ==================== Internal Functions ====================
+    function _generateWETH2USDTDagSwapData(uint256 mode) internal view returns (bytes memory) {
+        // baseRequest
+        DexRouter.BaseRequest memory baseRequest = _generateBaseRequest(WETH, USDT, oneEther);
+        // batches
+        DexRouter.RouterPath[] memory path = new DexRouter.RouterPath[](1);
+        path[0].mixAdapters = new address[](1);
+        path[0].mixAdapters[0] = address(UniversalUniV3Adapter);
+        path[0].assetTo = new address[](1);
+        path[0].assetTo[0] = address(UniversalUniV3Adapter);
+        path[0].rawData = new uint256[](1);
+        path[0].rawData[0] = uint256(bytes32(abi.encodePacked(uint64(0x00), uint8(0), uint8(1), uint16(10000), address(WETH_USDT_UNIV3))));
+        path[0].extraData = new bytes[](1);
+        path[0].extraData[0] = abi.encode(0, abi.encode(WETH, USDT, 0));
+        path[0].fromToken = uint256(uint160(WETH)) | mode;
+
+        return abi.encodeWithSelector(
+            DexRouter.dagSwapTo.selector,
+            0, arnaud, baseRequest, path
+        );
+    }
+
     function _generateWETH2USDTSmartSwapData(uint256 mode) internal view returns (bytes memory) {
         return _generateSmartSwapData(
             WETH,

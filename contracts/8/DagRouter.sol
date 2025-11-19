@@ -21,16 +21,12 @@ abstract contract DagRouter is CommonLib, TransferLib {
 
     /// @notice The fromTokenAmount will not must be greater than 0, cause for some protocols the fromTokenAmount needs to be 0 to skip token transfer like fourmeme. 
     function _dagSwapInternal(
-        BaseRequest calldata baseRequest,
+        BaseRequest memory baseRequest,
         RouterPath[] calldata paths,
-        address payer,
-        address refundTo,
-        address receiver
+        SwapParams memory swapParams
     ) internal {
         // 1. check and process ETH
-        BaseRequest memory _baseRequest = baseRequest;
-
-        address fromToken = _bytes32ToAddress(_baseRequest.fromToken);
+        address fromToken = _bytes32ToAddress(baseRequest.fromToken);
 
         address firstNodeToken = _bytes32ToAddress(paths[0].fromToken);
 
@@ -39,19 +35,19 @@ abstract contract DagRouter is CommonLib, TransferLib {
         if (IERC20(fromToken).isETH()) {
             require(firstNodeToken == _WETH, "firstToken mismatch");
             IWETH(_WETH).deposit{
-                value: _baseRequest.fromTokenAmount
+                value: baseRequest.fromTokenAmount
             }();
-            payer = address(this);
+            swapParams.payer = address(this);
         } else {
             require(firstNodeToken == fromToken, "firstToken mismatch");
             require(msg.value == 0, "value must be 0");
         }
 
         // 2. execute dag swap
-        _exeDagSwap(payer, receiver, refundTo, _baseRequest.fromTokenAmount, IERC20(_baseRequest.toToken).isETH(), paths);
+        _exeDagSwap(swapParams.payer, swapParams.receiver, swapParams.refundTo, baseRequest.fromTokenAmount, IERC20(baseRequest.toToken).isETH(), paths);
 
         // 3. transfer tokens to receiver
-        _transferTokenToUser(_baseRequest.toToken, receiver);
+        _transferTokenToUser(baseRequest.toToken, swapParams.receiver);
     }
 
     /// @notice The core logic to execute the DAG swap. For the first node, the payer should use passed value.
@@ -155,26 +151,12 @@ abstract contract DagRouter is CommonLib, TransferLib {
                     accAmount += _fromTokenAmount;
                 }
 
-                // // TODO pass valid permit2Info and call _transferInternal
-                // Permit2Info memory permit2Info = Permit2Info({
-                //     permit: IPermit2.PermitTransferFrom({
-                //         permitted: IPermit2.TokenPermissions({
-                //             token: address(0),
-                //             amount: 0
-                //         }),
-                //         nonce: 0,
-                //         deadline: 0
-                //     }),
-                //     owner: address(0),
-                //     signature: ""
-                // });
-                // _transferInternal(
-                //     swapParams.payer,
-                //     path.assetTo[i],
-                //     path.fromToken,
-                //     _fromTokenAmount,
-                //     permit2Info
-                // );
+                _transferInternal(
+                    payer,
+                    path.assetTo[i],
+                    path.fromToken,
+                    _fromTokenAmount
+                );
             }
 
             // 3. execute single swap

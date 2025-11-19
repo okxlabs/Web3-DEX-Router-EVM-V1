@@ -84,25 +84,11 @@ contract DexRouter is
                         ? batchAmount
                         : (batchAmount * weight) / 10_000;
 
-                    // TODO pass valid permit2Info
-                    Permit2Info memory permit2Info = Permit2Info({
-                        permit: IPermit2.PermitTransferFrom({
-                            permitted: IPermit2.TokenPermissions({
-                                token: address(0),
-                                amount: 0
-                            }),
-                            nonce: 0,
-                            deadline: 0
-                        }),
-                        owner: address(0),
-                        signature: ""
-                    });
                     _transferInternal(
                         payer,
                         path.assetTo[i],
                         path.fromToken,
-                        _fromTokenAmount,
-                        permit2Info
+                        _fromTokenAmount
                     );
                 }
             }
@@ -426,17 +412,19 @@ contract DexRouter is
         (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
         // add permit2
         _validateCommissionInfo(commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
+        // TODO add mode to commissionInfo.tokenWithMode
 
         returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver);
 
+        // TODO call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
+        // (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         _doUniswapV3Swap(
             swapParams,
             amount,
             minReturn,
             pools,
             commissionInfo,
-            trimInfo,
-            permit2Info
+            trimInfo
         );
 
         // check minReturnAmount
@@ -461,8 +449,7 @@ contract DexRouter is
         uint256 minReturn,
         uint256[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo,
-        Permit2Info memory permit2Info
+        TrimInfo memory trimInfo
     ) private {
         // erc20转账模式
         // 首先在_uniswapV3Swap里面还是要根据pools[0]来判断flag
@@ -493,9 +480,8 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount,
-                trimInfo.hasTrim,
-                permit2Info
+                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                trimInfo.hasTrim
             );
 
         // _uniswapV3Swap(
@@ -575,7 +561,8 @@ contract DexRouter is
         commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, swapParams.receiver);
-
+        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
+        // TODO (swapParams.payer, baseRequest.fromTokenAmount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         {
             (
                 address middleReceiver,
@@ -583,9 +570,8 @@ contract DexRouter is
             ) = _doCommissionFromToken(
                     commissionInfo,
                     swapParams,
-                    baseRequest.fromTokenAmount,
-                    trimInfo.hasTrim,
-                    permit2Info
+                    baseRequest.fromTokenAmount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                    trimInfo.hasTrim
                 );
 
             _smartSwapInternal(
@@ -685,6 +671,8 @@ contract DexRouter is
             receiver: receiver,
             toToken: toToken
         });
+        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
+        // (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         _doUnxswap(
             swapParams,
             srcToken,
@@ -692,8 +680,7 @@ contract DexRouter is
             minReturn,
             pools,
             commissionInfo,
-            trimInfo,
-            permit2Info
+            trimInfo
         );
 
         // check minReturnAmount
@@ -721,8 +708,7 @@ contract DexRouter is
         uint256 minReturn,
         bytes32[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo,
-        Permit2Info memory permit2Info
+        TrimInfo memory trimInfo
     ) private {
         (
             address middleReceiver,
@@ -730,20 +716,18 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount,
-                trimInfo.hasTrim,
-                permit2Info
+                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                trimInfo.hasTrim
             );
 
-        // TODO: remove this temporarily to avoid stack too deep
-        // _unxswapInternal(
-        //     IERC20(srcToken),
-        //     amount,
-        //     minReturn,
-        //     pools,
-        //     swapParams.payer,
-        //     middleReceiver
-        // );
+        _unxswapInternal(
+            IERC20(srcToken),
+            amount,
+            minReturn,
+            pools,
+            swapParams.payer,
+            middleReceiver
+        );
 
         _doCommissionAndTrimToToken(
             commissionInfo,
@@ -859,6 +843,7 @@ contract DexRouter is
         address toToken = reversed ? _ETH : _WETH;
 
         _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
+        // TODO add mode to commissionInfo.tokenWithMode
 
         SwapParams memory swapParams = SwapParams({
             payer: msg.sender,
@@ -866,15 +851,16 @@ contract DexRouter is
             receiver: receiver,
             toToken: toToken
         });
+        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
+        // TODO (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount,
-                trimInfo.hasTrim,
-                permit2Info
+                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                trimInfo.hasTrim
             );
 
         if (reversed) {
@@ -980,7 +966,7 @@ contract DexRouter is
     function dagSwapTo(
         uint256 orderId,
         address receiver,
-        BaseRequest calldata baseRequest,
+        BaseRequest memory baseRequest,
         RouterPath[] calldata paths
     )
         public
@@ -998,6 +984,7 @@ contract DexRouter is
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         
         _validateCommissionInfo(commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, receiver);
 
@@ -1007,32 +994,50 @@ contract DexRouter is
             receiver: receiver,
             toToken: baseRequest.toToken
         });
-        (
-            address middleReceiver,
-            uint256 balanceBefore
-        ) = _doCommissionFromToken(
-                commissionInfo,
-                swapParams,
+
+        uint256 fromTokenCommissionAmount;
+        {
+            address onlyOneAssetTo = paths[0].assetTo.length == 1 ? paths[0].assetTo[0] : address(0);
+            (
+                swapParams.payer,
                 baseRequest.fromTokenAmount,
-                trimInfo.hasTrim,
+                fromTokenCommissionAmount
+            ) = _handlePermit2SignatureModeWithCommission(
+                paths[0].fromToken,
+                swapParams.payer,
+                baseRequest.fromTokenAmount,
+                commissionInfo,
+                onlyOneAssetTo,
                 permit2Info
             );
+        }
 
-        _dagSwapInternal(
-            baseRequest,
-            paths,
-            msg.sender,
-            msg.sender,
-            middleReceiver
-        );
+        {
+            uint256 balanceBefore;
+            (
+                swapParams.receiver,
+                balanceBefore
+            ) = _doCommissionFromToken(
+                    commissionInfo,
+                    swapParams,
+                    fromTokenCommissionAmount,
+                    trimInfo.hasTrim
+                );
 
-        _doCommissionAndTrimToToken(
-            commissionInfo,
-            receiver,
-            balanceBefore,
-            baseRequest.toToken,
-            trimInfo
-        );
+            _dagSwapInternal(
+                baseRequest,
+                paths,
+                swapParams
+            );
+
+            _doCommissionAndTrimToToken(
+                commissionInfo,
+                receiver,
+                balanceBefore,
+                baseRequest.toToken,
+                trimInfo
+            );
+        }
 
         // check minReturnAmount
         returnAmount =

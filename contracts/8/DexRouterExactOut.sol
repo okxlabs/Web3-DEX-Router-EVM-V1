@@ -328,20 +328,8 @@ contract DexRouterExactOut is
                     receiver: afterSwapParams.receiver,
                     toToken: afterSwapParams.toToken
                 }),
-                afterSwapParams.consumeAmount,
-                false,
-                Permit2Info({
-                    permit: IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions({
-                            token: afterSwapParams.toToken,
-                            amount: afterSwapParams.consumeAmount
-                        }),
-                        nonce: 0,
-                        deadline: block.timestamp
-                    }),
-                    owner: afterSwapParams.payer,
-                    signature: ""
-                })
+                afterSwapParams.consumeAmount, // TODO should be fromTokenCommissionAmount gotten from _handleTransferModeWithCommission
+                false
             );
             if (
                 afterSwapParams.srcToken == _ETH &&

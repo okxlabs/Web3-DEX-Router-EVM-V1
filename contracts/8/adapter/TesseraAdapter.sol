@@ -12,6 +12,8 @@ import {ITesseraSwap} from "../interfaces/ITesseraSwap.sol";
 contract TesseraAdapter is IAdapter {
     using SafeERC20 for IERC20;
     address public immutable TESSERA_SWAP;
+    uint256 constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+    uint256 internal constant ORIGIN_PAYER = 0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000;
 
     constructor (
         address _tesseraSwap
@@ -24,7 +26,7 @@ contract TesseraAdapter is IAdapter {
         address,
         bytes memory moreInfo
     ) external override {
-        _tesseraSwap(to, moreInfo);
+        _tesseraSwap(to, moreInfo, _getPayerOrigin());
     }
 
     function sellQuote(
@@ -32,12 +34,13 @@ contract TesseraAdapter is IAdapter {
         address,
         bytes memory moreInfo
     ) external override {
-        _tesseraSwap(to, moreInfo);
+        _tesseraSwap(to, moreInfo, _getPayerOrigin());
     }
 
     function _tesseraSwap(
         address to,
-        bytes memory moreInfo
+        bytes memory moreInfo,
+        uint256 payerOrigin
     ) internal {
         (address tokenIn, address tokenOut) = abi.decode(
             moreInfo,   
@@ -61,5 +64,22 @@ contract TesseraAdapter is IAdapter {
             to,
             ""
         );
+        
+        /// @notice Refund logic: if there is leftover fromToken, refund to payerOrigin
+        address _payerOrigin;
+        if ((payerOrigin & ORIGIN_PAYER) == ORIGIN_PAYER) {
+            _payerOrigin = address(uint160(uint256(payerOrigin) & ADDRESS_MASK));
+        }
+        uint256 remainingAmount = IERC20(tokenIn).balanceOf(address(this));
+        if (remainingAmount > 0 && _payerOrigin != address(0)) {
+            SafeERC20.safeTransfer(IERC20(tokenIn), _payerOrigin, remainingAmount);
+        }
+    }
+
+    function _getPayerOrigin() internal pure returns (uint256 payerOrigin) {
+        assembly {
+            let size := calldatasize()
+            payerOrigin := calldataload(sub(size, 32))
+        }
     }
 }

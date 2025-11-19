@@ -39,6 +39,8 @@ abstract contract AbstractCommissionLib is IDexRouter {
         address chargeAddress; // 0xc0
     }
 
+    uint256 internal constant DENOMINATOR = 10 ** 9;
+
     function _getCommissionAndTrimInfo()
         internal
         virtual
@@ -52,9 +54,8 @@ abstract contract AbstractCommissionLib is IDexRouter {
     function _doCommissionFromToken(
         CommissionInfo memory commissionInfo,
         SwapParams memory swapParams,
-        uint256 inputAmount,
-        bool hasTrim,
-        Permit2Info memory permit2Info
+        uint256 fromTokenCommissionAmount,
+        bool hasTrim
     ) internal virtual returns (address, uint256);
 
     function _doCommissionAndTrimToToken(

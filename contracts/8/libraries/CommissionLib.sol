@@ -41,11 +41,17 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         0x7777777722220000000000000000000000000000000000000000000000000000;
 
     uint256 internal constant _PERMIT2_INFO_FLAG_MASK =
+        0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _PERMIT2_INFO_NONCE_MASK =
         0x0000000000000000000000000000000000000000000000000000ffffffffffff;
-    uint256 internal constant _PERMIT2_INFO_LENGTH_MASK =
-        0x00000000000000000000000000000000000000000000000000ff000000000000;
-    uint256 internal constant PERMIT2_INFO_FLAG =
-        0x000000000000000000000000000000000000000000000000000092527fff1a63; // bytes6(keccak256("Permit2Info"))
+    uint256 internal constant _PERMIT2_INFO_DEADLINE_MASK =
+        0x0000000000000000000000000000000000000000ffffffffffff000000000000;
+    uint256 internal constant _PERMIT2_INFO_SIGNATURE_V_MASK =
+        0x00000000000000000000000000000000000000ff000000000000000000000000;
+    uint256 internal constant PERMIT2_INFO_SIG65_FLAG =
+        0x92527fff1a650000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x65
+    uint256 internal constant PERMIT2_INFO_SIG64_FLAG =
+        0x92527fff1a640000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x64
 
     event CommissionAndTrimInfo(
         uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
@@ -93,15 +99,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant WAD = 1 ether;
     uint256 internal constant TRIM_RATE_LIMIT = 100;
     uint256 internal constant TRIM_DENOMINATOR = 1000;
-    uint256 internal constant PERMIT2_INFO_VALID_LENGTH_SIG64 = 32 + 32 + 32 + 20 + 64;
-    uint256 internal constant PERMIT2_INFO_VALID_LENGTH_SIG65 = 32 + 32 + 32 + 20 + 65;
 
     function _getCommissionAndTrimInfo()
         internal
         override
         returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info)
     {
-        uint256 permit2InfoLength;
+        uint256 permit2InfoFlag;
         uint256[] memory permit2SignatureCache = new uint256[](3); // signature r, signature s, signature v
         assembly ("memory-safe") {
             function _revertWithReason(m, len) {
@@ -309,41 +313,54 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 mstore(add(0xa0, trimInfo), 0) // chargeRate
                 mstore(add(0xc0, trimInfo), 0) // chargeAddress
             }
-            // get permit2Info and cache the values to permit2InfoCache
+            // get first bytes32 of permit2Info
             let permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x20)))
-            flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
-            switch eq(flag, PERMIT2_INFO_FLAG)
-            case 1 {
-                permit2InfoLength := shr(48, and(permit2InfoData, _PERMIT2_INFO_LENGTH_MASK))
-                //require(permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG64 || permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG65, "invalid permit2Info length")
-                if and(iszero(eq(permit2InfoLength, PERMIT2_INFO_VALID_LENGTH_SIG64)), iszero(eq(permit2InfoLength, PERMIT2_INFO_VALID_LENGTH_SIG65))) {
-                    _revertWithReason(
-                        0x0000001a696e76616c6964207065726d697432496e666f206c656e6774680000,
-                        0x5e
-                    ) // "invalid permit2Info length"
-                }
+            permit2InfoFlag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
+            if or(
+                eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG),
+                eq(permit2InfoFlag, PERMIT2_INFO_SIG64_FLAG)
+            ) {
+                // set pointer to permit2Info.permit and permit2Info.permit.permitted
                 let permitPosition := mload(permit2Info)
                 let permittedPosition := mload(permitPosition)
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 39))) // 32 + 1 + 6
-                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 71))) // 32 + 32 + 1 + 6
-                mstore(add(permitPosition, 0x20), permit2InfoData) // store nonce to [permit2Info.permit + 0x20]
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 103))) // 32 + 32 + 32 + 1 + 6
-                mstore(add(permitPosition, 0x40), permit2InfoData) // store deadline to [permit2Info.permit + 0x40]
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 135))) // 32 + 32 + 32 + 32 + 1 + 6, to load owner as normal bytes32
+
                 mstore(add(permit2Info, 0x20), and(permit2InfoData, _ADDRESS_MASK)) // store owner to [permit2Info + 0x20]
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 155))) // 32 + 20 + 32 + 32 + 32 + 1 + 6
+
+                // get second bytes32 of permit2Info
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x40)))
+                flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
+                if iszero(eq(permit2InfoFlag, flag)) {
+                    _revertWithReason(
+                        0x00000018696e76616c6964207065726d697432496e666f20666c616700000000,
+                        0x5c
+                    ) // "invalid permit2Info flag"
+                }
+                mstore(add(permitPosition, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // store nonce to [permit2Info.permit + 0x20]
+                mstore(add(permitPosition, 0x40), shr(48, and(permit2InfoData, _PERMIT2_INFO_DEADLINE_MASK))) // store deadline to [permit2Info.permit + 0x40]
+                if eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG) {
+                    mstore(add(permit2SignatureCache, 0x60), shr(96, and(permit2InfoData, _PERMIT2_INFO_SIGNATURE_V_MASK))) // signature v
+                }
+
+                // get third bytes32 of permit2Info
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x60)))
+                // slot2 := permit2InfoData
+                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
+
+                // get fourth bytes32 of permit2Info
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x80)))
+                // slot3 := permit2InfoData
                 mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 187))) // 32 + 32 + 20 + 32 + 32 + 32 + 1 + 6
+
+                // get fifth bytes32 of permit2Info
+                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0xa0)))
+                // slot4 := permit2InfoData
                 mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 188))) // 1 + 32 + 32 + 20 + 32 + 32 + 32 + 1 + 6
-                mstore(add(permit2SignatureCache, 0x60), shr(248, permit2InfoData)) // signature v
             }
         }
 
-        if (permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG65) {
+        if (permit2InfoFlag == PERMIT2_INFO_SIG65_FLAG) {
             permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]), bytes1(uint8(permit2SignatureCache[2])));
-        } else if (permit2InfoLength == PERMIT2_INFO_VALID_LENGTH_SIG64) {
+        } else if (permit2InfoFlag == PERMIT2_INFO_SIG64_FLAG) {
             permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]));
         }
 

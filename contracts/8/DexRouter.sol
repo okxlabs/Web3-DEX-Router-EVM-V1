@@ -424,7 +424,8 @@ contract DexRouter is
             minReturn,
             pools,
             commissionInfo,
-            trimInfo
+            trimInfo,
+            permit2Info
         );
 
         // check minReturnAmount
@@ -449,7 +450,8 @@ contract DexRouter is
         uint256 minReturn,
         uint256[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo
+        TrimInfo memory trimInfo,
+        Permit2Info memory permit2Info
     ) private {
         // erc20转账模式
         // 首先在_uniswapV3Swap里面还是要根据pools[0]来判断flag
@@ -459,18 +461,23 @@ contract DexRouter is
         // 如果是_MODE_PERMIT2_SIGNATURE，在没有CommissionFromToken的情景下，那么在_handle的时候直接把token转移到v3的池子中
         // 其他几个模式还是保留一样，_doCommissionFromToken的时候就只处理分佣资金，不需要把所有token转移到dexrouter
         
-        // 从 pools[0] 提取 transfer mode 和池子地址
-        require(pools.length > 0, "Empty pools");
-        uint256 firstPool = pools[0];
-        uint256 mode = firstPool & _TRANSFER_MODE_MASK;
-        address firstPoolAddress = address(uint160(firstPool & _ADDRESS_MASK));
+        
+        // 确定 onlyOneAssetTo
+        // 如果有分佣，onlyOneAssetTo = address(0)，会转到 address(this)
+        // 如果没有分佣，onlyOneAssetTo = firstPoolAddress，会转到池子
+        address onlyOneAssetTo = commissionInfo.isFromTokenCommission ? address(0) : firstPoolAddress;
 
-        (address newPayer, uint256 newInputAmount, uint256 fromTokenCommissionAmount) = _handleTransferModeWithCommission(
-            mode,
-            payer,
+        // 调用 _handlePermit2SignatureModeWithCommission
+        (
+            address newPayer,
+            uint256 newInputAmount,
+            uint256 fromTokenCommissionAmount
+        ) = _handlePermit2SignatureModeWithCommission(
+            pools[0],
+            swapParams.payer,
             amount,
             commissionInfo,
-            firstPoolAddress,
+            onlyOneAssetTo,
             permit2Info
         );
         
@@ -480,7 +487,7 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                fromTokenCommissionAmount, // 使用从 _handlePermit2SignatureModeWithCommission 获取的佣金金额
                 trimInfo.hasTrim
             );
 
@@ -492,9 +499,9 @@ contract DexRouter is
         //     pools
         // );
         _uniswapV3Swap(
-            newPayer,
+            newPayer,   // 如果没有分佣，newpayer就是address(0).如果有分佣，newpayer就是address(this)
             payable(middleReceiver),
-            amount,
+            newInputAmount, // 使用从 _handlePermit2SignatureModeWithCommission 获取的新 inputAmount
             minReturn,
             pools
         );

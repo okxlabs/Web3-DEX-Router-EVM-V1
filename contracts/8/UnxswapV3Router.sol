@@ -63,6 +63,7 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 mstore(0x40, m)
                 revert(0, len)
             }
+            // _makeSwap组callback的data的时候，可以加上transfer_mode
             function _makeSwap(_receiver, _payer, _refundTo, _pool, _amount)
                 -> _returnAmount
             {
@@ -390,6 +391,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
             }
 
             let payer := calldataload(132) // 4+32+32+32+32 = 132
+            // 需要读取transfer_mode，然后根据transfer_mode来决定转账方式
+            // 类似于_transferTokenWithMode
             mstore(emptyPtr, _SELECTORS)
             switch eq(payer, address())
             case 1 {

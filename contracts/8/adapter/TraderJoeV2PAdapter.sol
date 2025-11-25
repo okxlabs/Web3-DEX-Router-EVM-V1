@@ -5,9 +5,7 @@ pragma abicoder v2;
 import "../interfaces/IAdapter.sol";
 import "../interfaces/ITraderJoeV2P.sol";
 
-/// @title TraderJoe (V2.1 & V2.2) Adapter
-/// @notice Unified adapter for TraderJoe V2.1 and V2.2 pools
-/// @dev Both versions use identical swap interface, can share the same adapter
+/// @title TraderJoeV2PAdapter for V2.1 & V2.2
 contract TraderJoeV2PAdapter is IAdapter {
     
     function _traderJoeV2PSwap(

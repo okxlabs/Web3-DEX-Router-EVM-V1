@@ -3,11 +3,14 @@ pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "../interfaces/IAdapter.sol";
-import "../interfaces/ITraderJoeV2P1.sol";
+import "../interfaces/ITraderJoeV2P.sol";
 
-contract TraderJoeV2P1Adapter is IAdapter {
+/// @title TraderJoe (V2.1 & V2.2) Adapter
+/// @notice Unified adapter for TraderJoe V2.1 and V2.2 pools
+/// @dev Both versions use identical swap interface, can share the same adapter
+contract TraderJoeV2PAdapter is IAdapter {
     
-    function _traderJoeV2P1Swap(
+    function _traderJoeV2PSwap(
         address to,
         address pool,
         bytes memory moreInfo
@@ -23,7 +26,7 @@ contract TraderJoeV2P1Adapter is IAdapter {
         address pool,
         bytes memory moreInfo
     ) external override {
-        _traderJoeV2P1Swap(to, pool, moreInfo);
+        _traderJoeV2PSwap(to, pool, moreInfo);
     }
 
     // fromToken == tokenY
@@ -32,6 +35,7 @@ contract TraderJoeV2P1Adapter is IAdapter {
         address pool,
         bytes memory moreInfo
     ) external override {
-        _traderJoeV2P1Swap(to, pool, moreInfo);
+        _traderJoeV2PSwap(to, pool, moreInfo);
     }
 }
+

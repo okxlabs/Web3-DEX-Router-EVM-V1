@@ -6,21 +6,32 @@ import "../interfaces/IAdapter.sol";
 import "../interfaces/ITraderJoeV2P2.sol";
 
 contract TraderJoeV2P2Adapter is IAdapter {
+    
+    function _traderJoeV2P2Swap(
+        address to,
+        address pool,
+        bytes memory moreInfo
+    ) internal {
+        (address tokenIn) = abi.decode(moreInfo, (address));
+        address tokenX = address(ILBPair(pool).getTokenX());  
+        ILBPair(pool).swap(tokenIn == tokenX, to);
+    }
+    
     // fromToken == tokenX
     function sellBase(
         address to,
         address pool,
-        bytes memory 
+        bytes memory moreInfo
     ) external override {
-        ILBPair(pool).swap(false, to);
+        _traderJoeV2P2Swap(to, pool, moreInfo);
     }
 
     // fromToken == tokenY
     function sellQuote(
         address to,
         address pool,
-        bytes memory 
+        bytes memory moreInfo
     ) external override {
-        ILBPair(pool).swap(true, to);
+        _traderJoeV2P2Swap(to, pool, moreInfo);
     }
 }

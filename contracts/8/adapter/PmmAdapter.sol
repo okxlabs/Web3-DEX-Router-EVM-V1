@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -16,7 +15,9 @@ interface IPMMProtocol {
         uint256 makerAmount; // 0xa0
         uint256 takerAmount; // 0xc0
         bool usePermit2; // 0xe0;
-        bytes permit2Signature; // 0x100
+        bytes permit2Signature; // 0xf0;
+        bytes32 permit2Witness;
+        string permit2WitnessType;
     }
     function fillOrderRFQTo(
         OrderRFQ memory order,
@@ -24,6 +25,8 @@ interface IPMMProtocol {
         uint256 flagsAndAmount,
         address target
     ) external returns (uint256, uint256, bytes32);
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
 contract PMMAdapter {
@@ -260,6 +263,13 @@ contract PMMAdapter {
             revert(
                 string(
                     abi.encodePacked("RFQ_SettlementAmountTooSmall ", rfqId.toString())
+                )
+            );
+        } else if (selector == 0x589584f5) {
+            // RFQ_OrderAlreadyCancelledOrUsed(uint256 rfqId);
+            revert(
+                string(
+                    abi.encodePacked("RFQ_OrderAlreadyCancelledOrUsed ", rfqId.toString())
                 )
             );
         } else {

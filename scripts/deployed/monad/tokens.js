@@ -1,0 +1,8 @@
+module.exports = {
+    wmon: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A", // Wrapped MON
+    usdc: "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", // USDC
+    ausd: "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a", // AUSD
+    weth: "0xEE8c0E9f1BFFb4Eb878d8f15f368A02a35481242", // Wrapped ETH
+    wsol: "0xea17E5a9efEBf1477dB45082d67010E2245217f1", // Wrapped SOL
+}
+

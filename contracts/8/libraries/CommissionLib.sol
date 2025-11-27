@@ -611,10 +611,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             return 0;
         }
         uint256 balanceAfter = _getBalanceOf(toToken, address(this));
-        if (balanceAfter == balanceBefore) {
-            return 0;
-        }
-
         assembly ("memory-safe") {
             // https://github.com/Vectorized/solady/blob/701406e8126cfed931645727b274df303fbcd94d/src/utils/FixedPointMathLib.sol#L595
             function _mulDiv(x, y, d) -> z {
@@ -818,7 +814,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
 
             // require(balanceAfter >= balanceBefore, "invalid balance after");
-            if gt(balanceBefore, balanceAfter) {
+            if or(gt(balanceBefore, balanceAfter), eq(balanceAfter, balanceBefore)) {
                 _revertWithReason(
                     0x00000015696e76616c69642062616c616e636520616674657200000000000000,
                     0x59

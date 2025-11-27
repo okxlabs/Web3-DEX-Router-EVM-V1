@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./TrimTestBase.t.sol";
+import "../common/TrimAndCommissionTestBase.t.sol";
 
-contract CommissionAndTrimRoundingTest is TrimTestBase {
+contract CommissionAndTrimRoundingTest is TrimAndCommissionTestBase {
     // Test toToken commission with commission rate 1 / 10^9, rounding result = 1, and the amount in event is 1.
     function test_normalAmountOut_toTokenCommissionRounding_result_gt_0() tokenLogAndCheck(WETH, USDT, 3 * 10 ** 17, false, false, false, true, false) public {
         bytes memory swapData = _generateWETH2USDTSmartSwapData(3 * 10 ** 17); // 3 * 10^17 WETH -> 1,294,111,181 USDT, rounding result with 1/10^9 is 1.
+        uint256[] memory commissionRates_ = new uint256[](1);
+        commissionRates_[0] = 1;
+        address[] memory referrerAddresses_ = new address[](1);
+        referrerAddresses_[0] = referrerAddresses[0];
         bytes memory commissionData = _buildCommissionInfoUnified(
             false, // isFromTokenCommission
             true, // isToTokenCommission
             USDT, // token
-            1, // commissionRate 1/10^9, denominator = 10 ** 9
-            referrerAddress, // refererAddress
-            0, // commissionRate2 0%
-            address(0), // refererAddress2
-            false // isToBCommission
+            false, // isToBCommission
+            commissionRates_,
+            referrerAddresses_
         );
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -27,15 +29,17 @@ contract CommissionAndTrimRoundingTest is TrimTestBase {
     // Test toToken commission with commission rate 1 / 10^9, the rounding result = 0, and the amount in event is 0
     function test_normalAmountOut_toTokenCommissionRounding_result_eq_0() tokenLogAndCheck(WETH, USDT, 2 * 10 ** 17, false, false, false, false, false) public {
         bytes memory swapData = _generateWETH2USDTSmartSwapData(2 * 10 ** 17); // 2 * 10^17 WETH -> 862,740,908 USDT, rounding result with 1/10^9 is 0.
+        uint256[] memory commissionRates_ = new uint256[](1);
+        commissionRates_[0] = 1;
+        address[] memory referrerAddresses_ = new address[](1);
+        referrerAddresses_[0] = referrerAddresses[0];
         bytes memory commissionData = _buildCommissionInfoUnified(
             false, // isFromTokenCommission
             true, // isToTokenCommission
             USDT, // token
-            1, // commissionRate 1/10^9, denominator = 10 ** 9
-            referrerAddress, // refererAddress
-            0, // commissionRate2 0%
-            address(0), // refererAddress2
-            false // isToBCommission
+            false, // isToBCommission
+            commissionRates_,
+            referrerAddresses_
         );
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -47,15 +51,17 @@ contract CommissionAndTrimRoundingTest is TrimTestBase {
     // Test toToken commission with commission rate 1%, rounding result = 1, and the amount in event is 1.
     function test_smallAmountOut_toTokenCommissionRounding_result_gt_0() tokenLogAndCheck(WETH, USDT, 3 * 10 ** 10, false, false, false, true, false) public {
         bytes memory swapData = _generateWETH2USDTSmartSwapData(3 * 10 ** 10); // 3 * 10^10 WETH -> 129 USDT, rounding result with 1% is 1.
+        uint256[] memory commissionRates_ = new uint256[](1);
+        commissionRates_[0] = 10000000;
+        address[] memory referrerAddresses_ = new address[](1);
+        referrerAddresses_[0] = referrerAddresses[0];
         bytes memory commissionData = _buildCommissionInfoUnified(
             false, // isFromTokenCommission
             true, // isToTokenCommission
             USDT, // token
-            10000000, // commissionRate 1%, denominator = 10 ** 9
-            referrerAddress, // refererAddress
-            0, // commissionRate2 0%
-            address(0), // refererAddress2
-            false // isToBCommission
+            false, // isToBCommission
+            commissionRates_,
+            referrerAddresses_
         );
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -67,15 +73,17 @@ contract CommissionAndTrimRoundingTest is TrimTestBase {
     // Test toToken commission with commission rate 1%, rounding result = 0, and the amount in event is 0.
     function test_smallAmountOut_toTokenCommissionRounding_result_eq_0() tokenLogAndCheck(WETH, USDT, 2 * 10 ** 10, false, false, false, false, false) public {
         bytes memory swapData = _generateWETH2USDTSmartSwapData(2 * 10 ** 10); // 2 * 10^10 WETH -> 86 USDT, rounding result with 1% is 0.
+        uint256[] memory commissionRates_ = new uint256[](1);
+        commissionRates_[0] = 10000000;
+        address[] memory referrerAddresses_ = new address[](1);
+        referrerAddresses_[0] = referrerAddresses[0];
         bytes memory commissionData = _buildCommissionInfoUnified(
             false, // isFromTokenCommission
             true, // isToTokenCommission
             USDT, // token
-            10000000, // commissionRate 1%, denominator = 10 ** 9
-            referrerAddress, // refererAddress
-            0, // commissionRate2 0%
-            address(0), // refererAddress2
-            false // isToBCommission
+            false, // isToBCommission
+            commissionRates_,
+            referrerAddresses_
         );
         bytes memory data = bytes.concat(swapData, commissionData);
         (bool success, ) = address(dexRouter).call(data);
@@ -92,7 +100,8 @@ contract CommissionAndTrimRoundingTest is TrimTestBase {
             trimAddress, // trimAddress
             10, // expectAmountOut 10, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             0, // chargeRate 0%, all for trim
-            address(0) // chargeAddress
+            address(0), // chargeAddress
+            true // isToBTrim
         );
         bytes memory data = bytes.concat(swapData, trimData);
         (bool success, ) = address(dexRouter).call(data);
@@ -109,7 +118,8 @@ contract CommissionAndTrimRoundingTest is TrimTestBase {
             trimAddress, // trimAddress
             10, // expectAmountOut 10, but usually the trimAmount will be the allowedMaxTrimAmount cause the expectAmountOut is too small
             0, // chargeRate 0%, all for trim
-            address(0) // chargeAddress
+            address(0), // chargeAddress
+            true // isToBTrim
         );
         bytes memory data = bytes.concat(swapData, trimData);
         (bool success, ) = address(dexRouter).call(data);

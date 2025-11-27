@@ -28,7 +28,7 @@ contract DexRouter is
     UniswapTokenInfoHelper,
     DagRouter
 {
-    string public constant version = "v1.0.6-dag";
+    string public constant version = "v1.0.7-multi-commission";
     using UniversalERC20 for IERC20;
 
     //-------------------------------
@@ -83,12 +83,14 @@ contract DexRouter is
                     uint256 _fromTokenAmount = weight == 10_000
                         ? batchAmount
                         : (batchAmount * weight) / 10_000;
-                    _transferInternal(
-                        payer,
-                        path.assetTo[i],
-                        path.fromToken,
-                        _fromTokenAmount
-                    );
+                    if (_fromTokenAmount > 0) {
+                        _transferInternal(
+                            payer,
+                            path.assetTo[i],
+                            path.fromToken,
+                            _fromTokenAmount
+                        );
+                    }
                 }
             }
 
@@ -285,7 +287,7 @@ contract DexRouter is
             pools
         );
     }
-    /// @notice Executes a swap tailored for investment purposes, adjusting swap amounts based on the contract's balance. For smartSwap, if fromToken or toToken is ETH, the address needs to be 0xEeee.
+    /// @notice Executes a swap tailored for investment purposes, adjusting swap amounts based on the contract's balance.
     /// @param baseRequest Struct containing essential swap parameters like source and destination tokens, amounts, and deadline.
     /// @param batchesAmount Array indicating how much of the source token to swap in each batch, facilitating diversified investments.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
@@ -599,9 +601,8 @@ contract DexRouter is
         // validate token info
         (address fromToken, address toToken) = _getUnxswapTokenInfo(msg.value > 0, pools);
         address srcTokenAddr = _bytes32ToAddress(srcToken);
-        srcTokenAddr = srcTokenAddr == address(0) ? _ETH : srcTokenAddr;
         require(
-            srcTokenAddr == fromToken,
+            (srcTokenAddr == fromToken) || (srcTokenAddr == address(0) && fromToken == _ETH),
             "unxswap: token mismatch"
         );
         

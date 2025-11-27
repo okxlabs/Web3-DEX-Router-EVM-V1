@@ -69,7 +69,7 @@ contract AspectaAdapter is IAdapter, Ownable {
                 SafeERC20.safeTransfer(IERC20(WNATIVETOKEN), payerOrigin, refundAmount);
             }
             uint256 toAmount = IAspectaKeyPool(pool).balanceOf(to) - toAmountBefore;
-            emit OrderRecord(true, NATIVE_ADDRESS, pool, totalPriceWithFee, toAmount);
+            emit OrderRecord(true, NATIVE_ADDRESS, pool, fromAmount, toAmount);
         } else {
             address payerOrigin = _getPayerOrigin();
             require(payerOrigin != address(0), "AspectaAdapter: payerOrigin is zero");

@@ -483,7 +483,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             function _sendTokenWithinBalanceAndEmitEvents(token, totalRate, referrerNum, commissionInfo_)
             {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x48))
+                mstore(0x40, add(freePtr, 0x24))
                 mstore(
                     freePtr,
                     0x70a0823100000000000000000000000000000000000000000000000000000000
@@ -534,7 +534,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _emitCommissionFromToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x60))
+                mstore(0x40, add(freePtr, 0x80))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)
@@ -611,6 +611,10 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             return 0;
         }
         uint256 balanceAfter = _getBalanceOf(toToken, address(this));
+        if (balanceAfter == balanceBefore) {
+            return 0;
+        }
+
         assembly ("memory-safe") {
             // https://github.com/Vectorized/solady/blob/701406e8126cfed931645727b274df303fbcd94d/src/utils/FixedPointMathLib.sol#L595
             function _mulDiv(x, y, d) -> z {
@@ -689,7 +693,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _emitCommissionToToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x60))
+                mstore(0x40, add(freePtr, 0x80))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)

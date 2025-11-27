@@ -813,7 +813,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 }
             }
 
-            // require(balanceAfter >= balanceBefore, "invalid balance after");
+            // require(balanceAfter > balanceBefore, "invalid balance after");
             if or(gt(balanceBefore, balanceAfter), eq(balanceAfter, balanceBefore)) {
                 _revertWithReason(
                     0x00000015696e76616c69642062616c616e636520616674657200000000000000,

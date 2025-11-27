@@ -106,10 +106,12 @@ contract DyorPumpRouterV3Adapter is IAdapter {
             );
             amountOut = address(this).balance - amountOut;
             require(amountOut >= tradeInfo.minReturnAmount, "DyorPumpRouterV3Adapter: Min return not reached");
+
+            // Wrap ETH to WETH
+            IWETH(WETH).deposit{value: amountOut}();
             
-            // Wrap ETH to WETH and transfer to 'to' address for next swap step
+            // transfer to 'to' address for next swap step
             if (to != address(this)) {
-                IWETH(WETH).deposit{value: amountOut}();
                 SafeERC20.safeTransfer(IERC20(WETH), to, amountOut);
             }
             

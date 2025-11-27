@@ -582,6 +582,16 @@ module.exports = {
           runs: 200
         },
       }
+    },
+    xlayer_stg: {
+      url: 'https://rpc.xlayer.tech',
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
     }
   },
   paths: {

@@ -35,11 +35,12 @@ contract HashflowV3Adapter is IAdapter {
         );
         IHashflowV3(HASHFLOW_V3_ROUTER).tradeRFQT(Quote);
 
+        if (toToken == ETH_ADDRESS) {
+            IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
+            toToken = WETH_ADDRESS;
+        }
+
         if (to != address(this)) {
-            if (toToken == ETH_ADDRESS) {
-                IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
-                toToken = WETH_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

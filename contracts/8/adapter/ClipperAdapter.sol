@@ -67,10 +67,11 @@ contract ClipperAdapter is IAdapter {
             }
         }
 
+        if (toToken == WETH_ADDRESS) {
+            IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
+        }
+
         if (to != address(this)) {
-            if (toToken == WETH_ADDRESS) {
-                IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

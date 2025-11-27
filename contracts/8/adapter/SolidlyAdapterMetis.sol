@@ -34,14 +34,15 @@ contract SolidlyAdapterOnMetis is IAdapter {
         uint256 receiveQuoteAmount = IPair(pool).getAmountOut(sellBaseAmount, baseToken);
 
         IPair(pool).swap(0, receiveQuoteAmount, to, new bytes(0));
+
+        address quoteToken = IPair(pool).token1();
+        if (quoteToken == ETH) {
+            WETH.deposit{value: address(this).balance}();
+            quoteToken = address(WETH);
+        }
+
         if (to != address(this)) {
-            address quoteToken = IPair(pool).token1();
-            if (quoteToken == ETH) {
-                WETH.deposit{value: address(this).balance}();
-                WETH.transfer(to, WETH.balanceOf(address(this)));
-            } else {
-                SafeERC20.safeTransfer(IERC20(quoteToken), to, IERC20(quoteToken).balanceOf(address(this)));
-            }
+            SafeERC20.safeTransfer(IERC20(quoteToken), to, IERC20(quoteToken).balanceOf(address(this)));
         }
     }
 
@@ -71,14 +72,15 @@ contract SolidlyAdapterOnMetis is IAdapter {
         uint256 receiveBaseAmount = IPair(pool).getAmountOut(sellQuoteAmount, quoteToken);
 
         IPair(pool).swap(receiveBaseAmount, 0, address(this), new bytes(0));
+
+        address baseToken = IPair(pool).token0();
+        if (baseToken == ETH) {
+            WETH.deposit{value: address(this).balance}();
+            baseToken = address(WETH);
+        }
+        
         if (to != address(this)) {
-            address baseToken = IPair(pool).token0();
-            if (baseToken == ETH) {
-                WETH.deposit{value: address(this).balance}();
-                WETH.transfer(to, WETH.balanceOf(address(this)));
-            } else {
-                SafeERC20.safeTransfer(IERC20(baseToken), to, IERC20(baseToken).balanceOf(address(this)));
-            }
+            SafeERC20.safeTransfer(IERC20(baseToken), to, IERC20(baseToken).balanceOf(address(this)));
         }
     }
     receive() external payable {}

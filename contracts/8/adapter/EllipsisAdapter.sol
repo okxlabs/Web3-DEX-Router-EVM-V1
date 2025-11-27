@@ -66,12 +66,14 @@ contract EllipsisAdapter is IAdapter {
             pool,
             0
         );
+
+        if (toToken == ETH_ADDRESS) {
+            uint256 returnAmount = address(this).balance;
+            IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
+            toToken = WETH_ADDRESS;
+        }
+
         if (to != address(this)) {
-            if (toToken == ETH_ADDRESS) {
-                uint256 returnAmount = address(this).balance;
-                IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
-                toToken = WETH_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

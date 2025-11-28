@@ -219,7 +219,7 @@ module.exports = {
       },
     },
     cro: {
-      url: "https://evm.cronos.org",
+      url: "https://cronos-evm-rpc.publicnode.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {

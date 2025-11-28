@@ -18,11 +18,9 @@ contract CurveCryptoSwapAdapterTest is Test {
     address USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603; //token0
     address CHOG = 0x350035555E10d9AfAF1566AaebfCeD5BA6C27777; //token1
     
-    //https://monadscan.com/tx/0xca2be62fc21e9e14e795d2b503c1c14a49b7b8af96112ae49ecd699dc4d2e940
     function setUp() public {
         vm.createSelectFork(vm.envString("MONAD_RPC_URL"), 38470090);
         adapter = new CurveCryptoSwapAdapter();
-        // adapter = CurveStableNGAdapter(payable(0xEcd7Eef15713997528896Cb5db7ec316Db4C2101));
     }
 
     modifier user(address _user) {

@@ -71,15 +71,7 @@ contract CurveStableSwapAdapterTest is Test {
         dexRouter.smartSwapByOrderId(
             swapInfo.orderId, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
-        // bytes memory data = abi.encodeWithSelector(
-        //     DexRouter.smartSwapByOrderId.selector,
-        //     swapInfo.orderId,
-        //     swapInfo.baseRequest,
-        //     swapInfo.batchesAmount,
-        //     swapInfo.batches,
-        //     swapInfo.extraData
-        // );
-        // console2.logBytes(data);
+
         console2.log("AZND balance after", IERC20(AZND).balanceOf(address(bob)));
         console2.log("AUSD balance after", IERC20(AUSD).balanceOf(address(bob)));
     }

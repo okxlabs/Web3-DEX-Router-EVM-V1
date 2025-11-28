@@ -31,10 +31,6 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       console.log(`Deployer address: ${deployerAddress}`);
       console.log(`Balance: ${balanceInEth} ${network === 'bsc' ? 'BNB' : 'ETH'}`);
 
-      if (parseFloat(balanceInEth) < 0.001) {
-        throw new Error(`Insufficient balance. Need at least 0.01 ${network === 'bsc' ? 'BNB' : 'ETH'} to deploy`);
-      }
-
       // Step 0: Clean
       await hre.run("clean");
 

@@ -6,6 +6,9 @@ require("solidity-coverage");
 require('hardhat-contract-sizer');
 require('hardhat-log-remover');
 require("@openzeppelin/hardhat-upgrades");
+require("@matterlabs/hardhat-zksync-deploy");
+require("@matterlabs/hardhat-zksync-solc");
+require("@matterlabs/hardhat-zksync-verify");
 require('dotenv').config();
 require("./scripts/multichain.js");
 require('@okxweb3/hardhat-explorer-verify');
@@ -35,6 +38,7 @@ const AVAXSCAN_API_KEY = process.env.AVAXSCAN_API_KEY || '';
 const BLASTSCAN_API_KEY = process.env.BLASTSCAN_API_KEY || '';
 const SONIC_API_KEY = process.env.SONIC_API_KEY || '';
 const ZETA_API_KEY = process.env.ZETA_API_KEY || '123';
+const ZKSYNC_ETH_NETWORK = process.env.ZKSYNC_ETH_NETWORK || 'mainnet';
 module.exports = {
   solidity: {
     compilers: [
@@ -57,6 +61,11 @@ module.exports = {
         }
       }
     ]
+  },
+  zksolc: {
+    version: "1.3.1",
+    compilerSource: "binary",
+    settings: {},
   },
   networks: {
     hardhat: {
@@ -355,6 +364,10 @@ module.exports = {
     },
     zksync: {
       url: "https://mainnet.era.zksync.io",
+      ethNetwork: ZKSYNC_ETH_NETWORK,
+      zksync: true,
+      chainId: 324,
+      verifyURL: "https://zksync2-mainnet-explorer.zksync.io/contract_verification",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {

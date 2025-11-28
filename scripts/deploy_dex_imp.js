@@ -6,6 +6,8 @@ async function main() {
 
     DexRouter = await ethers.getContractFactory("DexRouter");
     dexRouter = await DexRouter.deploy();
+    // REMARK: Add Gas limit for Ethereum mainnet (chainId 1)
+    // dexRouter = await DexRouter.deploy({ gasLimit: 8000000 });
     await dexRouter.deployed();
     console.log("dexRouter: " + dexRouter.address);
     // let tx = await dexRouter.initialize();

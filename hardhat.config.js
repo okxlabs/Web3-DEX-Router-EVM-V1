@@ -46,15 +46,15 @@ module.exports = {
             runs: 1
           }
         }
-      },
-      {
-        version: '^0.8.0',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1
-          }
-        }
+      // },
+      // {
+      //   version: '^0.8.0',
+      //   settings: {
+      //     optimizer: {
+      //       enabled: true,
+      //       runs: 1
+      //     }
+      //   }
       }
     ]
   },
@@ -186,7 +186,7 @@ module.exports = {
           enabled: true,
           runs: 200
         },
-      }
+      },
     },
     eth_stg: {
       url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
@@ -241,7 +241,7 @@ module.exports = {
       },
     },
     avax: {
-      url: "https://api.avax.network/ext/bc/C/rpc",
+      url: "https://1rpc.io/avax/c",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -263,7 +263,7 @@ module.exports = {
       },
     },
     polygon: {
-      url: "https://rpc-mainnet.matic.quiknode.pro",
+      url: "https://polygon.lava.build",
       accounts: [`${PRIVATE_KEY}`],
       gasPrice: 250000000000,
       settings: {
@@ -648,7 +648,7 @@ module.exports = {
       avalanche: ETHERSCAN_API_KEY,
       avax: AVAXSCAN_API_KEY,
       blast: ETHERSCAN_API_KEY,
-      blast_ok: BLASTSCAN_API_KEY,
+      blast_ok: ETHERSCAN_API_KEY,
       story: 'empty',
       sonic: ETHERSCAN_API_KEY,
       zeta: ZETA_API_KEY,

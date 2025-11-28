@@ -124,7 +124,7 @@ module.exports = {
       },
     },
     zeta: {
-      url: 'https://zetachain-mainnet.public.blastapi.io',
+      url: 'https://zeta-chain.drpc.org',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -313,7 +313,7 @@ module.exports = {
       },
     },
     op: {
-      url: "https://optimism-mainnet.public.blastapi.io",
+      url: "https://optimism-rpc.publicnode.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {

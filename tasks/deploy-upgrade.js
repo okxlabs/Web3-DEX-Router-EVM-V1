@@ -3,18 +3,32 @@ const path = require('path');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { isZkSyncNetwork, buildZkWallet } = require('../scripts/utils/zksync');
+
+const getDeployedDir = (network) =>
+  network === 'zksync' ? 'zkSyncEra' : network;
 
 task("deploy-upgrade", "Deploys and upgrades the DEX contract")
   .setAction(async (taskArgs, hre) => {
     try {
       const network = hre.network.name;
+      const isZkSync = isZkSyncNetwork(hre, network);
 
       // Check balance first
-      const [deployer] = await hre.ethers.getSigners();
-      const balance = await hre.ethers.provider.getBalance(deployer.address);
+      let deployerAddress;
+      let balance;
+      if (isZkSync) {
+        const wallet = buildZkWallet(hre, network);
+        deployerAddress = wallet.address;
+        balance = await wallet.getBalance();
+      } else {
+        const [deployer] = await hre.ethers.getSigners();
+        deployerAddress = deployer.address;
+        balance = await hre.ethers.provider.getBalance(deployer.address);
+      }
       const balanceInEth = hre.ethers.utils.formatEther(balance);
 
-      console.log(`Deployer address: ${deployer.address}`);
+      console.log(`Deployer address: ${deployerAddress}`);
       console.log(`Balance: ${balanceInEth} ${network === 'bsc' ? 'BNB' : 'ETH'}`);
 
       if (parseFloat(balanceInEth) < 0.001) {
@@ -49,7 +63,8 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 4: Update base.js with new implementation address
       console.log("\nStep 4: Updating implementation address...");
-      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + network + '/base.js');
+      const deployedDir = getDeployedDir(network);
+      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + deployedDir + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
 
       baseContent = baseContent.replace(
@@ -94,13 +109,23 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
   .setAction(async (taskArgs, hre) => {
     try {
       const network = hre.network.name;
+      const isZkSync = isZkSyncNetwork(hre, network);
 
       // Check balance first
-      const [deployer] = await hre.ethers.getSigners();
-      const balance = await hre.ethers.provider.getBalance(deployer.address);
+      let deployerAddress;
+      let balance;
+      if (isZkSync) {
+        const wallet = buildZkWallet(hre, network);
+        deployerAddress = wallet.address;
+        balance = await wallet.getBalance();
+      } else {
+        const [deployer] = await hre.ethers.getSigners();
+        deployerAddress = deployer.address;
+        balance = await hre.ethers.provider.getBalance(deployer.address);
+      }
       const balanceInEth = hre.ethers.utils.formatEther(balance);
 
-      console.log(`Deployer address: ${deployer.address}`);
+      console.log(`Deployer address: ${deployerAddress}`);
       console.log(`Balance: ${balanceInEth} ${network === 'bsc' ? 'BNB' : 'ETH'}`);
 
       if (parseFloat(balanceInEth) < 0.001) {
@@ -135,7 +160,8 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 4: Update base.js with new implementation address
       console.log("\nStep 4: Updating implementation address...");
-      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + network + '/base.js');
+      const deployedDir = getDeployedDir(network);
+      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + deployedDir + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
 
       baseContent = baseContent.replace(

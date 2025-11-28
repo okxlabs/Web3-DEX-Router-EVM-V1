@@ -13,5 +13,5 @@ module.exports = {
     _FF_FACTORY: "",
     // p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
-    newImpl: "0x4f61d47f5942AD214A0fE93DAE2e82f4cB871D81",
+    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
 }

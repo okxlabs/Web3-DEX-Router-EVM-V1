@@ -47,8 +47,12 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       });
       await hre.run("compile");
 
-      // Step 3: Deploy new implementation
-      console.log("\nStep 3: Deploying new implementation...");
+      // Step 3: Flatten the DexRouter contract for verification
+      console.log("\nStep 3: Running forge flatten...");
+      await execPromise(`forge flatten -o contracts/flatten/DexRouter_${network}.sol contracts/8/DexRouter.sol`);
+
+      // Step 4: Deploy new implementation
+      console.log("\nStep 4: Deploying new implementation...");
 
       const deployDexImp = require('../scripts/deploy_dex_imp');
       const newDexRouterAddress = await deployDexImp();
@@ -57,8 +61,8 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
         throw new Error("Could not get newly deployed dexRouter address");
       }
 
-      // Step 4: Update base.js with new implementation address
-      console.log("\nStep 4: Updating implementation address...");
+      // Step 5: Update base.js with new implementation address
+      console.log("\nStep 5: Updating implementation address...");
       const deployedDir = getDeployedDir(network);
       const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + deployedDir + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
@@ -72,26 +76,23 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       console.log(`Updated newImpl address to: ${newDexRouterAddress}`);
 
       if (network === 'zeta') {
-        // step 5: verify contract for zeta
-        console.log("\nStep 5: verifying contract for zeta")
+        // step 6: verify contract for zeta
+        console.log("\nStep 6: verifying contract for zeta")
         await hre.run("run", {
           script: "scripts/verify_zeta.js",
           network: network
         })
       } else {
-        // Step 5: Verify contracts
-        console.log("\nStep 5: Verifying contracts...");
+        // Step 6: Verify contracts
+        console.log("\nStep 6: Verifying contracts...");
         await hre.run("run", {
           script: "scripts/verify_etherscan_oklink.js",
           network: network
         });
       }
 
-
-
-
-      // Step 6: Restore original files
-      console.log("\nStep 6: Restoring original files...");
+      // Step 7: Restore original files
+      console.log("\nStep 7: Restoring original files...");
       await execPromise('git checkout -- contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
 
       console.log("\nDeployment and upgrade process completed successfully!");

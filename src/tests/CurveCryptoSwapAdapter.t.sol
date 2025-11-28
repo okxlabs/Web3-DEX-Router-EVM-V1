@@ -78,4 +78,43 @@ contract CurveCryptoSwapAdapterTest is Test {
         console2.log("CHOG balance after", IERC20(CHOG).balanceOf(address(bob)));
     }
 
+    function test_swapCHOGtoUSDC() public user(bob) {
+        deal(CHOG, bob, 100 * 10 ** 18);
+        IERC20(CHOG).approve(tokenApprove, 10 * 10 ** 18);
+
+        uint256 amount = 10 * 10 ** 18;
+        SwapInfo memory swapInfo;
+        swapInfo.baseRequest.fromToken = uint256(uint160(address(CHOG)));
+        swapInfo.baseRequest.toToken = USDC;
+        swapInfo.baseRequest.fromTokenAmount = amount;
+        swapInfo.baseRequest.minReturnAmount = 0;
+        swapInfo.baseRequest.deadLine = block.timestamp + 1000 hours;
+
+        swapInfo.batchesAmount = new uint[](1);
+        swapInfo.batchesAmount[0] = amount;
+
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches[0][0].mixAdapters = new address[](1);
+        swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
+        swapInfo.batches[0][0].assetTo = new address[](1);
+        // direct interaction with pool
+        swapInfo.batches[0][0].assetTo[0] = address(pool);
+        swapInfo.batches[0][0].rawData = new uint[](1);
+        swapInfo.batches[0][0].rawData[0] = uint256(bytes32(abi.encodePacked(uint8(0x80), uint88(10000), address(pool))));
+        swapInfo.batches[0][0].extraData = new bytes[](1);//extradata is not 0x
+        swapInfo.batches[0][0].extraData[0] = abi.encode(CHOG, USDC, uint256(1), uint256(0));
+        swapInfo.batches[0][0].fromToken = uint256(uint160(address(CHOG)));
+
+        swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
+        
+        console2.log("USDC balance before", IERC20(USDC).balanceOf(address(bob)));
+        console2.log("CHOG balance before", IERC20(CHOG).balanceOf(address(bob)));
+        dexRouter.smartSwapByOrderId(
+            swapInfo.orderId, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
+        );
+
+        console2.log("USDC balance after", IERC20(USDC).balanceOf(address(bob)));
+        console2.log("CHOG balance after", IERC20(CHOG).balanceOf(address(bob)));
+    }
 }

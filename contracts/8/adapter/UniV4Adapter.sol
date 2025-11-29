@@ -108,11 +108,16 @@ contract UniV4Adapter is IAdapter, SafeCallback {
 
         (PoolKey memory poolKey, bool zeroForOne) = getPoolAndSwapDirection(pathKey, pathKey.inputCurrency); 
 
-        (uint128 actualAmountIn, uint128 amountOut) = _swap(poolKey, zeroForOne, -int256(amountIn));
+        uint256 settledAmount = _settle(pathKey.inputCurrency, amountIn);
+        
+        (uint128 actualAmountIn, uint128 amountOut) = _swap(poolKey, zeroForOne, -int256(settledAmount));
         
         require(amountOut > 0, "Amount must be positive");
 
-        _settle(pathKey.inputCurrency, actualAmountIn);
+        int256 inputDelta = poolManager.currencyDelta(address(this), pathKey.inputCurrency);
+        if (inputDelta > 0) {
+            _take(pathKey.inputCurrency, address(this), uint256(inputDelta));
+        }
 
         if (Currency.unwrap(pathKey.outputCurrency) == address(0)) { 
             _take(pathKey.outputCurrency, address(this), amountOut); 
@@ -189,18 +194,20 @@ contract UniV4Adapter is IAdapter, SafeCallback {
     }
 
     /// @notice Pay and settle a currency to the PoolManager
-    function _settle(Currency currency, uint256 amount) internal {
-        if (amount == 0) return;
+    /// @dev For fee-on-transfer tokens, the actual settled amount may be less than the transfer amount
+    /// @return paid The actual amount settled (after transfer fees if any)
+    function _settle(Currency currency, uint256 amount) internal returns (uint256 paid) {
+        if (amount == 0) return 0;
         poolManager.sync(currency);
         if (currency.isAddressZero()) {
-            poolManager.settle{value: amount}();
+            paid = poolManager.settle{value: amount}();
         } else {
             SafeERC20.safeTransfer(
                 IERC20(Currency.unwrap(currency)),
                 address(poolManager),
                 amount
             );
-            poolManager.settle();
+            paid = poolManager.settle();
         }
     }
 

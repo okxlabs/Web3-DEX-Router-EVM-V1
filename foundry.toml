@@ -18,6 +18,11 @@ remappings = [
 evm_version = "cancun"
 fs_permissions = [{access = "read-write", path = "./"}]
 
+# Sourcify verification settings for Monad
+metadata = true
+metadata_hash = "none"
+use_literal_content = true
+
 [rpc_endpoints]
 arb = "https://arb1.lava.build"
 avax = "https://avax-mainnet.g.alchemy.com/v2/Vi9EBxKbLyTvKM3I2LXvsOV8f6fWsbrj"
@@ -39,6 +44,7 @@ scroll = "https://rpc.scroll.io"
 xlayer = "https://xlayer.drpc.org"
 sonic = "https://sonic-rpc.publicnode.com"
 unichain = "https://unichain.drpc.org"
+monad = "https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO"
 
 [fmt]
 line_length = 120

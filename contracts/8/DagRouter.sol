@@ -44,7 +44,13 @@ abstract contract DagRouter is CommonLib, TransferLib {
         }
 
         // 2. execute dag swap
-        _exeDagSwap(swapParams.payer, swapParams.receiver, swapParams.refundTo, baseRequest.fromTokenAmount, IERC20(baseRequest.toToken).isETH(), paths);
+        // For BY_INVEST mode, the fromTokenAmount still needs to be fromToken balance to keep consistent with smartSwapByInvestWithRefund.
+        // In later version, the scaling of fromTokenAmount will be completed by the earn contract, then we will remove this logic.
+        uint256 firstNodeBalance = _baseRequest.fromTokenAmount;
+        if (paths[0].fromToken & _TRANSFER_MODE_MASK == _MODE_BY_INVEST) {
+            firstNodeBalance = IERC20(firstNodeToken).balanceOf(address(this));
+        }
+        _exeDagSwap(payer, receiver, refundTo, firstNodeBalance, IERC20(_baseRequest.toToken).isETH(), paths);
 
         // 3. transfer tokens to receiver
         _transferTokenToUser(baseRequest.toToken, swapParams.receiver);
@@ -150,13 +156,14 @@ abstract contract DagRouter is CommonLib, TransferLib {
                     _fromTokenAmount = (nodeBalance * weight) / 10_000;
                     accAmount += _fromTokenAmount;
                 }
-
-                _transferInternal(
-                    payer,
-                    path.assetTo[i],
-                    path.fromToken,
-                    _fromTokenAmount
-                );
+                if (_fromTokenAmount > 0) {
+                    _transferInternal(
+                        payer,
+                        path.assetTo[i],
+                        path.fromToken,
+                        _fromTokenAmount
+                    );
+                }
             }
 
             // 3. execute single swap

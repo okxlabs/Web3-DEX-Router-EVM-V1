@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {PMMAdapter, IPMMProtocol} from "@dex/adapter/PmmAdapter.sol";
 import "forge-std/Test.sol";
 import {IWETH} from "@dex/interfaces/IWETH.sol";
-import {IPermit2} from "@dex/interfaces/IPermit2.sol";
+import {IPermit2} from "@dex/interfaces/IPermit2ForRFQ.sol";
 import {TestHelper} from "./helpers/RFQTestHelper.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {OrderRFQLib} from "./helpers/RFQTestHelper.sol";

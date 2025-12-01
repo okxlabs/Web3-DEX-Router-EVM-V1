@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/IPermit2ForRFQ.sol";
 
 library ECDSA {
     function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 res) {

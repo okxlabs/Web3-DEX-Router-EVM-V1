@@ -114,9 +114,10 @@ contract UniV4Adapter is IAdapter, SafeCallback {
         
         require(amountOut > 0, "Amount must be positive");
 
+        // Refund unused input tokens to payerOrigin
         int256 inputDelta = poolManager.currencyDelta(address(this), pathKey.inputCurrency);
         if (inputDelta > 0) {
-            _take(pathKey.inputCurrency, address(this), uint256(inputDelta));
+            _take(pathKey.inputCurrency, _payerOrigin, uint256(inputDelta));
         }
 
         if (Currency.unwrap(pathKey.outputCurrency) == address(0)) { 
@@ -125,31 +126,6 @@ contract UniV4Adapter is IAdapter, SafeCallback {
             SafeERC20.safeTransfer(IERC20(WETH), to, amountOut); 
         } else { 
             _take(pathKey.outputCurrency, to, amountOut); 
-        }
-
-        // Refund excess tokens to payerOrigin
-        if (_payerOrigin != address(0)) {
-            address fromToken = Currency.unwrap(pathKey.inputCurrency);
-            uint256 refundAmount;
-            
-            if (fromToken == address(0)) {
-                // Handle ETH: wrap to WETH first
-                refundAmount = address(this).balance;
-                if (refundAmount > 0) {
-                    IWETH(WETH).deposit{value: refundAmount}();
-                    fromToken = WETH; // Update fromToken to WETH for transfer
-                }
-            } else {
-                // Handle ERC20 tokens
-                refundAmount = IERC20(fromToken).balanceOf(address(this));
-            }
-            
-            if (refundAmount > 0) {
-                (bool s,) = address(fromToken).call(
-                    abi.encodeWithSignature("transfer(address,uint256)", _payerOrigin, refundAmount)
-                );
-                require(s, "Transfer failed");
-            }
         }
 
         return "";

@@ -15,6 +15,10 @@ abi/
 .DS_Store
 coverage.json
 coverage/
+.npm-cache/
+.npm-home
+cache-zk
+artifacts-zk
 
 .openzeppelin/unknown-31337.json
 test_sor/.openzeppelin/unknown-31337.json

@@ -10,5 +10,5 @@ module.exports = {
     commisson: "0xFF317b4E3041c1838BCfE189F0118aF8A5B5480F",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
 
-    newImpl: "0x1e3143b9cB44170098092e53bfbCE76E1Ce53E00",
+    newImpl: "0x23E2f2FA1967FAffde2e05fDecbb3fa787A5D3E5",
 }

@@ -37,3 +37,7 @@ requirement
 .cursor
 out/
 
+.npm-cache
+.npm-home
+artifacts-zk
+cache-zk

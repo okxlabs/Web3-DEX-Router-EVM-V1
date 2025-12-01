@@ -115,7 +115,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
                 SafeERC20.safeTransfer(IERC20(WETH), to, amountOut);
             }
             
-            emit OrderRecord(false, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn, amountOut);
+            emit OrderRecord(false, tradeInfo.fundAddress, tradeInfo.tokenAddress, tradeInfo.sellMemeAmount, amountOut);
         }
     }
 

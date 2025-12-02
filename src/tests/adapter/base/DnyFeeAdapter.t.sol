@@ -26,10 +26,11 @@ contract DnyFeeAdapterTest is AbstractAdapterTest {
         pure
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](3);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](4);
         cases[0] = getRocketForkUniV2TestCases();
         cases[1] = getLFGTestCases();
-        cases[2] = getOKIETestCases();
+        cases[2] = getOKIETestCases(); // Skip OKIE tests
+        cases[3] = getMonadTestCases();
 
         return cases;
     }
@@ -178,5 +179,39 @@ contract DnyFeeAdapterTest is AbstractAdapterTest {
         });
 
         return cases;
-    } 
+    }
+
+    function getMonadTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        // Token addresses on Monad network
+        address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // Wrapped MON
+        address USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603; // USDC
+
+        // Pool address
+        address WMON_USDC_POOL = 0x3fE12728ea1B89E4Bac6e59A9130b61A27D032F8;
+
+        // Test: WMON to USDC
+        // Note: Monad has higher cold state access costs (8,100 gas vs 2,100 on Ethereum)
+        cases[0] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 0, // Set to specific block when testing
+            fromToken: WMON,
+            toToken: USDC,
+            pool: WMON_USDC_POOL,
+            amount: 1 * 10 ** 18, // 1 WMON
+            expectedOutput: 0, // dynamic
+            sellBase: true, // WMON is token0 (base)
+            expectRevert: false,
+            description: "WMON to USDC on Monad",
+            moreInfo: abi.encode(uint256(30)), // 3/1000 fee (adjust based on actual pool fee)
+            fromTokenPreTo: WMON_USDC_POOL // Transfer tokens to pool first
+        });
+
+        return cases;
+    }
 }

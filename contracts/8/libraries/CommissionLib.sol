@@ -545,7 +545,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _getBalanceOfToken(token) -> tokenBalance {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x48))
+                mstore(0x40, add(freePtr, 0x24))
                 mstore(
                     freePtr,
                     0x70a0823100000000000000000000000000000000000000000000000000000000
@@ -570,7 +570,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _emitCommissionFromToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x60))
+                mstore(0x40, add(freePtr, 0x80))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)
@@ -838,7 +838,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _emitCommissionToToken(token, amount, referrer, rate) {
                 let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x60))
+                mstore(0x40, add(freePtr, 0x80))
                 mstore(freePtr, token)
                 mstore(add(freePtr, 0x20), amount)
                 mstore(add(freePtr, 0x40), referrer)
@@ -962,8 +962,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 }
             }
 
-            // require(balanceAfter >= balanceBefore, "invalid balance after");
-            if gt(balanceBefore, balanceAfter) {
+            // require(balanceAfter > balanceBefore, "invalid balance after");
+            if or(gt(balanceBefore, balanceAfter), eq(balanceAfter, balanceBefore)) {
                 _revertWithReason(
                     0x00000015696e76616c69642062616c616e636520616674657200000000000000,
                     0x59

@@ -19,7 +19,7 @@ contract Permit2Helper is Test {
     bytes32 public constant Permit2EthDomainSeperator = 0x866a5aba21966af95d6c7ab78eb2b2fc913915c28be3b9aa07cc04ff903e3f28; // eth address: 0x000000000022D473030F116dDEE9F6B43aC78BA3
 
 
-    /*
+    /*  *NOTE* permit2Info encoded layout for permit2TransferFrom method
      *  For signature length 65, the encoded permit2Info should be like as follows, flag == bytes5(keccak256("Permit2Info")) + 0x65
      *  ┌────────────────┬────────────────┬────────────────┬─────────────┬──────────┬─────────────┬──────────┬─────────┬──────────────┬───────────┬───────────────┐
      *  │  signature_s   │  signature_r   │     amount     │ permit2_flag│ padding  │ signature_v │ deadline │ nonce   │ permit2_flag │  padding  │ owner_address │
@@ -35,6 +35,24 @@ contract Permit2Helper is Test {
      *  │                │                │                │0x92527fff1a64│                       │          │         │0x92527fff1a64│           │               │
      *  └────────────────┴────────────────┴────────────────┴─────────────┴────────────────────────┴──────────┴─────────┴──────────────┴───────────┴───────────────┘
      *   ←── 32 bytes ──→ ←── 32 bytes ──→ ←── 32 bytes ──→ ←─────────────────────── 32 bytes ────────────────────────→ ←─────────────── 32 bytes ───────────────→
+     *
+     *
+     *  *NOTE* permit2Info encoded layout for permit2TransferFrom method with array
+     *  For signature length 65, the encoded permit2Info should be like as follows, flag == bytes5(keccak256("Permit2Info")) + 0x65
+     *  ┌────────────────┬────────────────┬────────────────┬─────────────────┬────────────────┬─────────────┬──────────┬─────────────┬──────────┬─────────┬──────────────┬─────────────┬────────────┬───────────────┐
+     *  │  amountN       │  amount2       │    amount1     │   signature_s   │   signature_r  │ permit2_flag│ padding  │ signature_v │ deadline │ nonce   │ permit2_flag │amount_length│ padding    │ owner_address │
+     *  │  32 bytes      │  32 bytes      │    32 bytes    │   32 bytes      │   32 bytes     │ 6 bytes     │ 13 bytes │ 1 byte      │ 6 bytes  │ 6 bytes │ 6 bytes      │ 1 bytes     │ 5 bytes    │ 20 bytes      │
+     *  │                │                │                │                 │                │0x92527fff1a65│         │             │          │         │0x92527fff1a65│             │            │               │
+     *  └────────────────┴────────────────┴────────────────┴─────────────────┴────────────────┴─────────────┴──────────┴─────────────┴──────────┴─────────┴──────────────┴─────────────┴────────────┴───────────────┘
+     *   ←─── 32 bytes ──→ ←── 32 bytes ─→ ←── 32 bytes ──→ ←─── 32 bytes ──→ ←── 32 bytes ──→ ←─────────────────────── 32 bytes ────────────────────────→ ←─────────────────────── 32 bytes ──────────────────────→
+     *
+     *  For signature length 64, the encoded permit2Info should be like as follows, flag == bytes5(keccak256("Permit2Info")) + 0x64
+     *  ┌────────────────┬────────────────┬────────────────┬─────────────────┬────────────────┬─────────────┬────────────────────────┬──────────┬─────────┬──────────────┬─────────────┬────────────┬───────────────┐
+     *  │  amountN       │  amount2       │    amount1     │   signature_s   │   signature_r  │ permit2_flag│        padding         │ deadline │ nonce   │ permit2_flag │amount_length│ padding    │ owner_address │
+     *  │  32 bytes      │  32 bytes      │    32 bytes    │   32 bytes      │   32 bytes     │ 6 bytes     │        14 bytes        │ 6 bytes  │ 6 bytes │ 6 bytes      │ 1 bytes     │ 5 bytes    │ 20 bytes      │
+     *  │                │                │                │                 │                │0x92527fff1a64│                       │          │         │0x92527fff1a64│             │            │               │
+     *  └────────────────┴────────────────┴────────────────┴─────────────────┴────────────────┴─────────────┴────────────────────────┴──────────┴─────────┴──────────────┴─────────────┴────────────┴───────────────┘
+     *   ←── 32 bytes ──→ ←── 32 bytes ──→ ←── 32 bytes ──→ ←── 32 bytes ───→ ←── 32 bytes ──→ ←──────────────────────── 32 bytes ───────────────────────→ ←───────────────────── 32 bytes ────────────────────────→
     */
 
     struct Permit2Info {

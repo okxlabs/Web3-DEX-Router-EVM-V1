@@ -53,29 +53,45 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         }
 
         // For _MODE_PERMIT2_SIGNATURE mode, token needs to be claimed to address `to` by calling permitTransferFrom. And the address `to` needs to be set according to the situation.
+        // For following 2 situations, the address `to` should be set to address(this):
+        // 1. onlyOneAssetTo=address(0): means the swap method needs the swapToken to be claimed to address(this).
+        // 2. isFromTokenCommission=true && toBCommission=2: means the fromToken needs to be claimed to address(this) and then transfer commission to referrers.
+        // And when isFromTokenCommission=true && toBCommission=1, the commission needs to be transferred to referrers immediately.
         address to;
-        if (onlyOneAssetTo == address(0) || commissionInfo.isFromTokenCommission) {
+        if (onlyOneAssetTo == address(0) || (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == 2)) {
             to = address(this);
         } else {
             to = onlyOneAssetTo;
         }
-        IPermit2.SignatureTransferDetails memory transferDetails = IPermit2.SignatureTransferDetails({
-            to: to,
-            requestedAmount: inputAmount + fromTokenCommissionAmount
-        });
-        permit2Info.permit.permitted.token = token;
-        IPermit2(_PERMIT2).permitTransferFrom(permit2Info.permit, transferDetails, permit2Info.owner, permit2Info.signature);
 
-        // If the to address is address(this), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
-        // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
-        if (to == address(this)) {
-            uint256 balance = IERC20(token).balanceOf(address(this));
-            inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
-            fromTokenCommissionAmount = balance - inputAmount;
-            return (address(this), inputAmount, fromTokenCommissionAmount);
+        // Execute permitTransferFrom
+        uint256 permitLength;
+        if (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == 1) {
+            permitLength = commissionInfo.commissionLength + 1;
         } else {
-            return (address(0), inputAmount, 0);
+            permitLength = 1;
         }
+
+        IPermit2.PermitBatchTransferFrom memory permitBatchTransferFrom = IPermit2.PermitBatchTransferFrom({
+            permitted: new IPermit2.TokenPermissions[](permitLength),
+            nonce: permit2Info.nonce,
+            deadline: permit2Info.deadline
+        });
+        IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
+        // TODO 构造 permitBatchTransferFrom 和 transferDetails 参数，最好是改造 CommissionInfo 的结构，再通过 loop 构造 permitBatchTransferFrom 和 transferDetails 参数。
+
+        // IPermit2(_PERMIT2).permitTransferFrom(permitBatchTransferFrom, transferDetails, permit2Info.owner, permit2Info.signature);
+
+        // // If the to address is address(this), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
+        // // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
+        // if (to == address(this)) {
+        //     uint256 balance = IERC20(token).balanceOf(address(this));
+        //     inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
+        //     fromTokenCommissionAmount = balance - inputAmount;
+        //     return (address(this), inputAmount, fromTokenCommissionAmount);
+        // } else {
+        //     return (address(0), inputAmount, 0);
+        // }
     }
 
     /// @notice Transfers tokens internally within the contract.

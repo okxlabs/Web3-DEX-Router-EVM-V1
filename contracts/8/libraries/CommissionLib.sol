@@ -6,100 +6,6 @@ import "../interfaces/AbstractCommissionLib.sol";
 /// @title Base contract with common permit handling logics
 
 abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
-    uint256 internal constant _COMMISSION_RATE_MASK =
-        0x000000000000ffffffffffff0000000000000000000000000000000000000000;
-    uint256 internal constant _COMMISSION_FLAG_MASK =
-        0xffffffffffff0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant FROM_TOKEN_COMMISSION =
-        0x3ca20afc2aaa0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TO_TOKEN_COMMISSION =
-        0x3ca20afc2bbb0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant FROM_TOKEN_COMMISSION_DUAL =
-        0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TO_TOKEN_COMMISSION_DUAL =
-        0x22220afc2bbb0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant FROM_TOKEN_COMMISSION_MULTIPLE =
-        0x88880afc2aaa0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TO_TOKEN_COMMISSION_MULTIPLE =
-        0x88880afc2bbb0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _COMMISSION_LENGTH_MASK =
-        0x00ff000000000000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _TO_B_COMMISSION_MASK =
-        0x8000000000000000000000000000000000000000000000000000000000000000;
-
-    uint256 internal constant _TRIM_FLAG_MASK =
-        0xffffffffffff0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK =
-        0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
-    uint256 internal constant _TRIM_RATE_MASK =
-        0x000000000000ffffffffffff0000000000000000000000000000000000000000;
-    uint256 internal constant _TO_B_TRIM_MASK =
-        0x0000000000008000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TRIM_FLAG =
-        0x7777777711110000000000000000000000000000000000000000000000000000;
-    uint256 internal constant TRIM_DUAL_FLAG =
-        0x7777777722220000000000000000000000000000000000000000000000000000;
-
-    uint256 internal constant _PERMIT2_INFO_FLAG_MASK =
-        0xffffffffffff0000000000000000000000000000000000000000000000000000;
-    uint256 internal constant _PERMIT2_INFO_NONCE_MASK =
-        0x0000000000000000000000000000000000000000000000000000ffffffffffff;
-    uint256 internal constant _PERMIT2_INFO_DEADLINE_MASK =
-        0x0000000000000000000000000000000000000000ffffffffffff000000000000;
-    uint256 internal constant _PERMIT2_INFO_SIGNATURE_V_MASK =
-        0x00000000000000000000000000000000000000ff000000000000000000000000;
-    uint256 internal constant PERMIT2_INFO_SIG65_FLAG =
-        0x92527fff1a650000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x65
-    uint256 internal constant PERMIT2_INFO_SIG64_FLAG =
-        0x92527fff1a640000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x64
-
-    event CommissionAndTrimInfo(
-        uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
-        uint256 toBTrim, // 0 for no trim, 1 for no-toB trim, 2 for toB trim
-        uint256 trimRate,
-        uint256 chargeRate
-    );
-
-    // @notice CommissionFromTokenRecord is emitted in assembly, commentted out for contract size saving
-    // event CommissionFromTokenRecord(
-    //     address fromTokenAddress,
-    //     uint256 commissionAmount,
-    //     address referrerAddress,
-    //     uint256 commissionRate
-    // );
-
-    // @notice CommissionToTokenRecord is emitted in assembly, commentted out for contract size saving
-    // event CommissionToTokenRecord(
-    //     address toTokenAddress,
-    //     uint256 commissionAmount,
-    //     address referrerAddress,
-    //     uint256 commissionRate
-    // );
-
-    // @notice PositiveSlippageTrimRecord is emitted in assembly, commentted out for contract size saving
-    // event PositiveSlippageTrimRecord(
-    //     address toTokenAddress,
-    //     uint256 trimAmount,
-    //     address trimAddress
-    // );
-
-    // @notice PositiveSlippageChargeRecord is emitted in assembly, commentted out for contract size saving
-    // event PositiveSlippageChargeRecord(
-    //     address toTokenAddress,
-    //     uint256 chargeAmount,
-    //     address chargeAddress
-    // );
-
-    // set default value can change when need.
-    uint256 internal constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
-    uint256 internal constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
-    uint256 internal constant commissionRateLimit = 10000000;
-    uint256 internal constant NO_TO_B_MODE = 1; // value for no-toB commission and no-toB trim when related calldata exists
-    uint256 internal constant TO_B_MODE = 2; // value for toB commission and toB trim when related calldata exists
-    uint256 internal constant WAD = 1 ether;
-    uint256 internal constant TRIM_RATE_LIMIT = 100;
-    uint256 internal constant TRIM_DENOMINATOR = 1000;
-
     function _getCommissionAndTrimInfo()
         internal
         override
@@ -433,6 +339,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         }
     }
 
+    /// @notice For ERC20 fromToken non-toB commission with PERMIT2_SIGNATURE mode, the commission token has been transferred to referrers earlier than here.
+    ///         So for this situation, only need to emit event.
     function _doCommissionFromTokenInternal(
         CommissionInfo memory commissionInfo,
         address payer,
@@ -692,7 +600,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     _emitCommissionFromToken(_ETH, amount, referrer, rate)
                 }
             }
-            if and(and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) { // commission token is ERC20 with no toB mode and mode != _MODE_PERMIT2_SIGNATURE
+            if and(and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) { // commission token is ERC20 with no toB mode and transfer mode != _MODE_PERMIT2_SIGNATURE
                 let sendAmount := 0
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
@@ -709,11 +617,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         )
                         sendAmount := add(sendAmount, amount)
                     }
-                    _transferTokenWithMode(token, mode, payer, referrer, amount)
+                    if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
+                        _transferTokenWithMode(token, mode, payer, referrer, amount)
+                    }
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }
-            if or(and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // commission token is ERC20 with toB mode or mode == _MODE_PERMIT2_SIGNATURE
+            if or(and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // commission token is ERC20 with toB mode or transfer mode == _MODE_PERMIT2_SIGNATURE
                 // If mode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed to address(this) first, and then get token balance to reset the fromTokenCommissionAmount.
                 if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
                     _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)

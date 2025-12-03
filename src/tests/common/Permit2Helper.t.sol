@@ -22,16 +22,16 @@ contract Permit2Helper is Test {
     /*
      *  For signature length 65, the encoded permit2Info should be like as follows, flag == bytes5(keccak256("Permit2Info")) + 0x65
      *  ┌────────────────┬────────────────┬────────────────┬─────────────┬──────────┬─────────────┬──────────┬─────────┬──────────────┬───────────┬───────────────┐
-     *  │  signature_s   │  signature_r   │     amount     │ permit2_flag│ padding  │ signature_v │ deadline │ nonce   │ permit2_flag │  padding  │ owner_address │
-     *  │  32 bytes      │  32 bytes      │    32 bytes    │ 6 bytes     │ 13 bytes │ 1 byte      │ 6 bytes  │ 6 bytes │ 6 bytes      │ 6 bytes   │ 20 bytes      │
+     *  │  amount        │  signature_s   │  signature_r   │ permit2_flag│ padding  │ signature_v │ deadline │ nonce   │ permit2_flag │  padding  │ owner_address │
+     *  │  32 bytes      │  32 bytes      │  32 bytes      │ 6 bytes     │ 13 bytes │ 1 byte      │ 6 bytes  │ 6 bytes │ 6 bytes      │ 6 bytes   │ 20 bytes      │
      *  │                │                │                │0x92527fff1a65│         │             │          │         │0x92527fff1a65│           │               │
      *  └────────────────┴────────────────┴────────────────┴─────────────┴──────────┴─────────────┴──────────┴─────────┴──────────────┴───────────┴───────────────┘
      *   ←── 32 bytes ──→ ←── 32 bytes ──→ ←── 32 bytes ──→ ←─────────────────────── 32 bytes ────────────────────────→ ←─────────────── 32 bytes ───────────────→
      *
      *  For signature length 64, the encoded permit2Info should be like as follows, flag == bytes5(keccak256("Permit2Info")) + 0x64
      *  ┌────────────────┬────────────────┬────────────────┬─────────────┬────────────────────────┬──────────┬─────────┬──────────────┬───────────┬───────────────┐
-     *  │  signature_s   │  signature_r   │     amount     │ permit2_flag│        padding         │ deadline │ nonce   │ permit2_flag │  padding  │ owner_address │
-     *  │  32 bytes      │  32 bytes      │    32 bytes    │ 6 bytes     │        14 bytes        │ 6 bytes  │ 6 bytes │ 6 bytes      │ 6 bytes   │ 20 bytes      │
+     *  │  amount        │  signature_s   │  signature_r   │ permit2_flag│        padding         │ deadline │ nonce   │ permit2_flag │  padding  │ owner_address │
+     *  │  32 bytes      │  32 bytes      │  32 bytes      │ 6 bytes     │        14 bytes        │ 6 bytes  │ 6 bytes │ 6 bytes      │ 6 bytes   │ 20 bytes      │
      *  │                │                │                │0x92527fff1a64│                       │          │         │0x92527fff1a64│           │               │
      *  └────────────────┴────────────────┴────────────────┴─────────────┴────────────────────────┴──────────┴─────────┴──────────────┴───────────┴───────────────┘
      *   ←── 32 bytes ──→ ←── 32 bytes ──→ ←── 32 bytes ──→ ←─────────────────────── 32 bytes ────────────────────────→ ←─────────────── 32 bytes ───────────────→
@@ -75,9 +75,9 @@ contract Permit2Helper is Test {
         }
 
         bytes memory permit2Info = abi.encodePacked(
+            bytes32(uint256(maxAmount)),
             bytes32(s),
             bytes32(r),
-            bytes32(uint256(maxAmount)),
             bytes32(
                 (flag & 0xffffffffffff0000000000000000000000000000000000000000000000000000) |
                 (uint256(nonce) & 0x0000000000000000000000000000000000000000000000000000ffffffffffff) |

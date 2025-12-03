@@ -416,9 +416,21 @@ contract DexRouter is
         // TODO add mode to commissionInfo.tokenWithMode
 
         returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver);
+       
+        uint256 fromTokenCommissionAmount;
+        (
+            swapParams.payer,
+            amount,
+            fromTokenCommissionAmount
+        ) = _handlePermit2SignatureModeWithCommission(
+            pools[0],
+            swapParams.payer,
+            amount,
+            commissionInfo,
+            address(0),
+            permit2Info
+        );
 
-        // TODO call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
-        // (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         _doUniswapV3Swap(
             swapParams,
             amount,
@@ -454,33 +466,6 @@ contract DexRouter is
         TrimInfo memory trimInfo,
         Permit2Info memory permit2Info
     ) private {
-        // erc20转账模式
-        // 首先在_uniswapV3Swap里面还是要根据pools[0]来判断flag
-        // _MODE_DIRECT、_MODE_PERMIT2_ALLOWANCE、_MODE_PERMIT2_SIGNATURE、_MODE_LEGACY
-        // 在_doCommissionFromToken方法前面会增加一个_handle方法，用来处理permitTransferFrom
-        // 如果是_MODE_PERMIT2_SIGNATURE，在有CommissionFromToken的情景下，那么在_handle的时候会将用户的token先全部转移到dexrouter，然后在_doCommissionFromToken的时候，只需要处理分佣资金，然后在v3callback中转移到池子
-        // 如果是_MODE_PERMIT2_SIGNATURE，在没有CommissionFromToken的情景下，那么在_handle的时候直接把token转移到v3的池子中
-        // 其他几个模式还是保留一样，_doCommissionFromToken的时候就只处理分佣资金，不需要把所有token转移到dexrouter
-        
-        
-        // 确定 onlyOneAssetTo
-        // 如果有分佣，onlyOneAssetTo = address(0)，会转到 address(this)
-        // 如果没有分佣，onlyOneAssetTo = firstPoolAddress，会转到池子
-        address onlyOneAssetTo = commissionInfo.isFromTokenCommission ? address(0) : firstPoolAddress;
-
-        // 调用 _handlePermit2SignatureModeWithCommission
-        (
-            address newPayer,
-            uint256 newInputAmount,
-            uint256 fromTokenCommissionAmount
-        ) = _handlePermit2SignatureModeWithCommission(
-            pools[0],
-            swapParams.payer,
-            amount,
-            commissionInfo,
-            onlyOneAssetTo,
-            permit2Info
-        );
         
         (
             address middleReceiver,
@@ -488,21 +473,20 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                fromTokenCommissionAmount, // 使用从 _handlePermit2SignatureModeWithCommission 获取的佣金金额
+                amount,
                 trimInfo.hasTrim
             );
 
-        // _uniswapV3Swap(
-        //     swapParams.payer,
-        //     payable(middleReceiver),
-        //     amount,
-        //     minReturn,
-        //     pools
-        // );
+        // In permit2sig mode: regardless of B-side or C-side, with or without commission, swapParams.payer is address(this)
+        // In legacy, permit2allowance, direct modes: 
+        //                  Without commission + C/B-side: swapParams.payer is user address
+        //                  With commission + C-side: swapParams.payer is user address
+        //                  With commission + B-side: swapParams.payer is address(this)
+        // In byinvest mode: swapParams.payer is address(this)
         _uniswapV3Swap(
-            newPayer,   // 如果没有分佣，newpayer就是address(0).如果有分佣，newpayer就是address(this)
+            swapParams.payer,
             payable(middleReceiver),
-            newInputAmount, // 使用从 _handlePermit2SignatureModeWithCommission 获取的新 inputAmount
+            amount,
             minReturn,
             pools
         );

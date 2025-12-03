@@ -63,8 +63,7 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 mstore(0x40, m)
                 revert(0, len)
             }
-            // _makeSwap组callback的data的时候，可以加上transfer_mode
-            function _makeSwap(_receiver, _payer, _refundTo, _pool, _amount)
+            function _makeSwap(_receiver, _payer, _refundTo, _pool, _amount, _transferMode)
                 -> _returnAmount
             {
                 if lt(_INT256_MAX, _amount) {
@@ -87,15 +86,16 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                     mstore(add(paramPtr, 0x40), _amount)
                     mstore(add(paramPtr, 0x60), _MIN_SQRT_RATIO)
                     mstore(add(paramPtr, 0x80), 0xa0)
-                    mstore(add(paramPtr, 0xa0), 64)
+                    mstore(add(paramPtr, 0xa0), 96)
                     mstore(add(paramPtr, 0xc0), _payer)
                     mstore(add(paramPtr, 0xe0), _refundTo)
+                    mstore(add(paramPtr, 0x100), _transferMode)
                     let success := call(
                         gas(),
                         poolAddr,
                         0,
                         freePtr,
-                        0x104,
+                        0x124,
                         0,
                         0
                     )
@@ -112,15 +112,16 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                     mstore(add(paramPtr, 0x40), _amount)
                     mstore(add(paramPtr, 0x60), _MAX_SQRT_RATIO)
                     mstore(add(paramPtr, 0x80), 0xa0)
-                    mstore(add(paramPtr, 0xa0), 64)
+                    mstore(add(paramPtr, 0xa0), 96)
                     mstore(add(paramPtr, 0xc0), _payer)
                     mstore(add(paramPtr, 0xe0), _refundTo)
+                    mstore(add(paramPtr, 0x100), _transferMode)
                     let success := call(
                         gas(),
                         poolAddr,
                         0,
                         freePtr,
-                        0x104,
+                        0x124,
                         0,
                         0
                     )
@@ -240,9 +241,6 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                     revert(0, 4)
                 }
                 
-                // 提取 pools[0] 的 transferMode
-                let firstPool := calldataload(firstPoolStart)
-                transferMode := and(firstPool, _TRANSFER_MODE_MASK)
             }
             let refundTo := payer
             {
@@ -264,7 +262,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                     payer,
                     refundTo,
                     calldataload(i),
-                    amount
+                    amount,
+                    and(calldataload(firstPoolStart), _TRANSFER_MODE_MASK)
                 )
                 payer := address()
             }
@@ -282,7 +281,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                         payer,
                         refundTo,
                         calldataload(lastPoolStart),
-                        amount
+                        amount,
+                        and(calldataload(lastPoolStart), _TRANSFER_MODE_MASK)
                     )
                     _unWrapWeth(receiver, returnAmount)
                 }
@@ -292,7 +292,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                         payer,
                         refundTo,
                         calldataload(lastPoolStart),
-                        amount
+                        amount,
+                        and(calldataload(lastPoolStart), _TRANSFER_MODE_MASK)
                     )
                 }
             }
@@ -348,6 +349,125 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 }
             }
 
+            function _revertWithReason(m, len) {
+                mstore(
+                    0,
+                    0x08c379a000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(
+                    0x20,
+                    0x0000002000000000000000000000000000000000000000000000000000000000
+                )
+                mstore(0x40, m)
+                revert(0, len)
+            }
+
+            function _transferTokenDirect(token, from, to, amount) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x64)) // calldata size == 0x64
+                mstore(
+                    freePtr,
+                    0x23b872dd00000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint256)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), amount)
+                let success := call(
+                    gas(),
+                    token,
+                    0,
+                    freePtr,
+                    0x64,
+                    0,
+                    0x20
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+
+            function _transferTokenPermit2Allowance(token, from, to, amount) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84)) // calldata size == 0x84
+                mstore(
+                    freePtr,
+                    0x36c7851600000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint160,address)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), shr(96, shl(96, amount)))
+                mstore(add(freePtr, 0x64), token)
+                let success := call(
+                    gas(),
+                    _PERMIT2,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+
+            function _claimToken(token, _payer, to, amount) {
+                if gt(amount, 0) {
+                    let freePtr := mload(0x40)
+                    mstore(0x40, add(freePtr, 0x84))
+                    mstore(
+                        freePtr,
+                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                    ) // claimTokens
+                    mstore(add(freePtr, 0x04), token)
+                    mstore(add(freePtr, 0x24), _payer)
+                    mstore(add(freePtr, 0x44), to)
+                    mstore(add(freePtr, 0x64), amount)
+                    let success := call(
+                        gas(),
+                        _APPROVE_PROXY,
+                        0,
+                        freePtr,
+                        0x84,
+                        0,
+                        0
+                    )
+                    if eq(success, 0) {
+                        _revertWithReason(
+                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
+                            0x57
+                        ) // "claim tokens failed"
+                    }
+                }
+            }
+            
+            function _transferTokenWithMode(token, mode, _payer, to, amount) {
+                if gt(amount, 0) {
+                    switch mode
+                    case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
+                        _transferTokenDirect(token, _payer, to, amount)
+                    }
+                    case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
+                        _transferTokenPermit2Allowance(token, _payer, to, amount)
+                    }
+                    case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
+                        _claimToken(token, _payer, to, amount)
+                    }
+                    default {
+                        _revertWithReason(
+                            0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
+                            0x59
+                        ) // "invalid transfer mode"
+                    }
+                }
+            }
+
             let emptyPtr := mload(0x40)
             let resultPtr := add(emptyPtr, 21) // 0x15 = _FF_FACTORY size
 
@@ -395,8 +515,7 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
             }
 
             let payer := calldataload(132) // 4+32+32+32+32 = 132
-            // 需要读取transfer_mode，然后根据transfer_mode来决定转账方式
-            // 类似于_transferTokenWithMode
+            let transferMode := calldataload(196) // 132 + 64 = 196
             mstore(emptyPtr, _SELECTORS)
             switch eq(payer, address())
             case 1 {
@@ -409,22 +528,8 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 getBalanceAndTransfer(emptyPtr, token)
             }
             default {
-                // approveProxy.claimTokens(token, payer, msg.sender, amount);
-                mstore(add(emptyPtr, 0x14), token)
-                mstore(add(emptyPtr, 0x34), payer)
-                mstore(add(emptyPtr, 0x54), caller())
-                mstore(add(emptyPtr, 0x74), amount)
-                validateERC20Transfer(
-                    call(
-                        gas(),
-                        _APPROVE_PROXY,
-                        0,
-                        add(emptyPtr, 0x10),
-                        0x84,
-                        0,
-                        0x20
-                    )
-                )
+                // payer is not address(this), use transferMode
+                _transferTokenWithMode(token, transferMode, payer, caller(), amount)
             }
         }
     }

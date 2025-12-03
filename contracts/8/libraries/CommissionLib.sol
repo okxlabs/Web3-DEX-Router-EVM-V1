@@ -6,11 +6,16 @@ import "../interfaces/AbstractCommissionLib.sol";
 /// @title Base contract with common permit handling logics
 
 abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
-    function _getCommissionAndTrimInfo()
+    function _getExtraData()
         internal
         override
-        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info)
+        returns (ExtraData memory)
     {
+        CommissionInfo memory commissionInfo;
+        TrimInfo memory trimInfo;
+        Permit2Info memory permit2Info;
+        address refundTo;
+
         uint256 permit2InfoFlag;
         uint256[] memory permit2SignatureCache = new uint256[](3); // signature r, signature s, signature v
         assembly ("memory-safe") {
@@ -97,8 +102,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     // require(referrerNum >= MIN_COMMISSION_MULTIPLE_NUM && referrerNum <= MAX_COMMISSION_MULTIPLE_NUM, "invalid referrer num")
                     if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
                         _revertWithReason(
-                            0x00000014696e76616c6964207265666572726572206e756d0000000000000000,
-                            0x58
+                            0x0000001420696e76616c6964207265666572726572206e756d00000000000000,
+                            0x59
                         ) // "invalid referrer num"
                     }
                 }
@@ -118,8 +123,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
                         if iszero(eq(flag, flag2)) {
                             _revertWithReason(
-                                0x00000017696e76616c696420636f6d6d697373696f6e20666c61670000000000,
-                                0x5b
+                                0x0000001720696e76616c696420636f6d6d697373696f6e20666c616700000000,
+                                0x5c
                             ) // "invalid commission flag"
                         }
                         mstore(
@@ -169,8 +174,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 let flag2 := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(flag, flag2)) {
                     _revertWithReason(
-                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
-                        0x55
+                        0x0000001120696e76616c6964207472696d20666c616700000000000000000000,
+                        0x56
                     ) // "invalid trim flag"
                 }
                 let toBTrim := NO_TO_B_MODE // default toBTrim is 1 for no-toB trim when trimData exists
@@ -201,8 +206,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 let flag2 := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(flag, flag2)) {
                     _revertWithReason(
-                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
-                        0x55
+                        0x0000001120696e76616c6964207472696d20666c616700000000000000000000,
+                        0x56
                     ) // "invalid trim flag"
                 }
                 mstore(
@@ -221,6 +226,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             // get first bytes32 of permit2Info
             let permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x20)))
+            let refundToOffset
             permit2InfoFlag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
             if or(
                 eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG),
@@ -237,8 +243,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
                 if iszero(eq(permit2InfoFlag, flag)) {
                     _revertWithReason(
-                        0x00000018696e76616c6964207065726d697432496e666f20666c616700000000,
-                        0x5c
+                        0x0000001820696e76616c6964207065726d697432496e666f20666c6167000000,
+                        0x5d
                     ) // "invalid permit2Info flag"
                 }
                 mstore(add(permitPosition, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // store nonce to [permit2Info.permit + 0x20]
@@ -249,18 +255,23 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
 
                 // get third bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x60)))
-                // slot2 := permit2InfoData
-                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
+                mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
 
                 // get fourth bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x80)))
-                // slot3 := permit2InfoData
-                mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
+                mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
 
                 // get fifth bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0xa0)))
-                // slot4 := permit2InfoData
-                mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
+                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
+
+                // get refundTo offset
+                refundToOffset := add(permit2InfoOffset, mul(5, 0x20))
+            }
+            // decode refundTo
+            let refundToData := calldataload(sub(calldatasize(), add(refundToOffset, 0x20)))
+            if eq(and(refundToData, _REFUND_TO_MASK), REFUND_TO_ADDRESS_FLAG) {
+                refundTo := and(refundToData, _ADDRESS_MASK)
             }
         }
 
@@ -278,6 +289,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 trimInfo.chargeRate
             );
         }
+
+        return ExtraData({
+            commissionInfo: commissionInfo,
+            trimInfo: trimInfo,
+            permit2Info: permit2Info,
+            refundTo: refundTo
+        });
     }
 
     function _getBalanceOf(
@@ -312,8 +330,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 let success := staticcall(gas(), token, freePtr, 0x24, 0, 0x20)
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x000000146765742062616c616e63654f66206661696c65640000000000000000,
-                        0x58
+                        0x00000014206765742062616c616e63654f66206661696c656400000000000000,
+                        0x59
                     ) // "get balanceOf failed"
                 }
                 amount := mload(0x00)
@@ -381,8 +399,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     let success := call(gas(), to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
-                            0x0000001b636f6d6d697373696f6e2077697468206574686572206572726f7200,
-                            0x5f
+                            0x0000001b20636f6d6d697373696f6e2077697468206574686572206572726f72,
+                            0x60
                         ) // "commission with ether error"
                     }
                 }
@@ -410,8 +428,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     )
                     if eq(success, 0) {
                         _revertWithReason(
-                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                            0x57
+                            0x0000001320636c61696d20746f6b656e73206661696c65640000000000000000,
+                            0x58
                         ) // "claim tokens failed"
                     }
                 }
@@ -445,8 +463,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                     if eq(success, 0) {
                         _revertWithReason(
-                            0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                            0x5f
+                            0x0000001b207472616e7366657220746f6b656e2072656665726572206661696c,
+                            0x60
                         ) // "transfer token referer fail"
                     }
                 }
@@ -470,8 +488,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x000000146765742062616c616e63654f66206661696c65640000000000000000,
-                        0x58
+                        0x00000014206765742062616c616e63654f66206661696c656400000000000000,
+                        0x59
                     ) // "get balanceOf failed"
                 }
                 tokenBalance := mload(0x00)
@@ -510,8 +528,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                        0x5f
+                        0x0000001b207472616e7366657220746f6b656e2072656665726572206661696c,
+                        0x60
                     ) // "transfer token referer fail"
                 }
             }
@@ -537,8 +555,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                        0x5f
+                        0x0000001b207472616e7366657220746f6b656e2072656665726572206661696c,
+                        0x60
                     ) // "transfer token referer fail"
                 }
             }
@@ -556,8 +574,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                     default {
                         _revertWithReason(
-                            0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
-                            0x59
+                            0x0000001520696e76616c6964207472616e73666572206d6f6465000000000000,
+                            0x5a
                         ) // "invalid transfer mode"
                     }
                 }
@@ -575,8 +593,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             if gt(totalRate, commissionRateLimit) {
                 _revertWithReason(
-                    0x000000156572726f7220636f6d6d697373696f6e207261746500000000000000,
-                    0x59
+                    0x00000015206572726f7220636f6d6d697373696f6e2072617465000000000000,
+                    0x5a
                 ) // "error commission rate"
             }
             if eq(token, _ETH) { // commission token is ETH, the process is same between no toB mode and toB mode
@@ -646,8 +664,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         )
                         if gt(amountScaled, fromTokenCommissionAmount) {
                             _revertWithReason(
-                                0x00000014696e76616c696420616d6f756e745363616c65640000000000000000,
-                                0x58
+                                0x0000001420696e76616c696420616d6f756e745363616c656400000000000000,
+                                0x59
                             ) // "invalid amountScaled"
                         }
                         sendAmount := add(sendAmount, amountScaled)
@@ -705,8 +723,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     let success := call(gas(), to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
-                            0x0000001173656e64206574686572206661696c65640000000000000000000000,
-                            0x55
+                            0x000000112073656e64206574686572206661696c656400000000000000000000,
+                            0x56
                         ) // "send ether failed"
                     }
                 }
@@ -740,8 +758,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     }
                     if eq(success, 0) {
                         _revertWithReason(
-                            0x000000157472616e7366657220746f6b656e206661696c656400000000000000,
-                            0x59
+                            0x00000015207472616e7366657220746f6b656e206661696c6564000000000000,
+                            0x5a
                         ) // "transfer token failed"
                     }
                 }
@@ -792,8 +810,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 }
                 if gt(totalRate, commissionRateLimit) {
                     _revertWithReason(
-                        0x000000156572726f7220636f6d6d697373696f6e207261746500000000000000,
-                        0x59
+                        0x00000015206572726f7220636f6d6d697373696f6e2072617465000000000000,
+                        0x5a
                     ) // "error commission rate"
                 }
                 commissionAmount := 0
@@ -825,15 +843,15 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 // require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate");
                 if gt(trimRate, TRIM_RATE_LIMIT) {
                     _revertWithReason(
-                        0x0000000f6572726f72207472696d207261746500000000000000000000000000,
-                        0x53
+                        0x0000000f206572726f72207472696d2072617465000000000000000000000000,
+                        0x54
                     ) // "error trim rate"
                 }
                 // require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
                 if gt(chargeRate, TRIM_DENOMINATOR) {
                     _revertWithReason(
-                        0x000000116572726f722063686172676520726174650000000000000000000000,
-                        0x55
+                        0x00000011206572726f7220636861726765207261746500000000000000000000,
+                        0x56
                     ) // "error charge rate"
                 }
                 // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
@@ -875,8 +893,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             // require(balanceAfter > balanceBefore, "invalid balance after");
             if or(gt(balanceBefore, balanceAfter), eq(balanceAfter, balanceBefore)) {
                 _revertWithReason(
-                    0x00000015696e76616c69642062616c616e636520616674657200000000000000,
-                    0x59
+                    0x0000001520696e76616c69642062616c616e6365206166746572000000000000,
+                    0x5a
                 ) // "invalid balance after"
             }
             let inputAmount := sub(balanceAfter, balanceBefore)
@@ -943,8 +961,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
             if and(flag, isFromTokenCommission) {
                 _revertWithReason(
-                    0x0000001b46726f6d20636f6d6d697373696f6e206e6f7420737570706f727400,
-                    0x5f
+                    0x0000001b2046726f6d20636f6d6d697373696f6e206e6f7420737570706f7274,
+                    0x60
                 ) // "From commission not support"
             }
 
@@ -953,8 +971,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             // }
             if eq(fromToken, toToken) {
                 _revertWithReason(
-                    0x0000000e496e76616c696420746f6b656e730000000000000000000000000000,
-                    0x52
+                    0x0000000e20496e76616c696420746f6b656e7300000000000000000000000000,
+                    0x53
                 ) // "Invalid tokens"
             }
 
@@ -981,8 +999,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))
             if iszero(flag) {
                 _revertWithReason(
-                    0x00000017496e76616c696420636f6d6d697373696f6e20696e666f0000000000,
-                    0x5b
+                    0x0000001720496e76616c696420636f6d6d697373696f6e20696e666f00000000,
+                    0x5c
                 ) // "Invalid commission info"
             }
         }

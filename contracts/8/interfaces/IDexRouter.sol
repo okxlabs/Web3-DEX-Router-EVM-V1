@@ -4,7 +4,9 @@ pragma solidity >=0.8.17;
 import "./IPermit2.sol";
 
 interface IDexRouter {
-    // =============================== Structs ===============================
+    /// =============================================================
+    /// ======================= Structs =============================
+    /// =============================================================
     struct BaseRequest {
         uint256 fromToken;
         address toToken;
@@ -45,16 +47,6 @@ interface IDexRouter {
         address referrerAddress8; // 0x280
     }
 
-    struct CommissionInfo2 {
-        bool isFromTokenCommission; //0x00
-        bool isToTokenCommission; //0x20
-        uint256 tokenWithMode; // 0x40, if isToTokenCommission, tokenWithMode is only the token address, otherwise tokenWithMode is the token address with mode encoded in high bits
-        uint256 toBCommission; // 0x60, 0 for no encoded commission data, 1 for no-toB commission, 2 for toB commission
-        uint256 commissionLength; // 0x80
-        uint256[] commissionRates; // 0xa0
-        address[] referrerAddresses; // 0xc0
-    }
-
     struct TrimInfo {
         bool hasTrim; // 0x00
         uint256 trimRate; // 0x20
@@ -66,15 +58,13 @@ interface IDexRouter {
     }
 
     struct Permit2Info {
-        address owner; // 0x00
-        uint256 nonce; // 0x20
-        uint256 deadline; // 0x40
-        bytes signature; // 0x60
-        uint256[] amounts; // 0x80
+        IPermit2.PermitTransferFrom permit;
+        address owner;
+        bytes signature;
     }
 
     struct ExtraData {
-        CommissionInfo2 commissionInfo;
+        CommissionInfo commissionInfo;
         TrimInfo trimInfo;
         Permit2Info permit2Info;
         address refundTo;
@@ -87,7 +77,9 @@ interface IDexRouter {
         address toToken;
     }
 
-    // =============================== Events ===============================
+    /// ==============================================================
+    /// ========================= Events =============================
+    /// ==============================================================
     event OrderRecord(
         address fromToken,
         address toToken,
@@ -99,8 +91,8 @@ interface IDexRouter {
     event SwapOrderId(uint256 id);
 
     event CommissionAndTrimInfo(
-        uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
-        uint256 toBTrim, // 0 for no trim, 1 for no-toB trim, 2 for toB trim
+        uint256 toBCommission, // 0 for no encoded commission data, 1 for no-toB commission, 2 for toB commission
+        uint256 toBTrim, // 0 for no encoded trim data, 1 for no-toB trim, 2 for toB trim
         uint256 trimRate,
         uint256 chargeRate
     );

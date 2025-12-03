@@ -5,10 +5,10 @@ import "./IDexRouter.sol";
 
 /// @title Abstract base contract with virtual functions
 abstract contract AbstractCommissionLib is IDexRouter {
-    function _getCommissionAndTrimInfo()
+    function _getExtraData()
         internal
         virtual
-        returns (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info);
+        returns (ExtraData memory);
 
     // function _getBalanceOf(address token, address user)
     //     internal

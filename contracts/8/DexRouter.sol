@@ -814,7 +814,7 @@ contract DexRouter is
         ExtraData memory extraData = _getExtraData();
 
         _validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
-        commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         SwapParams memory swapParams = SwapParams({
             payer: msg.sender,
@@ -832,9 +832,9 @@ contract DexRouter is
             reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
             swapParams.payer,
             amount,
-            commissionInfo,
+            extraData.commissionInfo,
             address(0),
-            permit2Info
+            extraData.permit2Info
         );
 
         (

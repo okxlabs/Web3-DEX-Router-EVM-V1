@@ -668,10 +668,11 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
             uint256(permit.nonce)                // nonce at low bits
         );
         
-        bytes32 slot3 = bytes32(permit.permitted.amount);  // amount
-        bytes32 slot4 = signatureR;                        // signature_r
-        bytes32 slot5 = signatureS;                        // signature_s
+        bytes32 slot3 = signatureR;                        // signature_r
+        bytes32 slot4 = signatureS;                        // signature_s
+        bytes32 slot5 = bytes32(permit.permitted.amount);  // amount
         
+        // Order: amount (slot5), s (slot4), r (slot3), slot2, slot1
         return abi.encodePacked(slot5, slot4, slot3, slot2, slot1);
     }
 }

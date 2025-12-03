@@ -833,7 +833,7 @@ contract DexRouter is
             swapParams.payer,
             amount,
             commissionInfo,
-            reversed ? _WNATIVE_RELAY : address(0),
+            address(0),
             permit2Info
         );
 
@@ -850,11 +850,11 @@ contract DexRouter is
         if (reversed) {
             _transferInternal(
                 swapParams.payer,
-                _WNATIVE_RELAY,
+                address(this),
                 mode | uint256(uint160(_WETH)),
                 amount
             );
-            IWNativeRelayer(_WNATIVE_RELAY).withdraw(amount);
+            IWETH(_WETH).withdraw(amount);
             if (middleReceiver != address(this)) {
                 (bool success, ) = payable(middleReceiver).call{
                     value: address(this).balance
@@ -862,7 +862,8 @@ contract DexRouter is
                 require(success, "transfer native token failed");
             }
         } else {
-            require(msg.value == amount + fromTokenCommissionAmount, "value not equal amount + commission");
+            require(msg.value >= amount + fromTokenCommissionAmount, "msg.value < amount + commission");
+            uint256 amount = address(this).balance;
             IWETH(_WETH).deposit{value: amount}();
             if (middleReceiver != address(this)) {
                 SafeERC20.safeTransfer(IERC20(_WETH), middleReceiver, amount);

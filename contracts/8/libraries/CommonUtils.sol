@@ -5,6 +5,7 @@ import "../interfaces/IDexRouter.sol";
 abstract contract CommonUtils is IDexRouter {
     address internal constant _ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    /// @notice Universal mask constants
     uint256 internal constant _ADDRESS_MASK =
         0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     uint256 internal constant _REVERSE_MASK =
@@ -23,6 +24,7 @@ abstract contract CommonUtils is IDexRouter {
     uint256 internal constant _ONE_FOR_ZERO_MASK = 1 << 255; // Mask for identifying if the swap is one-for-zero
     uint256 internal constant _WETH_UNWRAP_MASK = 1 << 253; // Mask for identifying if WETH should be unwrapped to ETH
 
+    /// @notice Transfer mode related mask and flag constants
     uint256 internal constant _MODE_LEGACY =
         0x0000000000000000000000000000000000000000000000000000000000000000; // 0b000 in [bit251, bit250, bit249]
     uint256 internal constant _MODE_PERMIT2_ALLOWANCE =
@@ -38,10 +40,79 @@ abstract contract CommonUtils is IDexRouter {
     uint256 internal constant _TRANSFER_MODE_MASK =
         0x0E00000000000000000000000000000000000000000000000000000000000000; // 0b111 in [bit251, bit250, bit249]
 
+    /// @notice Dag swap related mask and flag constants
     uint256 internal constant _INPUT_INDEX_MASK =
         0x0000000000000000ff0000000000000000000000000000000000000000000000;
     uint256 internal constant _OUTPUT_INDEX_MASK =
         0x000000000000000000ff00000000000000000000000000000000000000000000;
+
+    /// @notice Commission related mask and flag constants
+    uint256 internal constant _COMMISSION_RATE_MASK =
+        0x000000000000ffffffffffff0000000000000000000000000000000000000000;
+    uint256 internal constant _COMMISSION_FLAG_MASK =
+        0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant FROM_TOKEN_COMMISSION =
+        0x3ca20afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TO_TOKEN_COMMISSION =
+        0x3ca20afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant FROM_TOKEN_COMMISSION_DUAL =
+        0x22220afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TO_TOKEN_COMMISSION_DUAL =
+        0x22220afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant FROM_TOKEN_COMMISSION_MULTIPLE =
+        0x88880afc2aaa0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TO_TOKEN_COMMISSION_MULTIPLE =
+        0x88880afc2bbb0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _COMMISSION_LENGTH_MASK =
+        0x00ff000000000000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _TO_B_COMMISSION_MASK =
+        0x8000000000000000000000000000000000000000000000000000000000000000;
+
+    /// @notice Trim related mask and flag constants
+    uint256 internal constant _TRIM_FLAG_MASK =
+        0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK =
+        0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
+    uint256 internal constant _TRIM_RATE_MASK =
+        0x000000000000ffffffffffff0000000000000000000000000000000000000000;
+    uint256 internal constant _TO_B_TRIM_MASK =
+        0x0000000000008000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TRIM_FLAG =
+        0x7777777711110000000000000000000000000000000000000000000000000000;
+    uint256 internal constant TRIM_DUAL_FLAG =
+        0x7777777722220000000000000000000000000000000000000000000000000000;
+
+    /// @notice Permit2 signature related mask and flag constants
+    uint256 internal constant _PERMIT2_INFO_FLAG_MASK =
+        0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _PERMIT2_INFO_NONCE_MASK =
+        0x0000000000000000000000000000000000000000000000000000ffffffffffff;
+    uint256 internal constant _PERMIT2_INFO_DEADLINE_MASK =
+        0x0000000000000000000000000000000000000000ffffffffffff000000000000;
+    uint256 internal constant _PERMIT2_INFO_SIGNATURE_V_MASK =
+        0x00000000000000000000000000000000000000ff000000000000000000000000;
+    uint256 internal constant PERMIT2_INFO_SIG65_FLAG =
+        0x92527fff1a650000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x65
+    uint256 internal constant PERMIT2_INFO_SIG64_FLAG =
+        0x92527fff1a640000000000000000000000000000000000000000000000000000; // bytes5(keccak256("Permit2Info")) + 0x64
+
+    /// @notice RefundTo related mask and flag constants
+    uint256 internal constant _REFUND_TO_MASK =
+        0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant REFUND_TO_ADDRESS_FLAG =
+        0xac3a7da8b1c60000000000000000000000000000000000000000000000000000; // bytes6(keccak256("RefundTo"))
+
+    /// @notice Univarsal value constants
+    uint256 internal constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
+    uint256 internal constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
+    uint256 internal constant commissionRateLimit = 10000000;
+    uint256 internal constant DENOMINATOR = 10 ** 9;
+    uint256 internal constant NO_TO_B_MODE = 1; // value for no-toB commission and no-toB trim when related calldata exists
+    uint256 internal constant TO_B_MODE = 2; // value for toB commission and toB trim when related calldata exists
+    uint256 internal constant WAD = 1 * 10 ** 18;
+    uint256 internal constant TRIM_RATE_LIMIT = 100;
+    uint256 internal constant TRIM_DENOMINATOR = 1000;
+
 
     /// @dev WETH address is network-specific and needs to be changed before deployment.
     /// It can not be moved to immutable as immutables are not supported in assembly

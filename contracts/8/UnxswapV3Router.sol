@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 import "./interfaces/IUniswapV3SwapCallback.sol";
 import "./interfaces/IUniV3.sol";
 import "./interfaces/IWETH.sol";
-import "./interfaces/IWNativeRelayer.sol";
 
 import "./libraries/Address.sol";
 import "./libraries/CommonUtils.sol";

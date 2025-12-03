@@ -96,13 +96,19 @@ contract UniV4HookAdapter is IAdapter, SafeCallback {
             firstAmountIn = pathKeys[0].inputCurrency.balanceOfSelf();
         }
 
-        // swap
-        (uint256 actualAmountIn, uint256 actualAmountOut) = _swap(pathKeys, firstAmountIn);
-        require(actualAmountOut > 0, "Amount must be positive");
-        require(actualAmountIn <= firstAmountIn, "AmountIn must be less than or equal to firstAmountIn");
+        uint256 settledAmount = _settle(pathKeys[0].inputCurrency, firstAmountIn);
 
-        // transfer token from this contract to poolManager
-        _settle(pathKeys[0].inputCurrency, actualAmountIn);
+        // swap with the actual settled amount
+        (uint256 actualAmountIn, uint256 actualAmountOut) = _swap(pathKeys, settledAmount);
+        require(actualAmountOut > 0, "Amount must be positive");
+        require(actualAmountIn <= settledAmount, "AmountIn must be less than or equal to settledAmount");
+
+        // Refund unused input tokens to payerOrigin
+        address _payerOrigin = address(uint160(payerOrigin & ADDRESS_MASK));
+        int256 inputDelta = poolManager.currencyDelta(address(this), pathKeys[0].inputCurrency);
+        if (inputDelta > 0) {
+            poolManager.take(pathKeys[0].inputCurrency, _payerOrigin, uint256(inputDelta));
+        }
 
         // transfer token from poolManager to this contract
         Currency outputCurrency = pathKeys[pathKeys.length - 1].intermediateCurrency;
@@ -112,13 +118,6 @@ contract UniV4HookAdapter is IAdapter, SafeCallback {
             SafeERC20.safeTransfer(IERC20(WETH), to, actualAmountOut);
         } else {
             poolManager.take(outputCurrency, to, actualAmountOut);
-        }
-
-        /// @notice Refund logic: if there is leftover fromToken, refund to payerOrigin
-        /// @notice if inputCurrency is ETH, V4 will refund ETH to this contract
-        if (firstAmountIn - actualAmountIn > 0) {
-            address _payerOrigin = address(uint160(payerOrigin & ADDRESS_MASK));
-            pathKeys[0].inputCurrency.transfer(_payerOrigin, firstAmountIn - actualAmountIn);
         }
 
         return "";
@@ -188,14 +187,14 @@ contract UniV4HookAdapter is IAdapter, SafeCallback {
         }
     }
 
-    function _settle(Currency currency, uint256 amount) internal {
-        if (amount == 0) return;
+    function _settle(Currency currency, uint256 amount) internal returns (uint256 paid) {
+        if (amount == 0) return 0;
         poolManager.sync(currency);
         if (currency.isAddressZero()) {
-            poolManager.settle{value: amount}();
+            paid = poolManager.settle{value: amount}();
         } else {
             currency.transfer(address(poolManager), amount);
-            poolManager.settle();
+            paid = poolManager.settle();
         }
     }
 

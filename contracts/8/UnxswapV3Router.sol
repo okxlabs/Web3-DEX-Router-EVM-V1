@@ -160,29 +160,18 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
             }
             function _unWrapWeth(_receiver, _amount) {
                 let freePtr := mload(0x40)
-                let transferPtr := add(freePtr, 4)
 
-                mstore(freePtr, _SELECTORS2) // withdraw amountWith to amount
-                // transfer
-                mstore(add(transferPtr, 4), _WNATIVE_RELAY)
-                mstore(add(transferPtr, 36), _amount)
-                let success := call(gas(), _WETH, 0, transferPtr, 68, 0, 0)
-                if iszero(success) {
-                    _revertWithReason(
-                        0x000000147472616e736665722077657468206661696c65640000000000000000,
-                        88
-                    ) // transfer weth failed
-                }
-                // withdraw
+                // withdraw WETH to ETH
+                mstore(freePtr, _SELECTORS2) // withdraw(uint256) selector (first 4 bytes)
                 mstore(add(freePtr, 4), _amount)
-                success := call(gas(), _WNATIVE_RELAY, 0, freePtr, 36, 0, 0)
+                let success := call(gas(), _WETH, 0, freePtr, 36, 0, 0)
                 if iszero(success) {
                     _revertWithReason(
                         0x0000001477697468647261772077657468206661696c65640000000000000000,
                         88
                     ) // withdraw weth failed
                 }
-                // msg.value transfer
+                // send ETH to receiver
                 success := call(gas(), _receiver, _amount, 0, 0, 0, 0)
                 if iszero(success) {
                     _revertWithReason(

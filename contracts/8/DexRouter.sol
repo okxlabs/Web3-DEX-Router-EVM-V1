@@ -824,16 +824,18 @@ contract DexRouter is
         });
 
         uint256 fromTokenCommissionAmount;
-        if (reversed) {
-            (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission(
-                mode | uint256(uint160(_WETH)),
-                swapParams.payer,
-                amount,
-                commissionInfo,
-                _WNATIVE_RELAY,
-                permit2Info
-            );
-        }
+        (
+            swapParams.payer, 
+            amount, 
+            fromTokenCommissionAmount
+        ) = _handlePermit2SignatureModeWithCommission(
+            reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
+            swapParams.payer,
+            amount,
+            commissionInfo,
+            reversed ? _WNATIVE_RELAY : address(0),
+            permit2Info
+        );
 
         (
             address middleReceiver,
@@ -860,9 +862,7 @@ contract DexRouter is
                 require(success, "transfer native token failed");
             }
         } else {
-            if (!commissionInfo.isFromTokenCommission) {
-                require(msg.value == amount, "value not equal amount");
-            }
+            require(msg.value == amount + fromTokenCommissionAmount, "value not equal amount + commission");
             IWETH(_WETH).deposit{value: amount}();
             if (middleReceiver != address(this)) {
                 SafeERC20.safeTransfer(IERC20(_WETH), middleReceiver, amount);

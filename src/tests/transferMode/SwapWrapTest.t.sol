@@ -328,6 +328,127 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
         vm.stopPrank();
     }
 
+    /// @notice Test ETH -> WETH with fromToken Commission (Legacy mode)
+    function test_swapWrap_ETH_to_WETH_WithFromTokenCommission() public {
+        uint256 DENOMINATOR = 10 ** 9;
+        uint256 totalRate = 2_000_000; // 0.2%
+        uint256 swapAmount = SWAP_AMOUNT;
+        uint256 commissionAmount = swapAmount * totalRate / (DENOMINATOR - totalRate);
+        
+        address commissionAddress1 = vm.addr(300001);
+        address commissionAddress2 = vm.addr(300002);
+        
+        bytes memory callData;
+        {
+            bytes memory commissionData = abi.encodePacked(
+                bytes6(0x22220afc2aaa),
+                bytes6(uint48(1_000_000)),
+                commissionAddress1,
+                bytes6(0x800000000000),
+                bytes6(0),
+                ETH,
+                bytes6(0x22220afc2aaa),
+                bytes6(uint48(1_000_000)),
+                commissionAddress2
+            );
+            
+            callData = abi.encodeWithSelector(dexRouter.swapWrap.selector, 12360, swapAmount);
+            callData = bytes.concat(callData, commissionData);
+        }
+        
+        vm.startPrank(alice);
+        
+        uint256 wethBefore = IERC20(WETH).balanceOf(alice);
+        uint256 ethBefore = alice.balance;
+        
+        (bool success, ) = address(dexRouter).call{value: swapAmount + commissionAmount}(callData);
+        require(success, "swapWrap call failed");
+        
+        uint256 wethReceived = IERC20(WETH).balanceOf(alice) - wethBefore;
+        uint256 ethSpent = ethBefore - alice.balance;
+        uint256 commission1Received = commissionAddress1.balance;
+        uint256 commission2Received = commissionAddress2.balance;
+        
+        console.log("Alice WETH received:", wethReceived);
+        console.log("Alice ETH spent:", ethSpent);
+        console.log("Commission1 ETH:", commission1Received);
+        console.log("Commission2 ETH:", commission2Received);
+        
+        assertEq(wethReceived, swapAmount, "WETH should increase by swap amount");
+        assertEq(ethSpent, swapAmount + commissionAmount, "ETH spent should equal amount + commission");
+        assertGt(commission1Received, 0, "Commission1 should receive ETH");
+        assertGt(commission2Received, 0, "Commission2 should receive ETH");
+        assertEq(commission1Received + commission2Received, commissionAmount, "Total commission should match");
+        
+        vm.stopPrank();
+    }
+
+    /// @notice Test ETH -> WETH with fromToken Commission via swapWrapToWithBaseRequest
+    function test_swapWrapToWithBaseRequest_ETH_to_WETH_WithFromTokenCommission() public {
+        uint256 DENOMINATOR = 10 ** 9;
+        uint256 totalRate = 2_000_000; // 0.2%
+        uint256 swapAmount = SWAP_AMOUNT;
+        uint256 commissionAmount = swapAmount * totalRate / (DENOMINATOR - totalRate);
+        
+        address commissionAddress1 = vm.addr(400001);
+        address commissionAddress2 = vm.addr(400002);
+        
+        bytes memory callData;
+        {
+            bytes memory commissionData = abi.encodePacked(
+                bytes6(0x22220afc2aaa),
+                bytes6(uint48(1_000_000)),
+                commissionAddress1,
+                bytes6(0x800000000000),
+                bytes6(0),
+                ETH,
+                bytes6(0x22220afc2aaa),
+                bytes6(uint48(1_000_000)),
+                commissionAddress2
+            );
+            
+            IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
+                fromToken: uint256(uint160(ETH)),
+                toToken: WETH,
+                fromTokenAmount: swapAmount,
+                minReturnAmount: swapAmount,
+                deadLine: block.timestamp + 1000
+            });
+            
+            callData = abi.encodeWithSelector(
+                dexRouter.swapWrapToWithBaseRequest.selector, 
+                22360, 
+                uint256(uint160(bob)), 
+                baseRequest
+            );
+            callData = bytes.concat(callData, commissionData);
+        }
+        
+        vm.startPrank(alice);
+        
+        uint256 wethBefore = IERC20(WETH).balanceOf(bob);
+        uint256 aliceEthBefore = alice.balance;
+        
+        (bool success, ) = address(dexRouter).call{value: swapAmount + commissionAmount}(callData);
+        require(success, "swapWrapToWithBaseRequest call failed");
+        
+        uint256 wethReceived = IERC20(WETH).balanceOf(bob) - wethBefore;
+        uint256 aliceEthSpent = aliceEthBefore - alice.balance;
+        uint256 commission1Received = commissionAddress1.balance;
+        uint256 commission2Received = commissionAddress2.balance;
+        
+        console.log("Alice ETH spent:", aliceEthSpent);
+        console.log("Bob WETH received:", wethReceived);
+        console.log("Commission1 ETH:", commission1Received);
+        console.log("Commission2 ETH:", commission2Received);
+        
+        assertEq(wethReceived, swapAmount, "Receiver WETH should increase by swap amount");
+        assertGt(commission1Received, 0, "Commission1 should receive ETH");
+        assertGt(commission2Received, 0, "Commission2 should receive ETH");
+        
+        vm.stopPrank();
+    }
+
     // ============================================
     // Test swapWrapToWithBaseRequest function
     // ============================================

@@ -279,7 +279,8 @@ contract DexRouterExactOut is
         address middleReceiver,
         uint256 targetTokenBefore
     ) internal returns (CommissionInfo memory, uint256, uint256, address) {
-        (CommissionInfo memory commissionInfo,, ) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
+        CommissionInfo memory commissionInfo = extraData.commissionInfo;
         if (
             commissionInfo.isToTokenCommission &&
             commissionInfo.commissionRate > 0

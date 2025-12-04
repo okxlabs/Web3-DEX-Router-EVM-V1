@@ -410,9 +410,9 @@ contract DexRouter is
         uint256 minReturn,
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
         // add permit2
-        _validateCommissionInfo(commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
+        _validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
         // TODO add mode to commissionInfo.tokenWithMode
 
         returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver);
@@ -436,9 +436,8 @@ contract DexRouter is
             amount,
             minReturn,
             pools,
-            commissionInfo,
-            trimInfo,
-            permit2Info
+            extraData.commissionInfo,
+            extraData.trimInfo
         );
 
         // check minReturnAmount
@@ -545,12 +544,12 @@ contract DexRouter is
         uint256[] memory batchesAmount,
         RouterPath[][] memory batches
     ) internal returns (uint256 returnAmount) {
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
         
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
-        _validateCommissionInfo(commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
-        commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
+        _validateCommissionInfo(extraData.commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, swapParams.receiver);
         // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
@@ -560,10 +559,10 @@ contract DexRouter is
                 address middleReceiver,
                 uint256 balanceBefore
             ) = _doCommissionFromToken(
-                    commissionInfo,
+                    extraData.commissionInfo,
                     swapParams,
                     baseRequest.fromTokenAmount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
-                    trimInfo.hasTrim
+                    extraData.trimInfo.hasTrim
                 );
 
             _smartSwapInternal(
@@ -576,11 +575,11 @@ contract DexRouter is
             );
 
             _doCommissionAndTrimToToken(
-                commissionInfo,
+                extraData.commissionInfo,
                 swapParams.receiver,
                 balanceBefore,
                 baseRequest.toToken,
-                trimInfo
+                extraData.trimInfo
             );
         }
 
@@ -652,9 +651,9 @@ contract DexRouter is
         bytes32[] calldata pools
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
 
-        _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
+        _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, _MODE_LEGACY);
         returnAmount = _getBalanceOf(toToken, receiver);
 
         SwapParams memory swapParams = SwapParams({
@@ -671,8 +670,8 @@ contract DexRouter is
             amount,
             minReturn,
             pools,
-            commissionInfo,
-            trimInfo
+            extraData.commissionInfo,
+            extraData.trimInfo
         );
 
         // check minReturnAmount
@@ -829,12 +828,12 @@ contract DexRouter is
         require(amount > 0, "amount must be > 0");
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
 
         address srcToken = reversed ? _WETH : _ETH;
         address toToken = reversed ? _ETH : _WETH;
 
-        _validateCommissionInfo(commissionInfo, srcToken, toToken, _MODE_LEGACY);
+        _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, _MODE_LEGACY);
         // TODO add mode to commissionInfo.tokenWithMode
 
         SwapParams memory swapParams = SwapParams({
@@ -849,10 +848,10 @@ contract DexRouter is
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
-                commissionInfo,
+                extraData.commissionInfo,
                 swapParams,
                 amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
-                trimInfo.hasTrim
+                extraData.trimInfo.hasTrim
             );
 
         if (reversed) {
@@ -870,7 +869,7 @@ contract DexRouter is
                 require(success, "transfer native token failed");
             }
         } else {
-            if (!commissionInfo.isFromTokenCommission) {
+            if (!extraData.commissionInfo.isFromTokenCommission) {
                 require(msg.value == amount, "value not equal amount");
             }
             IWETH(_WETH).deposit{value: amount}();
@@ -880,11 +879,11 @@ contract DexRouter is
         }
         // emit return amount should be the amount after commission
         uint256 toTokenCommissionAndTrimAmount = _doCommissionAndTrimToToken(
-            commissionInfo,
+            extraData.commissionInfo,
             receiver,
             balanceBefore,
             toToken,
-            trimInfo
+            extraData.trimInfo
         );
 
         emit OrderRecord(
@@ -971,12 +970,12 @@ contract DexRouter is
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        (CommissionInfo memory commissionInfo, TrimInfo memory trimInfo, Permit2Info memory permit2Info) = _getCommissionAndTrimInfo();
+        ExtraData memory extraData = _getExtraData();
         
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         
-        _validateCommissionInfo(commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
-        commissionInfo.tokenWithMode = mode | commissionInfo.tokenWithMode;
+        _validateCommissionInfo(extraData.commissionInfo, _bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, receiver);
 
@@ -998,9 +997,9 @@ contract DexRouter is
                 paths[0].fromToken,
                 swapParams.payer,
                 baseRequest.fromTokenAmount,
-                commissionInfo,
+                extraData.commissionInfo,
                 onlyOneAssetTo,
-                permit2Info
+                extraData.permit2Info
             );
         }
 
@@ -1010,10 +1009,10 @@ contract DexRouter is
                 swapParams.receiver,
                 balanceBefore
             ) = _doCommissionFromToken(
-                    commissionInfo,
+                    extraData.commissionInfo,
                     swapParams,
                     fromTokenCommissionAmount,
-                    trimInfo.hasTrim
+                    extraData.trimInfo.hasTrim
                 );
 
             _dagSwapInternal(
@@ -1023,11 +1022,11 @@ contract DexRouter is
             );
 
             _doCommissionAndTrimToToken(
-                commissionInfo,
+                extraData.commissionInfo,
                 receiver,
                 balanceBefore,
                 baseRequest.toToken,
-                trimInfo
+                extraData.trimInfo
             );
         }
 

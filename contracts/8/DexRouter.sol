@@ -426,9 +426,9 @@ contract DexRouter is
             pools[0],
             swapParams.payer,
             amount,
-            commissionInfo,
+            extraData.commissionInfo,
             address(0),
-            permit2Info
+            extraData.permit2Info
         );
 
         _doUniswapV3Swap(
@@ -437,7 +437,9 @@ contract DexRouter is
             minReturn,
             pools,
             extraData.commissionInfo,
-            extraData.trimInfo
+            extraData.trimInfo,
+            extraData.permit2Info,
+            fromTokenCommissionAmount
         );
 
         // check minReturnAmount
@@ -463,7 +465,8 @@ contract DexRouter is
         uint256[] calldata pools,
         CommissionInfo memory commissionInfo,
         TrimInfo memory trimInfo,
-        Permit2Info memory permit2Info
+        Permit2Info memory permit2Info,
+        uint256 fromTokenCommissionAmount
     ) private {
         
         (
@@ -472,7 +475,7 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount,
+                fromTokenCommissionAmount,
                 trimInfo.hasTrim
             );
 

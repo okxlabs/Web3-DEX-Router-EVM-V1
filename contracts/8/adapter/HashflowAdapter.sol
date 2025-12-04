@@ -49,11 +49,12 @@ contract HashflowAdapter is IAdapter, OwnableUpgradeable, ReentrancyGuardUpgrade
             0
         );
 
+        if (toToken == ETH_ADDRESS) {
+            IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
+            toToken = WETH_ADDRESS;
+        }
+
         if (to != address(this)) {
-            if (toToken == ETH_ADDRESS) {
-                IWETH(WETH_ADDRESS).deposit{value: address(this).balance}();
-                toToken = WETH_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

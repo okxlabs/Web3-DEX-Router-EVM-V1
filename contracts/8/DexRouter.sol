@@ -977,9 +977,8 @@ contract DexRouter is
                 paths[0].fromToken,
                 swapParams.payer,
                 baseRequest.fromTokenAmount,
-                extraData.commissionInfo,
                 onlyOneAssetTo,
-                extraData.permit2Info
+                extraData
             );
         }
 

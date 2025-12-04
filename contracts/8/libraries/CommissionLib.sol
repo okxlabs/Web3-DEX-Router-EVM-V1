@@ -16,6 +16,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         Permit2Info memory permit2Info;
         address refundTo;
 
+        permit2Info.amounts = new uint256[](1 + MAX_COMMISSION_MULTIPLE_NUM);
         uint256 permit2InfoFlag;
         uint256[] memory permit2SignatureCache = new uint256[](3); // signature r, signature s, signature v
         assembly ("memory-safe") {
@@ -232,11 +233,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG),
                 eq(permit2InfoFlag, PERMIT2_INFO_SIG64_FLAG)
             ) {
-                // set pointer to permit2Info.permit and permit2Info.permit.permitted
-                let permitPosition := mload(permit2Info)
-                let permittedPosition := mload(permitPosition)
-
-                mstore(add(permit2Info, 0x20), and(permit2InfoData, _ADDRESS_MASK)) // store owner to [permit2Info + 0x20]
+                let amountLength := shr(200, and(permit2InfoData, _PERMIT2_INFO_AMOUNT_LENGTH_MASK))
+                mstore(permit2Info, and(permit2InfoData, _ADDRESS_MASK)) // owner
 
                 // get second bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x40)))
@@ -247,8 +245,8 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         0x5d
                     ) // "invalid permit2Info flag"
                 }
-                mstore(add(permitPosition, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // store nonce to [permit2Info.permit + 0x20]
-                mstore(add(permitPosition, 0x40), shr(48, and(permit2InfoData, _PERMIT2_INFO_DEADLINE_MASK))) // store deadline to [permit2Info.permit + 0x40]
+                mstore(add(permit2Info, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // nonce
+                mstore(add(permit2Info, 0x40), shr(48, and(permit2InfoData, _PERMIT2_INFO_DEADLINE_MASK))) // deadline
                 if eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG) {
                     mstore(add(permit2SignatureCache, 0x60), shr(96, and(permit2InfoData, _PERMIT2_INFO_SIGNATURE_V_MASK))) // signature v
                 }
@@ -256,14 +254,16 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 // get third bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x60)))
                 mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
-
                 // get fourth bytes32 of permit2Info
                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x80)))
                 mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
-
-                // get fifth bytes32 of permit2Info
-                permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0xa0)))
-                mstore(add(permittedPosition, 0x20), permit2InfoData) // store amount to [permit2Info.permit.permitted + 0x20]
+                // get all amounts
+                let amountsPosition := mload(add(permit2Info, 0x80))
+                for { let i := 0 } lt(i, amountLength) { i := add(i, 1) } {
+                    permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, add(0x80, mul(i, 0x20)))))
+                    mstore(add(amountsPosition, mul(i, 0x20)), permit2InfoData) // permit2Info.amounts[i]
+                }
+                mstore(amountsPosition, amountLength) // reset length for amounts array
 
                 // get refundTo offset
                 refundToOffset := add(permit2InfoOffset, mul(5, 0x20))

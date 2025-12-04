@@ -47,7 +47,7 @@ abstract contract DagRouter is CommonLib, TransferLib {
         // For BY_INVEST mode, the fromTokenAmount still needs to be fromToken balance to keep consistent with smartSwapByInvestWithRefund.
         // In later version, the scaling of fromTokenAmount will be completed by the earn contract, then we will remove this logic.
         uint256 firstNodeBalance = baseRequest.fromTokenAmount;
-        if (paths[0].fromToken & _TRANSFER_MODE_MASK == _MODE_BY_INVEST) {
+        if (paths[0].fromToken & _TRANSFER_MODE_MASK == _MODE_BY_INVEST) { // TODO _handlePermit2SignatureModeWithCommission() has gotten the token balance under ByInvest mode, so here can be removed.
             firstNodeBalance = IERC20(firstNodeToken).balanceOf(address(this));
         }
         _exeDagSwap(swapParams.payer, swapParams.receiver, swapParams.refundTo, firstNodeBalance, IERC20(baseRequest.toToken).isETH(), paths);

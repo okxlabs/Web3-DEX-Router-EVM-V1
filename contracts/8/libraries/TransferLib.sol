@@ -13,13 +13,12 @@ import "../interfaces/AbstractCommissionLib.sol";
 abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
     using UniversalERC20 for IERC20;
 
-    /// @notice Handle Permit2Signature mode and fromTokenCommission mainly.
+    /// @notice Handle Permit2Signature/ByInvest mode and fromTokenCommission mainly.
     /// @param fromTokenWithMode The fromToken with mode encoded in high bits.
     /// @param payer The address of the payer.
     /// @param inputAmount The inputAmount of the fromToken.
-    /// @param commissionInfo The commission info.
     /// @param onlyOneAssetTo The address of the only one assetTo. If the assetTo is more than one, it should be set to address(0).
-    /// @param permit2Info The permit2 info.
+    /// @param extraData The extra data.
     /// @return The new payer, the new inputAmount, and the fromTokenCommissionAmount. The new payer can be (1) original payer, (2) address(this), or (3) address(0).
     ///         The address(0) means the fromToken has been paid and no need to pay later.
     /// @dev  Since the permitTransferFrom can only be called once in a transaction, this function is designed to handle multiple scenarios and call permitTransferFrom if necessary.
@@ -27,17 +26,17 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         uint256 fromTokenWithMode,
         address payer,
         uint256 inputAmount,
-        CommissionInfo memory commissionInfo,
         address onlyOneAssetTo,
-        Permit2Info memory permit2Info
+        ExtraData memory extraData
     ) internal returns (address, uint256, uint256) {
         uint256 mode = fromTokenWithMode & _TRANSFER_MODE_MASK;
         address token = address(uint160(fromTokenWithMode & _ADDRESS_MASK));
         uint256 totalRate = 0;
         uint256 fromTokenCommissionAmount = 0;
 
-        if (commissionInfo.isFromTokenCommission) {
+        if (extraData.commissionInfo.isFromTokenCommission) {
             assembly ("memory-safe") {
+                let commissionInfo := mload(add(extraData, 0x00))
                 let referrerNum := mload(add(commissionInfo, 0x80))
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
@@ -47,51 +46,77 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
             fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
         }
 
-        // For not _MODE_PERMIT2_SIGNATURE mode, return directly.
-        if (mode != _MODE_PERMIT2_SIGNATURE) {
+        // For not _MODE_PERMIT2_SIGNATURE and _MODE_BY_INVEST mode, return directly.
+        if (mode != _MODE_PERMIT2_SIGNATURE && mode != _MODE_BY_INVEST) {
             return (payer, inputAmount, fromTokenCommissionAmount);
         }
 
         // For _MODE_PERMIT2_SIGNATURE mode, token needs to be claimed to address `to` by calling permitTransferFrom. And the address `to` needs to be set according to the situation.
         // For following 2 situations, the address `to` should be set to address(this):
         // 1. onlyOneAssetTo=address(0): means the swap method needs the swapToken to be claimed to address(this).
-        // 2. isFromTokenCommission=true && toBCommission=2: means the fromToken needs to be claimed to address(this) and then transfer commission to referrers.
-        // And when isFromTokenCommission=true && toBCommission=1, the commission needs to be transferred to referrers immediately.
+        // 2. isFromTokenCommission=true && toBCommission=TO_B_MODE: means the fromToken needs to be claimed to address(this) and then transfer commission to referrers.
+        // And when isFromTokenCommission=true && toBCommission=NO_TO_B_MODE, the commission needs to be transferred to referrers immediately.
         address to;
-        if (onlyOneAssetTo == address(0) || (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == 2)) {
-            to = address(this);
-        } else {
-            to = onlyOneAssetTo;
+        if (mode == _MODE_PERMIT2_SIGNATURE) {
+            // Get the address `to` according to the situation.
+            if (onlyOneAssetTo == address(0) || (extraData.commissionInfo.isFromTokenCommission && extraData.commissionInfo.toBCommission == TO_B_MODE)) {
+                to = address(this);
+            } else {
+                to = onlyOneAssetTo;
+            }
+
+            _executePermitTransferFrom(
+                inputAmount,
+                fromTokenCommissionAmount,
+                token,
+                to,
+                totalRate,
+                extraData
+            );  
         }
 
-        // Execute permitTransferFrom
+        // If the to address is address(this) or mode==_MODE_BY_INVEST(means fromToken is transferred to address(this)), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
+        // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
+        if (to == address(this) || mode == _MODE_BY_INVEST) {
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
+            fromTokenCommissionAmount = balance - inputAmount;
+            return (address(this), inputAmount, fromTokenCommissionAmount);
+        } else {
+            return (address(0), inputAmount, 0);
+        }
+    }
+
+    function _executePermitTransferFrom(
+        uint256 inputAmount,
+        uint256 fromTokenCommissionAmount,
+        address token,
+        address to,
+        uint256 totalRate,
+        ExtraData memory extraData
+    ) internal {
+        // Get permitTransferFrom parameters
         uint256 permitLength;
-        if (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == 1) {
-            permitLength = commissionInfo.commissionLength + 1;
+        if (extraData.commissionInfo.isFromTokenCommission && extraData.commissionInfo.toBCommission == NO_TO_B_MODE) {
+            permitLength = extraData.commissionInfo.commissionLength + 1;
         } else {
             permitLength = 1;
         }
+        require(permitLength == extraData.permit2Info.amounts.length, "permit2Info amount length mismatch");
 
+        // Execute permitTransferFrom
         IPermit2.PermitBatchTransferFrom memory permitBatchTransferFrom = IPermit2.PermitBatchTransferFrom({
             permitted: new IPermit2.TokenPermissions[](permitLength),
-            nonce: permit2Info.nonce,
-            deadline: permit2Info.deadline
+            nonce: extraData.permit2Info.nonce,
+            deadline: extraData.permit2Info.deadline
         });
         IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
-        // TODO 构造 permitBatchTransferFrom 和 transferDetails 参数，最好是改造 CommissionInfo 的结构，再通过 loop 构造 permitBatchTransferFrom 和 transferDetails 参数。
+        // TODO 遍历赋值 permitted 数组
+        // TODO 遍历赋值 transferDetails 数组
+        // 需要一起 load CommissionInfo 然后分别赋值
 
-        // IPermit2(_PERMIT2).permitTransferFrom(permitBatchTransferFrom, transferDetails, permit2Info.owner, permit2Info.signature);
 
-        // // If the to address is address(this), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
-        // // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
-        // if (to == address(this)) {
-        //     uint256 balance = IERC20(token).balanceOf(address(this));
-        //     inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
-        //     fromTokenCommissionAmount = balance - inputAmount;
-        //     return (address(this), inputAmount, fromTokenCommissionAmount);
-        // } else {
-        //     return (address(0), inputAmount, 0);
-        // }
+        IPermit2(_PERMIT2).permitTransferFrom(permitBatchTransferFrom, transferDetails, extraData.permit2Info.owner, extraData.permit2Info.signature);
     }
 
     /// @notice Transfers tokens internally within the contract.

@@ -133,14 +133,11 @@ abstract contract ExtraDataLib is CommonUtils {
     }
 
     /// @notice Parse commissionInfo
-    /// TODO 改为数组的形式
-    function parseCommissionInfo(uint256 endPoint, uint256 length) internal pure returns (CommissionInfo2 memory commissionInfo) {
+    function parseCommissionInfo(uint256 endPoint, uint256 length) internal pure returns (CommissionInfo memory commissionInfo) {
         if (length == 0) {
             return commissionInfo;
         }
         uint256 referrerNum = length - 1; // referrerNum is calculated in getExtraDataEndPointAndLength() function
-        commissionInfo.commissionRates = new uint256[](referrerNum);
-        commissionInfo.referrerAddresses = new address[](referrerNum);
         assembly ("memory-safe") {
             function _revertWithReason(m, len) {
                 mstore(
@@ -177,14 +174,12 @@ abstract contract ExtraDataLib is CommonUtils {
                     eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
                 )
             ) // isToTokenCommission
-            let commissionRatePosition := mload(add(0xa0, commissionInfo))
-            let referrerAddressPosition := mload(add(0xc0, commissionInfo))
             mstore(
-                add(0x20, commissionRatePosition),
+                add(0xa0, commissionInfo),
                 shr(160, and(commissionData, _COMMISSION_RATE_MASK))
             ) // 1st commissionRate
             mstore(
-                add(0x20, referrerAddressPosition),
+                add(0xc0, commissionInfo),
                 and(commissionData, _ADDRESS_MASK)
             ) // 1st referrerAddress
             commissionData := calldataload(sub(endPoint, 0x40))
@@ -213,11 +208,11 @@ abstract contract ExtraDataLib is CommonUtils {
                         ) // "invalid commission flag"
                     }
                     mstore(
-                        add(commissionRatePosition, mul(add(i, 1), 0x20)), // commissionRatePosition + (i + 1) * 0x20
+                        add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
                         shr(160, and(commissionData, _COMMISSION_RATE_MASK))
                     ) //i-th commissionRate
                     mstore(
-                        add(referrerAddressPosition, mul(add(i, 1), 0x20)), // referrerAddressPosition + (i + 1) * 0x20
+                        add(add(0xc0, commissionInfo), mul(i, 0x40)), // 0xc0: referrerAddress0, 0xc0 + 0x40 * i: i-th referrerAddress
                         and(commissionData, _ADDRESS_MASK)
                     ) //i-th referrerAddress
                 }

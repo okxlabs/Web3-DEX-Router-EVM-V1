@@ -78,7 +78,12 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         // If the to address is address(this) or mode==_MODE_BY_INVEST(means fromToken is transferred to address(this)), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
         // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
         if (to == address(this) || mode == _MODE_BY_INVEST) {
-            uint256 balance = IERC20(token).balanceOf(address(this));
+            uint256 balance;
+            if (mode == _MODE_BY_INVEST) {
+                balance = inputAmount; // For BY_INVEST mode, inputAmount is already the token balance.
+            } else {
+                balance = IERC20(token).balanceOf(address(this));
+            }
             inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
             fromTokenCommissionAmount = balance - inputAmount;
             return (address(this), inputAmount, fromTokenCommissionAmount);
@@ -95,10 +100,11 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         uint256 totalRate,
         ExtraData memory extraData
     ) internal {
+        CommissionInfo memory commissionInfo = extraData.commissionInfo;
         // Get permitTransferFrom parameters
         uint256 permitLength;
-        if (extraData.commissionInfo.isFromTokenCommission && extraData.commissionInfo.toBCommission == NO_TO_B_MODE) {
-            permitLength = extraData.commissionInfo.commissionLength + 1;
+        if (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == NO_TO_B_MODE) {
+            permitLength = commissionInfo.commissionLength + 1;
         } else {
             permitLength = 1;
         }
@@ -111,10 +117,47 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
             deadline: extraData.permit2Info.deadline
         });
         IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
-        // TODO 遍历赋值 permitted 数组
-        // TODO 遍历赋值 transferDetails 数组
-        // 需要一起 load CommissionInfo 然后分别赋值
-
+        if (permitLength == 1) {
+            permitBatchTransferFrom.permitted[0] = IPermit2.TokenPermissions({
+                token: token,
+                amount: extraData.permit2Info.amounts[0]
+            });
+            transferDetails[0] = IPermit2.SignatureTransferDetails({
+                to: to,
+                requestedAmount: inputAmount + fromTokenCommissionAmount
+            });
+        } else {
+            for (uint256 i = 0; i < permitLength; i++) {
+                permitBatchTransferFrom.permitted[i] = IPermit2.TokenPermissions({
+                    token: token,
+                    amount: extraData.permit2Info.amounts[i]
+                });
+            }
+            transferDetails[0] = IPermit2.SignatureTransferDetails({
+                to: to,
+                requestedAmount: inputAmount
+            });
+            uint256 accumulatedAmount = 0;
+            for (uint256 i = 0; i < permitLength - 1; i++) {
+                uint256 commissionRate;
+                address referrerAddress;
+                assembly ("memory-safe") {
+                    referrerAddress := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+                    commissionRate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+                }
+                uint256 commissionAmount;
+                if (i == permitLength - 2) {
+                    commissionAmount = fromTokenCommissionAmount - accumulatedAmount;
+                } else {
+                    commissionAmount = fromTokenCommissionAmount * commissionRate / totalRate;
+                    accumulatedAmount += commissionAmount;
+                }
+                transferDetails[i + 1] = IPermit2.SignatureTransferDetails({
+                    to: referrerAddress,
+                    requestedAmount: commissionAmount
+                });
+            }
+        }
 
         IPermit2(_PERMIT2).permitTransferFrom(permitBatchTransferFrom, transferDetails, extraData.permit2Info.owner, extraData.permit2Info.signature);
     }
@@ -137,9 +180,6 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         if (mode == _MODE_NO_TRANSFER) {
             return;
         } else if (mode == _MODE_BY_INVEST) {
-            if (amount == 0) {
-                amount = IERC20(token).balanceOf(address(this));
-            }
             SafeERC20.safeTransfer(IERC20(token), to, amount);
         } else { // For other modes, payer needs to be checked. If the payer is address(this), the transfer logic is same.
             if (payer == address(this)) {

@@ -294,28 +294,9 @@ contract DexRouter is
     /// @param baseRequest Struct containing essential swap parameters like source and destination tokens, amounts, and deadline.
     /// @param batchesAmount Array indicating how much of the source token to swap in each batch, facilitating diversified investments.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
-    /// @param extraData Additional data for swaps, supporting protocol-specific requirements.
     /// @param to The address where the swapped tokens will be sent, typically an investment contract or pool.
     /// @return returnAmount The total amount of destination tokens received, ready for investment.
     /// @dev This function is designed for scenarios where investments are made in batches or through complex paths to optimize returns. Adjustments are made based on the contract's current token balance to ensure precise allocation.
-
-    function smartSwapByInvest( // change function name
-        BaseRequest memory baseRequest,
-        uint256[] memory batchesAmount,
-        RouterPath[][] memory batches,
-        PMMLib.PMMSwapRequest[] memory extraData,
-        address to
-    ) external payable returns (uint256 returnAmount) {
-        return
-            smartSwapByInvestWithRefund(
-                baseRequest,
-                batchesAmount,
-                batches,
-                extraData,
-                to,
-                to
-            );
-    }
     function smartSwapByInvestWithRefund(
         BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,

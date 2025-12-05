@@ -22,8 +22,8 @@ contract Deploy is Test {
     // address payable WETH = payable(0x4200000000000000000000000000000000000006);
 
     //arb
-    address poolManager = 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32;
-    address payable WETH = payable(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
+    // address poolManager = 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32;
+    // address payable WETH = payable(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
     //polygon
     // address poolManager = 0x67366782805870060151383F4BbFF9daB53e5cD6;
@@ -41,6 +41,10 @@ contract Deploy is Test {
     // address poolManager = 0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF;
     // address payable WETH = payable(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
 
+    //monad
+    address poolManager = 0x188d586Ddcf52439676Ca21A244753fA19F9Ea8e;
+    address payable WETH = payable(0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A);
+
     function run() public {
         console2.log("deployer", deployer);
         require(
@@ -48,7 +52,7 @@ contract Deploy is Test {
             "wrong deployer! change the private key"
         );
 
-        vm.createSelectFork(vm.envString("ARB_RPC_URL"));
+        vm.createSelectFork(vm.envString("MONAD_RPC_URL"));
         vm.startBroadcast(deployer);
         console2.log("block.chainID", block.chainid);
 

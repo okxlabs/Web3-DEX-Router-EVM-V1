@@ -1,0 +1,907 @@
+Compiling 294 files with Solc 0.8.17
+Compiling 338 files with Solc 0.8.30
+Solc 0.8.30 finished in 3.60s
+Solc 0.8.17 finished in 10.56s
+Compiler run successful with warnings:
+Warning (2519): This declaration shadows an existing declaration.
+  --> src/tests/fix/DualFromTokenCommissionFix.t.sol:57:9:
+   |
+57 |         PMMLib.PMMSwapRequest[] memory extraData = new PMMLib.PMMSwapRequest[](0);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> src/tests/fix/DualFromTokenCommissionFix.t.sol:26:5:
+   |
+26 |     bytes extraData =
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+ --> contracts/8/interfaces/IMstable.sol:6:5:
+  |
+6 |     function mint(
+  |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:13:5:
+   |
+13 |     function mintMulti(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:20:5:
+   |
+20 |     function getMintOutput(address _input, uint256 _inputQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:26:5:
+   |
+26 |     function getMintMultiOutput(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:32:5:
+   |
+32 |     function swap(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:40:5:
+   |
+40 |     function getSwapOutput(address _input, address _output, uint256 _inputQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:47:5:
+   |
+47 |     function redeem(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:54:5:
+   |
+54 |     function redeemMasset(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:60:5:
+   |
+60 |     function redeemExactBassets(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:67:5:
+   |
+67 |     function getRedeemOutput(address _output, uint256 _mAssetQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:73:5:
+   |
+73 |     function getRedeemExactBassetsOutput(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (9302): Return value of low-level calls not used.
+  --> src/tests/fix/DualFromTokenCommissionFix.t.sol:66:9:
+   |
+66 |         address(dexRouter).call{value: 99}(data);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/UnxswapRouter.sol:48:9:
+   |
+48 |         uint256 minReturn,
+   |         ^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/UnxswapV3Router.sol:50:9:
+   |
+50 |         uint256 minReturn,
+   |         ^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/AmbientAdapter.sol:55:9:
+   |
+55 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/AmbientAdapter.sol:64:9:
+   |
+64 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/AmbientAdapter2.sol:97:9:
+   |
+97 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> contracts/8/adapter/AmbientAdapter2.sol:105:9:
+    |
+105 |         address pool,
+    |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/DODOV3Adapter.sol:45:9:
+   |
+45 |         bytes calldata data
+   |         ^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EchodexAdapter.sol:44:71:
+   |
+44 |     function _handleSwap(address to, address pool, address fromToken, address toToken, bool isToken0) internal {
+   |                                                                       ^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEbtcAdapter.sol:23:9:
+   |
+23 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEbtcAdapter.sol:52:9:
+   |
+52 |         address to,
+   |         ^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEbtcAdapter.sol:53:9:
+   |
+53 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEbtcAdapter.sol:54:9:
+   |
+54 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEethAdapter.sol:24:9:
+   |
+24 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEethAdapter.sol:48:9:
+   |
+48 |         address to,
+   |         ^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiEethAdapter.sol:49:9:
+   |
+49 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiWeethAdapter.sol:22:9:
+   |
+22 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiWeethAdapter.sol:23:9:
+   |
+23 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiWeethAdapter.sol:46:9:
+   |
+46 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/EtherFiWeethAdapter.sol:47:9:
+   |
+47 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> contracts/8/adapter/FluidAdapter.sol:21:27:
+   |
+21 |         (address tokenIn, address tokenOut) = abi.decode(
+   |                           ^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/LitePSMAdapter.sol:35:9:
+   |
+35 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/MstableAdapter.sol:34:71:
+   |
+34 |     function _handleMint(address to, address pool, address fromToken, address toToken)
+   |                                                                       ^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/NativeV3Adapter.sol:30:9:
+   |
+30 |         uint160 sqrtX96,
+   |         ^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+   --> contracts/8/libraries/CommissionLib.sol:198:5:
+    |
+198 |     function _getBalanceOf(
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> contracts/8/adapter/EtherFiEbtcAdapter.sol:51:5:
+   |
+51 |     function sellQuote(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> contracts/8/adapter/EtherFiEethAdapter.sol:47:5:
+   |
+47 |     function sellQuote(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+ --> contracts/8/interfaces/IMstable.sol:6:5:
+  |
+6 |     function mint(
+  |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:13:5:
+   |
+13 |     function mintMulti(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:20:5:
+   |
+20 |     function getMintOutput(address _input, uint256 _inputQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:26:5:
+   |
+26 |     function getMintMultiOutput(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:32:5:
+   |
+32 |     function swap(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:40:5:
+   |
+40 |     function getSwapOutput(address _input, address _output, uint256 _inputQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:47:5:
+   |
+47 |     function redeem(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:54:5:
+   |
+54 |     function redeemMasset(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:60:5:
+   |
+60 |     function redeemExactBassets(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:67:5:
+   |
+67 |     function getRedeemOutput(address _output, uint256 _mAssetQuantity)
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> contracts/8/interfaces/IMstable.sol:73:5:
+   |
+73 |     function getRedeemExactBassetsOutput(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2072): Unused local variable.
+  --> contracts/8/adapter/RingV3Adapter.sol:33:29:
+   |
+33 |         (address fromToken, address toToken, ) = abi.decode(
+   |                             ^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/SpartanV2Adapter.sol:23:9:
+   |
+23 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/SpartanV2Adapter.sol:47:9:
+   |
+47 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> contracts/8/adapter/SpartanV2Adapter.sol:50:29:
+   |
+50 |         (address fromToken, address toToken) = abi.decode(
+   |                             ^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> contracts/8/adapter/TimeAdapter.sol:36:10:
+   |
+36 |         (address tokenIn, address tokenOut) = abi.decode(moreInfo, (address, address));
+   |          ^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> contracts/8/adapter/TimeAdapter.sol:57:27:
+   |
+57 |         (address tokenIn, address tokenOut) = abi.decode(moreInfo, (address, address));
+   |                           ^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/UniswapV1Adapter.sol:23:9:
+   |
+23 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/UniswapV1Adapter.sol:37:9:
+   |
+37 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/sFRAXAdapter.sol:22:9:
+   |
+22 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/sFRAXAdapter.sol:23:9:
+   |
+23 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/sFRAXAdapter.sol:37:9:
+   |
+37 |         address pool,
+   |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> contracts/8/adapter/sFRAXAdapter.sol:38:9:
+   |
+38 |         bytes memory moreInfo
+   |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> src/tests/fix/ThenaAdapterFix.t.sol:87:18:
+   |
+87 |         (bool s, bytes memory res) = DexRouter.call{value: value}(data);
+   |                  ^^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> contracts/8/adapter/TestRevertAdapter.sol:37:5:
+   |
+37 |     function sellBase(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> contracts/8/adapter/TestRevertAdapter.sol:45:5:
+   |
+45 |     function sellQuote(
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> contracts/8/libraries/CommissionLib.sol:198:5:
+    |
+198 |     function _getBalanceOf(
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+╭-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------╮
+| Contract                                                                      | Runtime Size (B) | Initcode Size (B) | Runtime Margin (B) | Initcode Margin (B) |
++=================================================================================================================================================================+
+| AaveV2Adapter                                                                 | 1,615            | 1,781             | 22,961             | 47,371              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AaveV3Adapter                                                                 | 1,575            | 1,734             | 23,001             | 47,418              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AaveV3StaticATokenAdapter                                                     | 1,678            | 1,710             | 22,898             | 47,442              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Address                                                                       | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Address.0.8.17                                                                | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Address.0.8.30                                                                | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AddressSetLib                                                                 | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AddressUpgradeable.0.8.17                                                     | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AddressUpgradeable.0.8.30                                                     | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AgniFinanceAdapter                                                            | 2,467            | 2,626             | 22,109             | 46,526              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AlgebraAdapter                                                                | 2,544            | 2,703             | 22,032             | 46,449              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AlienBaseV3Adapter                                                            | 2,720            | 2,879             | 21,856             | 46,273              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AllBridgeAdapter                                                              | 1,009            | 1,154             | 23,567             | 47,998              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AmbientAdapter                                                                | 1,673            | 1,826             | 22,903             | 47,326              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AmbientAdapter2                                                               | 2,520            | 2,673             | 22,056             | 46,479              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AngleAdapter                                                                  | 984              | 1,016             | 23,592             | 48,136              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ApeAdapter                                                                    | 2,046            | 2,078             | 22,530             | 47,074              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ArbDexAdapter                                                                 | 2,287            | 2,319             | 22,289             | 46,833              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ArbSwapAdapter                                                                | 2,280            | 2,312             | 22,296             | 46,840              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ArbSwapV2Adapter                                                              | 3,507            | 3,539             | 21,069             | 45,613              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ArenaAdapter                                                                  | 2,641            | 2,814             | 21,935             | 46,338              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AspectaAdapter                                                                | 3,903            | 4,152             | 20,673             | 45,000              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| AxialAdapter                                                                  | 1,266            | 1,298             | 23,310             | 47,854              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BabyDogeAdapter                                                               | 1,484            | 1,757             | 23,092             | 47,395              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BakeryAdapter                                                                 | 1,933            | 1,965             | 22,643             | 47,187              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BalanceDeltaLibrary                                                           | 132              | 182               | 24,444             | 48,970              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BalancerAdapter                                                               | 1,906            | 1,938             | 22,670             | 47,214              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BalancerV2Adapter                                                             | 2,204            | 2,431             | 22,372             | 46,721              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BalancerV2ComposableAdapter                                                   | 4,220            | 4,386             | 20,356             | 44,766              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BalancerV3Adapter                                                             | 2,307            | 2,486             | 22,269             | 46,666              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BancorAdapter                                                                 | 2,847            | 3,088             | 21,729             | 46,064              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BancorV3Adapter                                                               | 2,775            | 3,062             | 21,801             | 46,090              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BeethovenxAdapter                                                             | 2,584            | 2,832             | 21,992             | 46,320              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BeforeSwapDeltaLibrary                                                        | 132              | 182               | 24,444             | 48,970              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BiAdapter                                                                     | 2,347            | 2,379             | 22,229             | 46,773              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BiAdapterV3                                                                   | 2,142            | 2,174             | 22,434             | 46,978              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BunnyswapAdapter                                                              | 1,838            | 2,003             | 22,738             | 47,149              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BytesLib.0.8.17                                                               | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| BytesLib.0.8.30                                                               | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CamelotV3Adapter                                                              | 2,401            | 2,560             | 22,175             | 46,592              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CameplotAdapter                                                               | 2,239            | 2,271             | 22,337             | 46,881              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ChronosAdapter                                                                | 1,976            | 2,008             | 22,600             | 47,144              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ClipperAdapter                                                                | 2,734            | 2,968             | 21,842             | 46,184              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ClipperCovesAdapter                                                           | 668              | 700               | 23,908             | 48,452              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CompoundAdapter                                                               | 2,808            | 2,974             | 21,768             | 46,178              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CompoundV3Adapter                                                             | 1,057            | 1,089             | 23,519             | 48,063              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurrencyLibrary                                                               | 142              | 192               | 24,434             | 48,960              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Curve3poolLPAdapter                                                           | 2,061            | 2,226             | 22,515             | 46,926              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurveAdapter                                                                  | 2,262            | 2,428             | 22,314             | 46,724              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurveStableNGAdapter                                                          | 1,519            | 1,551             | 23,057             | 47,601              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurveTNGAdapter                                                               | 1,455            | 1,487             | 23,121             | 47,665              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurveTriOptAdapter                                                            | 1,619            | 1,651             | 22,957             | 47,501              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CurveV2Adapter                                                                | 2,179            | 2,352             | 22,397             | 46,800              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CustomRevert.0.8.17                                                           | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| CustomRevert.0.8.30                                                           | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DODOV1Adapter                                                                 | 3,042            | 3,187             | 21,534             | 45,965              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DODOV2Adapter                                                                 | 618              | 650               | 23,958             | 48,502              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DODOV3Adapter                                                                 | 1,177            | 1,209             | 23,399             | 47,943              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DataTypes.0.8.17                                                              | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DataTypes.0.8.30                                                              | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DecimalMath                                                                   | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DexRouter                                                                     | 24,215           | 24,248            | 361                | 24,904              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DexRouterExactOut                                                             | 15,566           | 15,598            | 9,010              | 33,554              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DexRouterStorage.0.8.17                                                       | 63               | 92                | 24,513             | 49,060              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DexRouterStorage.0.8.30                                                       | 62               | 88                | 24,514             | 49,064              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DnyFeeAdapter                                                                 | 2,267            | 2,299             | 22,309             | 46,853              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DoppleAdapter                                                                 | 1,250            | 1,282             | 23,326             | 47,870              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| DragonV2Adapter                                                               | 2,539            | 2,698             | 22,037             | 46,454              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ECDSA                                                                         | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EchodexAdapter                                                                | 2,508            | 2,653             | 22,068             | 46,499              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EllipsisAdapter                                                               | 2,428            | 2,601             | 22,148             | 46,551              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EtherFiEbtcAdapter                                                            | 1,479            | 1,691             | 23,097             | 47,461              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EtherFiEethAdapter                                                            | 1,556            | 1,768             | 23,020             | 47,384              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EtherFiWeethAdapter                                                           | 1,810            | 2,137             | 22,766             | 47,015              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| EulerSwapAdapter                                                              | 1,501            | 1,533             | 23,075             | 47,619              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FerroAdapter                                                                  | 1,463            | 1,495             | 23,113             | 47,657              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FireFlyV3Adapter                                                              | 2,539            | 2,698             | 22,037             | 46,454              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FirebirdAdapter                                                               | 3,294            | 3,446             | 21,282             | 45,706              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FluidAdapter                                                                  | 1,774            | 1,959             | 22,802             | 47,193              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FourMemeAdapter                                                               | 4,197            | 4,438             | 20,379             | 44,714              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FraxswapAdapter                                                               | 1,815            | 1,847             | 22,761             | 47,305              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FushionXAdapter                                                               | 2,950            | 3,165             | 21,626             | 45,987              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| FxAdapter                                                                     | 1,884            | 1,916             | 22,692             | 47,236              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| GmxAdapter                                                                    | 654              | 686               | 23,922             | 48,466              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| GmxAdapter2                                                                   | 901              | 933               | 23,675             | 48,219              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HashflowAdapter                                                               | 3,877            | 3,909             | 20,699             | 45,243              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HashflowV3Adapter                                                             | 2,386            | 2,576             | 22,190             | 46,576              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HerculesV3Adapter                                                             | 2,455            | 2,614             | 22,121             | 46,538              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HermesAdapter                                                                 | 3,061            | 3,165             | 21,515             | 45,987              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HorizonAdapter                                                                | 2,952            | 3,312             | 21,624             | 45,840              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HorizonAdapterWithRefund                                                      | 2,736            | 2,895             | 21,840             | 46,257              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| HtokenAdapter                                                                 | 1,458            | 1,490             | 23,118             | 47,662              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| IZumiAdapter                                                                  | 4,118            | 4,333             | 20,458             | 44,819              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| IZumiPath.0.8.17                                                              | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| IZumiPath.0.8.30                                                              | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ImmutableState (contracts/8/libraries/ImmutableState.sol)                     | 162              | 285               | 24,414             | 48,867              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ImmutableState (contracts/8/libraries/PancakeSwapInfinity/ImmutableState.sol) | 162              | 285               | 24,414             | 48,867              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| IntegralAdapter                                                               | 1,181            | 1,326             | 23,395             | 47,826              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Ironswap3PoolLpAdapter                                                        | 2,485            | 2,894             | 22,091             | 46,258              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| IronswapAdapter                                                               | 1,446            | 1,478             | 23,130             | 47,674              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| KimV4Adapter                                                                  | 2,455            | 2,614             | 22,121             | 46,538              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| KokonutAdapter                                                                | 1,535            | 1,567             | 23,041             | 47,585              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| KyberAdapter                                                                  | 2,122            | 2,154             | 22,454             | 46,998              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| KyberElasticAdapter                                                           | 2,539            | 2,698             | 22,037             | 46,454              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| KyberElasticAdapterWithRefund                                                 | 2,740            | 2,899             | 21,836             | 46,253              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| LevelAdapter                                                                  | 632              | 664               | 23,944             | 48,488              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| LidoAdapter                                                                   | 2,649            | 2,795             | 21,927             | 46,357              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| LighterswapAdapter                                                            | 2,712            | 2,872             | 21,864             | 46,280              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| LimitOrderAdapter                                                             | 2,545            | 2,704             | 22,031             | 46,448              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| LitePSMAdapter                                                                | 1,459            | 1,518             | 23,117             | 47,634              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Math                                                                          | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MaverickAdapter                                                               | 2,792            | 3,007             | 21,784             | 46,145              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MaverickV2Adapter                                                             | 1,059            | 1,091             | 23,517             | 48,061              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MeshswapAdapter                                                               | 1,704            | 2,059             | 22,872             | 47,093              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MooniswapAdapter                                                              | 2,283            | 2,443             | 22,293             | 46,709              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MstableAdapter                                                                | 1,619            | 1,651             | 22,957             | 47,501              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| MultichainAdapter                                                             | 1,069            | 1,101             | 23,507             | 48,051              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NativePmmAdapter                                                              | 2,690            | 2,894             | 21,886             | 46,258              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NativePmmAdapterV2                                                            | 2,626            | 2,830             | 21,950             | 46,322              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NativePmmAdapterV3                                                            | 3,552            | 3,763             | 21,024             | 45,389              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NativeV3Adapter                                                               | 3,742            | 3,894             | 20,834             | 45,258              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NerveFinanceAdapter                                                           | 1,266            | 1,298             | 23,310             | 47,854              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NetswapAdapter                                                                | 4,235            | 4,339             | 20,341             | 44,813              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NexttokenAdapter                                                              | 1,431            | 1,463             | 23,145             | 47,689              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NileCLAdapter                                                                 | 1,693            | 1,725             | 22,883             | 47,427              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NomiswapAdapter                                                               | 2,913            | 3,111             | 21,663             | 46,041              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| NovabitsV3Adapter                                                             | 2,720            | 2,879             | 21,856             | 46,273              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| OKXLimitOrderAdapter                                                          | 2,578            | 2,868             | 21,998             | 46,284              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| OneinchV1Adapter                                                              | 2,213            | 2,373             | 22,363             | 46,779              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| OriginAdapter                                                                 | 960              | 992               | 23,616             | 48,160              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| OriginWrapperAdapter                                                          | 1,164            | 1,196             | 23,412             | 47,956              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PMMAdapter                                                                    | 5,288            | 5,320             | 19,288             | 43,832              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PMMLib.0.8.17                                                                 | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PMMLib.0.8.30                                                                 | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PMMRouterStorage.0.8.17                                                       | 63               | 92                | 24,513             | 49,060              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PMMRouterStorage.0.8.30                                                       | 62               | 88                | 24,514             | 49,064              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PSMAdapter                                                                    | 4,441            | 4,962             | 20,135             | 44,190              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PancakeAdapter                                                                | 2,050            | 2,082             | 22,526             | 47,070              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PancakeStableSwapTwoAdapter                                                   | 2,030            | 2,196             | 22,546             | 46,956              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PancakeSwapInfinityAdapter                                                    | 5,797            | 6,155             | 18,779             | 42,997              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PancakestableAdapter                                                          | 1,156            | 1,184             | 23,420             | 47,968              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PancakeswapV3Adapter                                                          | 2,755            | 2,962             | 21,821             | 46,190              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PendleAdapter                                                                 | 3,214            | 3,380             | 21,362             | 45,772              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PlatypusAdapter                                                               | 1,290            | 1,423             | 23,286             | 47,729              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PmmRFQAdapter                                                                 | 1,920            | 2,059             | 22,656             | 47,093              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PolygonMigrationAdapter                                                       | 1,734            | 2,009             | 22,842             | 47,143              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PoolIdLibrary (contracts/8/types/PancakeSwapInfinity/PoolId.sol)              | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| PoolIdLibrary (contracts/8/types/PoolId.sol)                                  | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| QuickswapAdapter                                                              | 1,967            | 1,995             | 22,609             | 47,157              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Quickswapv3Adapter                                                            | 2,391            | 2,543             | 22,185             | 46,609              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RamsesV2Adapter                                                               | 2,371            | 2,523             | 22,205             | 46,629              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RevertReasonForwarder.0.8.17                                                  | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RevertReasonForwarder.0.8.30                                                  | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RevertReasonParser.0.8.17                                                     | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RevertReasonParser.0.8.30                                                     | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RingAdapter                                                                   | 2,884            | 2,912             | 21,692             | 46,240              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RingV3Adapter                                                                 | 3,570            | 3,709             | 21,006             | 45,443              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RocketpoolAdapter                                                             | 2,068            | 2,345             | 22,508             | 46,807              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| RouterErrors                                                                  | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SaddleAdapter                                                                 | 1,486            | 1,514             | 23,090             | 47,638              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeCast.0.8.17                                                               | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeCast.0.8.30                                                               | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeERC20                                                                     | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeERC20.0.8.17                                                              | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeERC20.0.8.30                                                              | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeMath.0.8.17                                                               | 164              | 220               | 24,412             | 48,932              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SafeMath.0.8.30                                                               | 162              | 212               | 24,414             | 48,940              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SavingsPoolAdapter                                                            | 1,255            | 1,283             | 23,321             | 47,869              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SheepdexAdapter                                                               | 2,433            | 2,585             | 22,143             | 46,567              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ShellAdapter                                                                  | 1,174            | 1,202             | 23,402             | 47,950              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SignedMath                                                                    | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Slot0Library                                                                  | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SmardexAdapter                                                                | 1,337            | 1,365             | 23,239             | 47,787              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SmardexAdapterWithRefund                                                      | 1,550            | 1,578             | 23,026             | 47,574              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SmoothyV1Adapter                                                              | 1,364            | 1,392             | 23,212             | 47,760              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SolidlyAdapter                                                                | 1,883            | 1,911             | 22,693             | 47,241              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SolidlyAdapterOnMetis                                                         | 3,774            | 3,873             | 20,802             | 45,279              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SolidlyV3Adapter                                                              | 1,414            | 1,442             | 23,162             | 47,710              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SolidlyseriesAdapter                                                          | 1,897            | 1,925             | 22,679             | 47,227              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SovereignPoolAdapter                                                          | 1,566            | 1,594             | 23,010             | 47,558              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SparkPsmAdapter                                                               | 1,075            | 1,214             | 23,501             | 47,938              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SpartanV2Adapter                                                              | 1,523            | 1,676             | 23,053             | 47,476              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Strings (contracts/8/libraries/Strings.sol)                                   | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Strings (node_modules/@openzeppelin/contracts/utils/Strings.sol)              | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Structs.0.8.17                                                                | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| Structs.0.8.30                                                                | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SynapseAdapter                                                                | 2,433            | 2,461             | 22,143             | 46,691              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SyncSwapAdapter                                                               | 1,042            | 1,070             | 23,534             | 48,082              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SynthetixEtherWrapperAdapter                                                  | 1,629            | 1,657             | 22,947             | 47,495              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SynthetixExchangeAtomicallyAdapter                                            | 1,160            | 1,291             | 23,416             | 47,861              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| SynthetixExchangeWithTrackingAdapter                                          | 1,169            | 1,300             | 23,407             | 47,852              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TempStorage.0.8.17                                                            | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TempStorage.0.8.30                                                            | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TestRevertAdapter                                                             | 784              | 812               | 23,792             | 48,340              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ThenaAdapter                                                                  | 1,905            | 1,933             | 22,671             | 47,219              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ThenaAdapterFix                                                               | 2,983            | 3,011             | 21,593             | 46,141              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ThenaV2Adapter                                                                | 2,113            | 2,263             | 22,463             | 46,889              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TickMath.0.8.17 (contracts/8/libraries/KyberElasticTickMath.sol)              | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TickMath.0.8.17 (contracts/8/libraries/TickMath.sol)                          | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TickMath.0.8.30 (contracts/8/libraries/KyberElasticTickMath.sol)              | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TickMath.0.8.30 (contracts/8/libraries/TickMath.sol)                          | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TimeAdapter                                                                   | 1,978            | 2,271             | 22,598             | 46,881              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TokenApprove                                                                  | 1,605            | 1,637             | 22,971             | 47,515              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TokenApproveProxy                                                             | 1,887            | 1,919             | 22,689             | 47,233              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TraderJoeV2Adapter                                                            | 627              | 655               | 23,949             | 48,497              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TraderJoeV2P1Adapter                                                          | 616              | 644               | 23,960             | 48,508              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TraderJoeV2P2Adapter                                                          | 616              | 644               | 23,960             | 48,508              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TransientStateLibrary                                                         | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| TridentAdapter                                                                | 1,628            | 1,787             | 22,948             | 47,365              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniAdapter                                                                    | 1,961            | 1,989             | 22,615             | 47,163              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniAdapterForRebaseToken                                                      | 2,314            | 2,342             | 22,262             | 46,810              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV3Adapter.0.8.17                                                           | 2,720            | 2,879             | 21,856             | 46,273              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV3Adapter.0.8.30                                                           | 2,609            | 2,761             | 21,967             | 46,391              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV3Adapter2                                                                 | 2,899            | 3,051             | 21,677             | 46,101              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV4Adapter                                                                  | 4,735            | 5,011             | 19,841             | 44,141              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV4AdapterV2                                                                | 4,554            | 4,823             | 20,022             | 44,329              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniV4HookAdapter                                                              | 5,385            | 5,654             | 19,191             | 43,498              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniswapV1Adapter                                                              | 1,931            | 1,994             | 22,645             | 47,158              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniversalERC20.0.8.17                                                         | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniversalERC20.0.8.30                                                         | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UniversalUniswapV3Adapter                                                     | 2,940            | 3,189             | 21,636             | 45,963              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UnxswapExactOutRouter                                                         | 225              | 256               | 24,351             | 48,896              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UnxswapRouter                                                                 | 225              | 256               | 24,351             | 48,896              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UnxswapV3ExactOutRouter                                                       | 3,206            | 3,238             | 21,370             | 45,914              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| UnxswapV3Router                                                               | 978              | 1,010             | 23,598             | 48,142              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| VirtuSwapAdapter                                                              | 1,577            | 1,605             | 22,999             | 47,547              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| VirtualsAdapter                                                               | 2,213            | 2,474             | 22,363             | 46,678              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| WNativeRelayer                                                                | 2,253            | 2,281             | 22,323             | 46,871              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| WombatAdapter                                                                 | 1,141            | 1,169             | 23,435             | 47,983              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| WoofiAdapter                                                                  | 902              | 930               | 23,674             | 48,222              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| WrappedSynthetixAdapter                                                       | 1,693            | 1,721             | 22,883             | 47,431              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| XSigmaAdapter                                                                 | 1,196            | 1,224             | 23,380             | 47,928              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| XeiAdapter                                                                    | 2,433            | 2,585             | 22,143             | 46,567              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| XfaiAdapter                                                                   | 1,156            | 1,184             | 23,420             | 47,968              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| YearnAdapter                                                                  | 1,282            | 1,310             | 23,294             | 47,842              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZebraV3Adapter                                                                | 2,433            | 2,585             | 22,143             | 46,567              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZeroCopySink                                                                  | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZeroCopySource                                                                | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZeroExAdapter                                                                 | 3,712            | 3,898             | 20,864             | 45,254              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZyberStableAdapter                                                            | 1,549            | 1,577             | 23,027             | 47,575              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| ZyberV3Adapter                                                                | 2,433            | 2,585             | 22,143             | 46,567              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| console.0.8.17                                                                | 86               | 141               | 24,490             | 49,011              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| console.0.8.30                                                                | 85               | 135               | 24,491             | 49,017              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| fraxETHAdapter                                                                | 2,652            | 2,976             | 21,924             | 46,176              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| sDAIAdapter                                                                   | 1,119            | 1,147             | 23,457             | 48,005              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| sFRAXAdapter                                                                  | 1,372            | 1,661             | 23,204             | 47,491              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| stEURAdapter                                                                  | 1,150            | 1,178             | 23,426             | 47,974              |
+|-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------|
+| stUSDAdapter                                                                  | 1,146            | 1,174             | 23,430             | 47,978              |
+╰-------------------------------------------------------------------------------+------------------+-------------------+--------------------+---------------------╯
+

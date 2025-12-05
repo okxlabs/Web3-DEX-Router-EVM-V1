@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.17;
 
 import {IERC20Minimal} from "../interfaces/external/IERC20Minimal.sol";
 import {CustomRevert} from "../libraries/CustomRevert.sol";
 
 type Currency is address;
 
-using {greaterThan as >, lessThan as <, greaterThanOrEqualTo as >=, equals as ==} for Currency global;
 using CurrencyLibrary for Currency global;
 
 function equals(Currency currency, Currency other) pure returns (bool) {

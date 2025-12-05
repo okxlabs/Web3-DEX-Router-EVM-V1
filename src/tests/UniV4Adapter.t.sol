@@ -44,6 +44,12 @@ contract UniV4Test is Test {
     address cbBTC = 0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf; //8
     address LBTC = 0xecAc9C5F704e954931349Da37F60E39f515c11c1; //8
     address USD = 0xB79DD08EA68A908A97220C76d19A6aA9cBDE4376; //6
+    
+    // Monad addresses
+    address MON = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A;
+    address USDC_monad = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603;
+    
     //address user = 0xcBfd32FDec86F88784266221CcE8141dA7B9A9eD;
     address amy = vm.rememberKey(1);
     UniV4Adapter adapter;
@@ -1203,5 +1209,270 @@ contract UniV4Test is Test {
         );
         console2.log("USDT balance after", IERC20(USDT).balanceOf(address(amy)));
         console2.log("USDe balance after", IERC20(USDe).balanceOf(address(amy)));
+    }
+
+    // ===== Monad Tests =====
+    // NOTE: These tests require MONAD_RPC_URL to be set and Monad-specific setup
+    
+    function _test_monad_WMON2USDC() public user(amy){
+        //poolId: 0x0f59a6494b686ccfba956980abf60c2ef0f4ead0ee9a85b1e3f03905afc79ba5
+        address FROM_TOKEN = WMON;
+        address TO_TOKEN = USDC_monad;
+        uint24 fee = 3000;
+        int24 tickSpacing = 60;
+        uint256 amount = 1 * 10 ** 10;
+
+        deal(FROM_TOKEN, amy, amount);
+        SafeERC20.safeApprove(IERC20(FROM_TOKEN), 0xf534A8a1CAD0543Cd6438f7534CA3486c01998d4, amount);
+
+        SwapInfo memory swapInfo;
+
+        //baseRequest
+        swapInfo.baseRequest.fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.baseRequest.toToken = TO_TOKEN;
+        swapInfo.baseRequest.fromTokenAmount = amount;
+        swapInfo.baseRequest.minReturnAmount = 0;
+        swapInfo.baseRequest.deadLine = block.timestamp + 1 hours;
+
+        //batchsAmount
+        swapInfo.batchesAmount = new uint256[](1);
+        swapInfo.batchesAmount[0] = amount;
+
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches[0][0].mixAdapters = new address[](1);
+        swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
+        swapInfo.batches[0][0].assetTo = new address[](1);
+        swapInfo.batches[0][0].assetTo[0] = address(adapter);
+        swapInfo.batches[0][0].rawData = new uint256[](1);
+        swapInfo.batches[0][0].rawData[0] = uint256(
+            bytes32(abi.encodePacked(uint8(0x00), uint88(10000), address(0)))
+        );
+
+        swapInfo.batches[0][0].extraData = new bytes[](1);
+        swapInfo.batches[0][0].extraData[0] = abi.encode(address(FROM_TOKEN), address(TO_TOKEN), fee, tickSpacing);
+        swapInfo.batches[0][0].fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
+
+        console2.log("WMON balance before", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("USDC balance before", IERC20(TO_TOKEN).balanceOf(address(amy)));
+        
+        try dexRouter.smartSwapByOrderId{value: 0}(
+            swapInfo.orderId,
+            swapInfo.baseRequest,
+            swapInfo.batchesAmount,
+            swapInfo.batches,
+            swapInfo.extraData
+        ) {
+            console2.log("Swap succeeded");
+        } catch Error(string memory reason) {
+            console2.log("Swap failed with reason:", reason);
+        } catch (bytes memory lowLevelData) {
+            console2.log("Swap failed with low level error");
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            console2.logBytes4(selector);
+        }
+
+        console2.log("WMON balance after", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("USDC balance after", IERC20(TO_TOKEN).balanceOf(address(amy)));
+    }
+
+    function _test_monad_MON2USDC() public user(amy){
+        //poolId: 0x0f59a6494b686ccfba956980abf60c2ef0f4ead0ee9a85b1e3f03905afc79ba5
+        address TO_TOKEN = USDC_monad;
+        uint24 fee = 3000;
+        int24 tickSpacing = 60;
+        uint256 amount = 1 * 10 ** 10;
+
+        deal(amy, amount);
+
+        SwapInfo memory swapInfo;
+
+        //baseRequest
+        swapInfo.baseRequest.fromToken = uint256(uint160(address(MON)));
+        swapInfo.baseRequest.toToken = TO_TOKEN;
+        swapInfo.baseRequest.fromTokenAmount = amount;
+        swapInfo.baseRequest.minReturnAmount = 0;
+        swapInfo.baseRequest.deadLine = block.timestamp;
+
+        //batchsAmount
+        swapInfo.batchesAmount = new uint256[](1);
+        swapInfo.batchesAmount[0] = amount;
+
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches[0][0].mixAdapters = new address[](1);
+        swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
+        swapInfo.batches[0][0].assetTo = new address[](1);
+        swapInfo.batches[0][0].assetTo[0] = address(adapter);
+        swapInfo.batches[0][0].rawData = new uint256[](1);
+        swapInfo.batches[0][0].rawData[0] = uint256(
+            bytes32(abi.encodePacked(uint8(0x00), uint88(10000), address(0)))
+        );
+
+        swapInfo.batches[0][0].extraData = new bytes[](1);
+        swapInfo.batches[0][0].extraData[0] = abi.encode(address(WMON), address(TO_TOKEN), fee, tickSpacing);
+        swapInfo.batches[0][0].fromToken = uint256(uint160(address(WMON)));
+        swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
+        
+        console2.log("MON balance before", address(amy).balance);
+        console2.log("TO_TOKEN balance before", IERC20(TO_TOKEN).balanceOf(address(amy)));
+        
+        try dexRouter.smartSwapByOrderId{value: amount}(
+            swapInfo.orderId,
+            swapInfo.baseRequest,
+            swapInfo.batchesAmount,
+            swapInfo.batches,
+            swapInfo.extraData
+        ) {
+            console2.log("Swap succeeded");
+        } catch Error(string memory reason) {
+            console2.log("Swap failed with reason:", reason);
+        } catch (bytes memory lowLevelData) {
+            console2.log("Swap failed with low level error");
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            console2.logBytes4(selector);
+        }
+
+        console2.log("MON balance after", address(amy).balance);
+        console2.log("TO_TOKEN balance after", IERC20(TO_TOKEN).balanceOf(address(amy)));
+    }
+
+    function _test_monad_USDC2WMON() public user(amy){
+        //poolId: 0x0f59a6494b686ccfba956980abf60c2ef0f4ead0ee9a85b1e3f03905afc79ba5
+        address FROM_TOKEN = USDC_monad;
+        address TO_TOKEN = WMON;
+        uint24 fee = 3000;
+        int24 tickSpacing = 60;
+        uint256 amount = 1 * 10 ** 4;
+
+        deal(FROM_TOKEN, amy, amount);
+        SafeERC20.safeApprove(IERC20(FROM_TOKEN), 0xf534A8a1CAD0543Cd6438f7534CA3486c01998d4, amount);
+
+        SwapInfo memory swapInfo;
+
+        //baseRequest
+        swapInfo.baseRequest.fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.baseRequest.toToken = TO_TOKEN;
+        swapInfo.baseRequest.fromTokenAmount = amount;
+        swapInfo.baseRequest.minReturnAmount = 0;
+        swapInfo.baseRequest.deadLine = block.timestamp + 1 hours;
+
+        //batchsAmount
+        swapInfo.batchesAmount = new uint256[](1);
+        swapInfo.batchesAmount[0] = amount;
+
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches[0][0].mixAdapters = new address[](1);
+        swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
+        swapInfo.batches[0][0].assetTo = new address[](1);
+        swapInfo.batches[0][0].assetTo[0] = address(adapter);
+        swapInfo.batches[0][0].rawData = new uint256[](1);
+        swapInfo.batches[0][0].rawData[0] = uint256(
+            bytes32(abi.encodePacked(uint8(0x00), uint88(10000), address(0)))
+        );
+
+        swapInfo.batches[0][0].extraData = new bytes[](1);
+        swapInfo.batches[0][0].extraData[0] = abi.encode(address(FROM_TOKEN), address(TO_TOKEN), fee, tickSpacing);
+        swapInfo.batches[0][0].fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
+        
+        console2.log("FROM_TOKEN balance before", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("TO_TOKEN balance before", IERC20(TO_TOKEN).balanceOf(address(amy)));
+
+        try dexRouter.smartSwapByOrderId{value: 0}(
+            swapInfo.orderId,
+            swapInfo.baseRequest,
+            swapInfo.batchesAmount,
+            swapInfo.batches,
+            swapInfo.extraData
+        ) {
+            console2.log("Swap succeeded");
+        } catch Error(string memory reason) {
+            console2.log("Swap failed with reason:", reason);
+        } catch (bytes memory lowLevelData) {
+            console2.log("Swap failed with low level error");
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            console2.logBytes4(selector);
+        }
+
+        console2.log("FROM_TOKEN balance after", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("TO_TOKEN balance after", IERC20(TO_TOKEN).balanceOf(address(amy)));
+    }
+
+    function _test_monad_USDC2MON() public user(amy){
+        //poolId: 0x0f59a6494b686ccfba956980abf60c2ef0f4ead0ee9a85b1e3f03905afc79ba5
+        address FROM_TOKEN = USDC_monad;
+        address TO_TOKEN = MON;
+        uint24 fee = 3000;
+        int24 tickSpacing = 60;
+        uint256 amount = 1 * 10 ** 4;
+
+        deal(FROM_TOKEN, amy, amount);
+        SafeERC20.safeApprove(IERC20(FROM_TOKEN), 0xf534A8a1CAD0543Cd6438f7534CA3486c01998d4, amount);
+
+        SwapInfo memory swapInfo;
+
+        //baseRequest
+        swapInfo.baseRequest.fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.baseRequest.toToken = TO_TOKEN;
+        swapInfo.baseRequest.fromTokenAmount = amount;
+        swapInfo.baseRequest.minReturnAmount = 0;
+        swapInfo.baseRequest.deadLine = block.timestamp + 1000 hours;
+
+        //batchsAmount
+        swapInfo.batchesAmount = new uint256[](1);
+        swapInfo.batchesAmount[0] = amount;
+
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches[0][0].mixAdapters = new address[](1);
+        swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
+        swapInfo.batches[0][0].assetTo = new address[](1);
+        swapInfo.batches[0][0].assetTo[0] = address(adapter);
+        swapInfo.batches[0][0].rawData = new uint256[](1);
+        swapInfo.batches[0][0].rawData[0] = uint256(
+            bytes32(abi.encodePacked(uint8(0x00), uint88(10000), address(0)))
+        );
+
+        swapInfo.batches[0][0].extraData = new bytes[](1);
+        swapInfo.batches[0][0].extraData[0] = abi.encode(address(FROM_TOKEN), address(WMON), fee, tickSpacing);
+        swapInfo.batches[0][0].fromToken = uint256(uint160(address(FROM_TOKEN)));
+        swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
+        
+        console2.log("FROM_TOKEN balance before", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("TO_TOKEN balance before", address(amy).balance);
+
+        try dexRouter.smartSwapByOrderId{value: 0}(
+            swapInfo.orderId,
+            swapInfo.baseRequest,
+            swapInfo.batchesAmount,
+            swapInfo.batches,
+            swapInfo.extraData
+        ) {
+            console2.log("Swap succeeded");
+        } catch Error(string memory reason) {
+            console2.log("Swap failed with reason:", reason);
+        } catch (bytes memory lowLevelData) {
+            console2.log("Swap failed with low level error");
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            console2.logBytes4(selector);
+        }
+
+        console2.log("FROM_TOKEN balance after", IERC20(FROM_TOKEN).balanceOf(address(amy)));
+        console2.log("TO_TOKEN balance after", address(amy).balance);
     }
 }

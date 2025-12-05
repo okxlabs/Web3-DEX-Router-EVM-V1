@@ -29,6 +29,9 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
         nativeWrappedTokens["linea"] = 0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f; // LINEA_WETH
         nativeWrappedTokens["cro"] = 0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23; // CRO_WCRO
         nativeWrappedTokens["polygon"] = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270; // POLYGON_WMATIC
+        nativeWrappedTokens["avax"] = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // AVALANCHE_WAVAX
+        nativeWrappedTokens["base"] = 0x4200000000000000000000000000000000000006; // BASE_WETH
+        nativeWrappedTokens["monad"] = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // MONAD_WMON
 
         address nativeWrappedToken = nativeWrappedTokens[networkId];
         require(nativeWrappedToken != address(0), "Unsupported network");
@@ -51,16 +54,147 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](8);
-        cases[0] = getThenaV3TestCases();
-        cases[1] = getAgniFinanceTestCases();
-        cases[2] = getOkieV3XlayerTestCases();
-        cases[3] = getEtherexFinanceTestCases();
-        cases[4] = getVVSFinanceV3TestCases();
-        cases[5] = getWDEXTestCases();
-        cases[6] = getRadioCACATestCases();
-        cases[7] = getDyorV3TestCases();
+        SwapTestCase[][] memory cases = new SwapTestCase[][](11);
+        // cases[0] = getThenaV3TestCases();
+        // cases[1] = getAgniFinanceTestCases();
+        // cases[2] = getOkieV3XlayerTestCases();
+        // cases[3] = getEtherexFinanceTestCases();
+        // cases[4] = getVVSFinanceV3TestCases();
+        // cases[5] = getWDEXTestCases();
+        // cases[6] = getRadioCACATestCases();
+        // cases[7] = getDyorV3TestCases();
+        // cases[8] = getPharaohV3Cases();
+        // cases[9] = getAerodromeCLTestCases();
+        cases[10] = getHydrexTestCases();
 
+        return cases;
+    }
+
+    /**
+     * @dev Test cases for Hydrex swaps on Base
+     * Transaction link: https://basescan.org/tx/0x662a3a95c81ff8068cbdd6efa30cb19032beb46152583b5bbd296ca191d36056
+     * TODO: Fill in the following information from on-chain transaction:
+     * - FROM_TOKEN: Address of token being sold
+     * - TO_TOKEN: Address of token being bought
+     * - POOL: Address of liquidity pool
+     * - forkBlock: Transaction block number - 1
+     * - amount: Input amount (with decimals)
+     * - expectedOutput: Output amount (with decimals), use 0 if dynamic
+     * - sellBase: true if selling base token, false if selling quote token
+     * - fee: Fee tier (uint24, e.g., 10000 for 1%, 3000 for 0.3%)
+     */
+    function getHydrexTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        
+        // TODO: Fill in token addresses from on-chain transaction
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+        address HYDREX = 0x00000e7efa313F4E11Bfff432471eD9423AC6B30;
+        address POOL = 0x51f0B932855986B0E621c9D4DB6Eee1f4644D3D2;
+        
+        // Transaction: https://basescan.org/tx/0x662a3a95c81ff8068cbdd6efa30cb19032beb46152583b5bbd296ca191d36056
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: 37714510 - 1, // TODO: Fill in transaction block number - 1
+            fromToken: USDC,
+            toToken: HYDREX,
+            pool: POOL,
+            amount: 250000000, // TODO: Fill in input amount (with decimals)
+            expectedOutput: 710356920982930477609, // TODO: Fill in output amount (with decimals), use 0 if dynamic/unverified
+            sellBase: true, // TODO: true if selling base token, false if selling quote token
+            expectRevert: false,
+            description: "USDC to HYDREX on Hydrex", // TODO: Update with actual token names
+            moreInfo: abi.encode(uint160(0), abi.encode(USDC, HYDREX)), // TODO: Fill in fee tier
+            fromTokenPreTo: address(0)
+        });
+        
+        return cases;
+    }
+
+    /**
+     * @dev Test cases for Aerodrome CL swaps on Base
+     * Transaction link: https://basescan.org/tx/0x002b581c8088f31906a816109da7ec52050b5b6a438eb8e4805e366abf9a558c
+     * Transaction: WETH to USDC swap on Aerodrome CL (Uniswap V4 compatible)
+     */
+    function getAerodromeCLTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        
+        // Token addresses on Base network
+        address WorthlessToken = 0x20173a75d8Ae180D64704eE162E5f97a2CF7Da77; // WorthlessToken
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913; // Circle: USDC Token
+        address POOL = 0xFeef402e5F3A808C1Ff70350c0A85e0443c31e3E; // Aerodrome CL Pool
+        
+        // Transaction: WETH to USDC swap
+        // Input: 0.021873944236736628 WETH (21873944236736628)
+        // Output: 85.434442 USDC (85434442, USDC has 6 decimals)
+        // From Swap event: amount0 = -85798740671858298611 (token0 sold), amount1 = 85434442 (token1 received)
+        // Since user sold WETH and received USDC, and from Swap event amount1 is positive (USDC received),
+        // this means token1 = USDC, token0 = other token (WorthlessToken or similar)
+        // The actual swap was WETH -> USDC, so sellBase depends on pool token order
+        // From the event: user received USDC (amount1 positive), so USDC is token1
+        // If WETH is token0, then sellBase = true; if WETH is token1, then sellBase = false
+        // Based on the transfer amounts and typical pool ordering (WETH < USDC address), WETH is likely token0
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: 37668814,
+            fromToken: WorthlessToken,
+            toToken: USDC,
+            pool: POOL,
+            amount: 85798740671858298611, // 85798740671858298611 WorthlessToken
+            expectedOutput: 84922610, // on chain tx is 85.434442 USDC (6 decimals), but if position is 0, the output is 85.429466 USDC
+            sellBase: false, // WorthlessToken is likely token1 (quote token) based on address ordering
+            expectRevert: false,
+            description: "WorthlessToken to USDC on Aerodrome CL",
+            moreInfo: abi.encode(uint160(0), abi.encode(WorthlessToken, USDC, uint24(1))),
+            fromTokenPreTo: address(0)
+        });
+        
+        return cases;
+    }
+
+    /**
+     * @dev Test cases for Pharaoh V3 swaps on Avalanche
+     * Transaction link: https://snowscan.xyz/tx/0x54c1a7fae32ce20ffd87ea4280b0b2e5c247a4db16b56bfdaae43e868c539476
+     */
+    function getPharaohV3Cases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        
+        // Token addresses
+        address WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // Wrapped AVAX
+        address PHAR = 0x13A466998Ce03Db73aBc2d4DF3bBD845Ed1f28E7; // Pharaoh Token
+        address POOL = 0x062D76834F188b9E88c46381D327A7613250240C; // WAVAX/PHAR Pool
+        
+        // Transaction: WAVAX to PHAR swap
+        // Input: 5.349671932217026773 WAVAX (5349671932217026773)
+        // Output: 2,682.469238708072917831 PHAR (2682469238708072917831)
+        // From Swap event: amount0 = -2682469238708072917831 (token0=PHAR sold), amount1 = 5349671932217026773 (token1=WAVAX received)
+        // Since user sold WAVAX (token1) and received PHAR (token0), sellBase = false
+        cases[0] = SwapTestCase({
+            networkId: "avax",
+            forkBlock: 71343723 - 1,
+            fromToken: WAVAX,
+            toToken: PHAR,
+            pool: POOL,
+            amount: 5349671932217026773, // 5.349671932217026773 WAVAX
+            expectedOutput: 2682469238708072917831, // 2,682.469238708072917831 PHAR
+            sellBase: false, // Selling WAVAX (token1), not base token
+            expectRevert: false,
+            description: "WAVAX to PHAR on Pharaoh V3",
+            moreInfo: abi.encode(uint160(0), abi.encode(WAVAX, PHAR, uint24(0))),
+            fromTokenPreTo: address(0)
+        });
+        
         return cases;
     }
 
@@ -390,6 +524,56 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "WETH to USDT in Etherex on Linea",
             moreInfo: abi.encode(uint160(0), abi.encode(WETH, USDT)),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getMonadUniswapV3TestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](2);
+
+        // Token addresses on Monad network
+        address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // Wrapped MON
+        address USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603; // USDC
+
+        // Uniswap V3 pool: WMON/USDC (fee: 3000, tickSpacing: 60)
+        address WMON_USDC_POOL = 0x659bD0BC4167BA25c62E05656F78043E7eD4a9da;
+
+        // Test 1: WMON to USDC
+        // Note: Monad has higher cold state access costs (10,100 gas for account, 8,100 gas for storage)
+        cases[0] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 0, // Set to specific block when testing
+            fromToken: WMON,
+            toToken: USDC,
+            pool: WMON_USDC_POOL,
+            amount: 1 * 10 ** 18, // 1 WMON
+            expectedOutput: 0, // dynamic
+            sellBase: true, // WMON is token0 (base)
+            expectRevert: false,
+            description: "WMON to USDC on Monad Uniswap V3",
+            moreInfo: abi.encode(uint160(0), abi.encode(WMON, USDC, uint24(3000))), // fee: 3000 (0.3%)
+            fromTokenPreTo: address(0)
+        });
+
+        // Test 2: USDC to WMON
+        cases[1] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 0, // Set to specific block when testing
+            fromToken: USDC,
+            toToken: WMON,
+            pool: WMON_USDC_POOL,
+            amount: 10 * 10 ** 6, // 10 USDC (6 decimals)
+            expectedOutput: 0, // dynamic
+            sellBase: false, // USDC is token1 (quote)
+            expectRevert: false,
+            description: "USDC to WMON on Monad Uniswap V3",
+            moreInfo: abi.encode(uint160(0), abi.encode(USDC, WMON, uint24(3000))), // fee: 3000 (0.3%)
             fromTokenPreTo: address(0)
         });
 

@@ -2,13 +2,13 @@
 // solhint-disable
 pragma solidity ^0.8.17;
 
-import {IAdapter} from "@dex/interfaces/IAdapter.sol";
-import {IERC20} from "@dex/interfaces/IERC20.sol";
-import {SafeERC20} from "@dex/libraries/SafeERC20.sol";
-import {IUniswapV2Pair} from "@dex/interfaces/IUniswapV2Pair.sol";
-import {IDyorPumpRouterV3, IDyorPoolV3} from "@dex/interfaces/IDyor.sol";
-import {RestrictedLiquidityLib, RefundLib} from "@dex/libraries/Adapters.sol";
-import {IWETH} from "@dex/interfaces/IWETH.sol";
+import {IAdapter} from "../interfaces/IAdapter.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
+import {SafeERC20} from "../libraries/SafeERC20.sol";
+import {IUniswapV2Pair} from "../interfaces/IUniswapV2Pair.sol";
+import {IDyorPumpRouterV3, IDyorPoolV3} from "../interfaces/IDyor.sol";
+import {RestrictedLiquidityLib, RefundLib} from "../libraries/Adapters.sol";
+import {IWETH} from "../interfaces/IWETH.sol";
 /**
  * @title DyorPumpRouterV3Adapter
  * @notice DyorPumpRouterV3 adapter for DyorPumpRouterV3 DEX protocols
@@ -42,7 +42,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
 
     /// @inheritdoc IAdapter
     function sellQuote(
-        address to, // to, not used, cause dyor will send token to tx.origin
+        address to,
         address pool,
         bytes memory moreInfo
     ) external override {
@@ -54,7 +54,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
      * @param moreInfo Additional configuration containing swap parameters
      */
     function _universalSwap(
-        address ,
+        address to,
         address pool,
         bool isSellBase,
         bytes memory moreInfo
@@ -86,7 +86,7 @@ contract DyorPumpRouterV3Adapter is IAdapter {
         } else { ///@notice sell dyor token is restricted liquidity, have to use tradeInfo to build moreinfo
             path[0] = pool;
             path[1] = WETH;
-            uint256 amountOut = tx.origin.balance; // eth balance
+            uint256 amountOut = address(this).balance; // eth balance
             RestrictedLiquidityLib.TradeInfo memory tradeInfo = abi.decode(moreInfo, (RestrictedLiquidityLib.TradeInfo));
             require(tradeInfo.fundAddress == pool, "DyorPumpRouterV3Adapter: sell token is not meme");
             require(tradeInfo.tokenAddress == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE || 
@@ -98,14 +98,24 @@ contract DyorPumpRouterV3Adapter is IAdapter {
                 amountIn,
                 0,
                 path,
-                tx.origin, // must be tx.origin, and eth will be received by tx.origin
-                tx.origin,
+                tx.origin, // must be tx.origin
+                address(this), // must be address(this), and eth will be received by address(this)
+                address(0),
                 0,
                 block.timestamp + 1000
             );
-            amountOut = tx.origin.balance - amountOut;
+            amountOut = address(this).balance - amountOut;
             require(amountOut >= tradeInfo.minReturnAmount, "DyorPumpRouterV3Adapter: Min return not reached");
-            emit OrderRecord(false, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn, amountOut);
+
+            // Wrap ETH to WETH
+            IWETH(WETH).deposit{value: amountOut}();
+            
+            // transfer to 'to' address for next swap step
+            if (to != address(this)) {
+                SafeERC20.safeTransfer(IERC20(WETH), to, amountOut);
+            }
+            
+            emit OrderRecord(false, tradeInfo.fundAddress, tradeInfo.tokenAddress, tradeInfo.sellMemeAmount, amountOut);
         }
     }
 

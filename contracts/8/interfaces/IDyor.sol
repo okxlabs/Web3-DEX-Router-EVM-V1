@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
-import {IUniswapV2Pair} from "@dex/interfaces/IUniswapV2Pair.sol";
+import {IUniswapV2Pair} from "./IUniswapV2Pair.sol";
 
 interface IDyorPumpRouterV3 {
 
@@ -16,6 +16,7 @@ interface IDyorPumpRouterV3 {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
+        address payer,
         address to,
         address team,
         uint256 teamRatePercent,

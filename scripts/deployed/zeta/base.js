@@ -15,5 +15,5 @@ module.exports = {
     _TYPE_HASH: "",
     nftmarketplace: "",
     proxyAdmin: "0x225d627851CBCD16D1e563308804f58DCFf5b218",
-    newImpl: "0xd30D8CA2E7715eE6804a287eB86FAfC0839b1380",
+    newImpl: "0x8feB9E84b7E9DC86adc6cD6Eb554C5B4355c8405",
 }

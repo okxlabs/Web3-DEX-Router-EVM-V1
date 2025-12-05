@@ -17,13 +17,13 @@ contract DnyFeeAdapter is IAdapter {
     ) external override {
         address baseToken = IUni(pool).token0();
         (uint256 reserveIn, uint256 reserveOut, ) = IUni(pool).getReserves();
-        uint256 dnyFee = abi.decode( moreInfo, (uint256));
+        uint256 dnyFee = abi.decode(moreInfo, (uint256));
         require(
             reserveIn > 0 && reserveOut > 0,
             "DnyFeeAdapter: INSUFFICIENT_LIQUIDITY"
         );
         require(
-            dnyFee >= 0 && dnyFee < 10000,
+            dnyFee < 10000,
             "DnyFeeAdapter: DNYFEE_MUST_BETWEEN_0_TO_10000"
         );
 
@@ -43,13 +43,13 @@ contract DnyFeeAdapter is IAdapter {
     ) external override {
         address quoteToken = IUni(pool).token1();
         (uint256 reserveOut, uint256 reserveIn, ) = IUni(pool).getReserves();
-        uint256 dnyFee = abi.decode( moreInfo, (uint256));
+        uint256 dnyFee = abi.decode(moreInfo, (uint256));
         require(
             reserveIn > 0 && reserveOut > 0,
             "DnyFeeAdapter: INSUFFICIENT_LIQUIDITY"
         );
         require(
-            dnyFee >= 0 && dnyFee < 10000,
+            dnyFee < 10000,
             "DnyFeeAdapter: DNYFEE_MUST_BETWEEN_0_TO_10000"
         );
 

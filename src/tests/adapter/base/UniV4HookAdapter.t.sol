@@ -22,11 +22,13 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
         poolManagers["eth"] = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         poolManagers["bsc"] = 0x000000000004444c5dc75cB358380D2e3dE08A90;
         poolManagers["base"] = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
+        poolManagers["unichain"] = 0x1F98400000000000000000000000000000000004;
         
         // Wrapped token addresses per network
         wrappedTokens["eth"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH
         wrappedTokens["bsc"] = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // WBNB
         wrappedTokens["base"] = 0x4200000000000000000000000000000000000006; // WETH
+        wrappedTokens["unichain"] = 0x4200000000000000000000000000000000000006; // WETH
 
         address poolManager = poolManagers[networkId];
         address wrappedToken = wrappedTokens[networkId];
@@ -50,10 +52,11 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](3);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](4);
         cases[0] = getUniV4TestCases();
         cases[1] = getClankerTestCases();
         cases[2] = getZoraTestCases();
+        cases[3] = getFeeOnTransferTestCases();
 
         return cases;
     }
@@ -71,11 +74,12 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
         // Pool manager address
         address POOL_MANAGER = 0x000000000004444c5dc75cB358380D2e3dE08A90;
 
-        SwapTestCase[] memory cases = new SwapTestCase[](5);
+        SwapTestCase[] memory cases = new SwapTestCase[](7);
 
         // Test 1: ETH to USDT (single hop)
-        UniV4HookAdapter.PathKey[] memory pathKeys1 = new UniV4HookAdapter.PathKey[](1);
-        pathKeys1[0] = UniV4HookAdapter.PathKey({
+        UniV4HookAdapter.PathKey[][] memory pathKeys = new UniV4HookAdapter.PathKey[][](cases.length);
+        pathKeys[0] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[0][0] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(address(0)),
             intermediateCurrency: Currency.wrap(USDT),
             fee: 500,
@@ -95,13 +99,14 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "WETH to USDT on UniV4",
-            moreInfo: abi.encode(pathKeys1),
+            moreInfo: abi.encode(pathKeys[0]),
             fromTokenPreTo: address(0)
         });
 
         // Test 2: USDT to USDe (single hop)
-        UniV4HookAdapter.PathKey[] memory pathKeys2 = new UniV4HookAdapter.PathKey[](1);
-        pathKeys2[0] = UniV4HookAdapter.PathKey({
+        // UniV4HookAdapter.PathKey[] memory pathKeys2 = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[1] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[1][0] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(USDT),
             intermediateCurrency: Currency.wrap(USDe),
             fee: 100,
@@ -121,13 +126,13 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "USDT to USDe on UniV4",
-            moreInfo: abi.encode(pathKeys2),
+            moreInfo: abi.encode(pathKeys[1]),
             fromTokenPreTo: address(0)
         });
 
         // Test 3: ETH to USDT to USDe (multihop)
-        UniV4HookAdapter.PathKey[] memory pathKeys3 = new UniV4HookAdapter.PathKey[](2);
-        pathKeys3[0] = UniV4HookAdapter.PathKey({
+        pathKeys[2] = new UniV4HookAdapter.PathKey[](2);
+        pathKeys[2][0] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(address(0)),
             intermediateCurrency: Currency.wrap(USDT),
             fee: 500,
@@ -135,7 +140,7 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             hook: address(0),
             hookData: ""
         });
-        pathKeys3[1] = UniV4HookAdapter.PathKey({
+        pathKeys[2][1] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(USDT),
             intermediateCurrency: Currency.wrap(USDe),
             fee: 100,
@@ -155,13 +160,13 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "WETH to USDT to USDe on UniV4 (multihop)",
-            moreInfo: abi.encode(pathKeys3),
+            moreInfo: abi.encode(pathKeys[2]),
             fromTokenPreTo: address(0)
         });
 
         // Test 4: USDe to USDT (single hop)
-        UniV4HookAdapter.PathKey[] memory pathKeys4 = new UniV4HookAdapter.PathKey[](1);
-        pathKeys4[0] = UniV4HookAdapter.PathKey({
+        pathKeys[3] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[3][0] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(USDe),
             intermediateCurrency: Currency.wrap(USDT),
             fee: 100,
@@ -181,13 +186,13 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "USDe to USDT on UniV4",
-            moreInfo: abi.encode(pathKeys4),
+            moreInfo: abi.encode(pathKeys[3]),
             fromTokenPreTo: address(0)
         });
 
         // Test 5: USDT to ETH (single hop)
-        UniV4HookAdapter.PathKey[] memory pathKeys5 = new UniV4HookAdapter.PathKey[](1);
-        pathKeys5[0] = UniV4HookAdapter.PathKey({
+        pathKeys[4] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[4][0] = UniV4HookAdapter.PathKey({
             inputCurrency: Currency.wrap(USDT),
             intermediateCurrency: Currency.wrap(address(0)),
             fee: 500,
@@ -207,7 +212,61 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "USDT to WETH on UniV4",
-            moreInfo: abi.encode(pathKeys5),
+            moreInfo: abi.encode(pathKeys[4]),
+            fromTokenPreTo: address(0)
+        });
+
+        // Test 6: ETH to wBTC with hook on UniChain (poolId is 0x410723c1949069324d0f6013dba28829c4a0562f7c81d0f7cb79ded668691e1f and the poolKey can be retrieved from PositionManager at 0x4529A01c7A0410167c5740C487A8DE60232617bf)
+        address WETH_UNICHAIN = 0x4200000000000000000000000000000000000006;
+        address WBTC_UNICHAIN = 0x0555E30da8f98308EdB960aa94C0Db47230d2B9c;
+        address POOL_MANAGER_UNICHAIN = 0x1F98400000000000000000000000000000000004;
+        address AEGIS_HOOK = 0xA0b0D2d00fD544D8E0887F1a3cEDd6e24Baf10cc;
+        pathKeys[5] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[5][0] = UniV4HookAdapter.PathKey({
+            inputCurrency: Currency.wrap(address(0)),
+            intermediateCurrency: Currency.wrap(WBTC_UNICHAIN),
+            fee: 8388608,
+            tickSpacing: 60,
+            hook: AEGIS_HOOK,
+            hookData: ""
+        });
+        cases[5] = SwapTestCase({
+            networkId: "unichain",
+            forkBlock: 21799331,
+            fromToken: WETH_UNICHAIN,
+            toToken: WBTC_UNICHAIN,
+            pool: POOL_MANAGER_UNICHAIN,
+            amount: 1 ether, // 1 WETH
+            expectedOutput: 0, // output is approximately 0.025 WBTC
+            sellBase: true,
+            expectRevert: false,
+            description: "WETH to wBTC with UniV4 Aegis hook pool on UniChain",
+            moreInfo: abi.encode(pathKeys[5]),
+            fromTokenPreTo: address(0)
+        });
+
+        // Test 7: wBTC to ETH with hook on UniChain (poolId: 0x410723c1949069324d0f6013dba28829c4a0562f7c81d0f7cb79ded668691e1f)
+        pathKeys[6] = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[6][0] = UniV4HookAdapter.PathKey({
+            inputCurrency: Currency.wrap(WBTC_UNICHAIN),
+            intermediateCurrency: Currency.wrap(address(0)),
+            fee: 8388608,
+            tickSpacing: 60,
+            hook: AEGIS_HOOK,
+            hookData: ""
+        });
+        cases[6] = SwapTestCase({
+            networkId: "unichain",
+            forkBlock: 21799331,
+            fromToken: WBTC_UNICHAIN,
+            toToken: WETH_UNICHAIN,
+            pool: POOL_MANAGER_UNICHAIN,
+            amount: 0.025 * 10 ** 8, // 0.025 WBTC
+            expectedOutput: 0, // output is approximately 0.99 WETH
+            sellBase: true,
+            expectRevert: false,
+            description: "wBTC to WETH with UniV4 Aegis hook pool on UniChain",
+            moreInfo: abi.encode(pathKeys[6]),
             fromTokenPreTo: address(0)
         });
 
@@ -324,6 +383,46 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "ZORA to CREATOR COIN to CONTENT COIN",
             moreInfo: abi.encode(pathKeys2),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getFeeOnTransferTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        // Token addresses on Base network
+        address FeeToken = 0x1A85b97F8b0E1CEE4D5500E093F5970a2aeB3fB8; // Fee-on-transfer token
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        // Test: Fee-on-transfer token to USDC on Base
+        UniV4HookAdapter.PathKey[] memory pathKeys = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[0] = UniV4HookAdapter.PathKey({
+            inputCurrency: Currency.wrap(FeeToken),
+            intermediateCurrency: Currency.wrap(USDC),
+            fee: 50000,
+            tickSpacing: 1000,
+            hook: address(0),
+            hookData: ""
+        });
+
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: 38611960,
+            fromToken: FeeToken,
+            toToken: USDC,
+            pool: 0x498581fF718922c3f8e6A244956aF099B2652b2b, // Pool manager on Base
+            amount: 915523991890652198646, // ~915 FeeToken
+            expectedOutput: 0, // dynamic
+            sellBase: true,
+            expectRevert: false,
+            description: "Fee-on-transfer token to USDC on Base UniV4",
+            moreInfo: abi.encode(pathKeys),
             fromTokenPreTo: address(0)
         });
 

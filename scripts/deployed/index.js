@@ -41,6 +41,9 @@ const story = require('./story')
 const sonic = require('./sonic')
 const berachain = require('./berachain')
 const unichain = require('./unichain')
+const plasma = require('./plasma')
+const xlayer_stg = require('./xlayer_stg')
+const monad = require('./monad')
 let config
 
 console.log('current network.name: ', network.name)
@@ -127,6 +130,11 @@ if (network.name === 'okc') {
     config = berachain
 } else if (network.name == 'unichain') {
     config = unichain
+} else if (network.name == 'plasma') {
+    config = plasma
+} else if (network.name == 'xlayer_stg') {
+    config = xlayer_stg
+} else if (network.name == 'monad') {
+    config = monad
 }
-
 module.exports = config

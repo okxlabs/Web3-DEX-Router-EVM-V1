@@ -2,10 +2,10 @@
 // solhint-disable
 pragma solidity ^0.8.17;
 
-import {IAdapter} from "@dex/interfaces/IAdapter.sol";
-import {IERC20} from "@dex/interfaces/IERC20.sol";
-import {SafeERC20} from "@dex/libraries/SafeERC20.sol";
-import {IUniswapV2Pair} from "@dex/interfaces/IUniswapV2Pair.sol";
+import {IAdapter} from "../../interfaces/IAdapter.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
+import {SafeERC20} from "../../libraries/SafeERC20.sol";
+import {IUniswapV2Pair} from "../../interfaces/IUniswapV2Pair.sol";
 
 /**
  * @title UniversalUniswapV2Adapter

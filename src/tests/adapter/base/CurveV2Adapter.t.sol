@@ -35,8 +35,9 @@ contract CurveV2AdapterTest is AbstractAdapterTest {
         pure
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](1);
-        cases[0] = getOkieStableSwapTestCases();
+        SwapTestCase[][] memory cases = new SwapTestCase[][](2);
+        cases[0] = getCurveV2TestCases();
+        cases[1] = getOkieStableSwapTestCases();
 
         return cases;
     }
@@ -60,6 +61,44 @@ contract CurveV2AdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "USDT0 to USDT on Xlayer CurveV2Adapter",
             moreInfo: abi.encode(USDT0, USDT, int128(1), int128(0), false),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    /**
+     * @dev Test cases for Ethereum Curve V2 swaps
+     * Transaction link: https://etherscan.io/tx/0x2fe33ab853e69e2998f6fe8da7621bad23f5f3db8534b1f220913f6940bba758
+     * Transaction: CRV to crvUSD swap on Curve V2 pool
+     * From TokenExchange event: sold_id=1 (CRV), bought_id=0 (crvUSD)
+     */
+    function getCurveV2TestCases() internal pure returns (SwapTestCase[] memory) {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        // Token addresses
+        address CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52; // Curve DAO Token
+        address crvUSD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E; // Curve.Fi USD Stablecoin
+        address POOL = 0xafca625321Df8D6A068bDD8F1585d489D2acF11b; // Curve V2 Pool
+
+        // Transaction: CRV to crvUSD swap
+        // Input: 0.135206669309128642 CRV (135206669309128642)
+        // Output: 0.116901388463382035 crvUSD (116901388463382035)
+        // From exchange function: i=1 (CRV), j=0 (crvUSD)
+        // From TokenExchange event: sold_id=1, bought_id=0
+        // Since sold_id=1 (non-base token) and bought_id=0 (base token), sellBase=false
+        cases[0] = SwapTestCase({
+            networkId: "eth",
+            forkBlock: 22930847 - 1,
+            fromToken: CRV,
+            toToken: crvUSD,
+            pool: POOL,
+            amount: 135206669309128642, // 0.135206669309128642 CRV
+            expectedOutput: 116906512903513457, // 0.116901388463382035 crvUSD
+            sellBase: false, // Selling index 1 (CRV), buying index 0 (crvUSD), so not selling base token
+            expectRevert: false,
+            description: "CRV to crvUSD on Ethereum Curve V2",
+            moreInfo: abi.encode(CRV, crvUSD, int128(1), int128(0), false),
             fromTokenPreTo: address(0)
         });
 

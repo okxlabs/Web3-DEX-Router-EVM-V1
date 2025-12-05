@@ -1,8 +1,8 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
+import "../interfaces/IDexRouter.sol";
 /// @title Base contract with common permit handling logics
-abstract contract CommonUtils {
+abstract contract CommonUtils is IDexRouter {
     address internal constant _ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint256 internal constant _ADDRESS_MASK =
@@ -22,6 +22,17 @@ abstract contract CommonUtils {
         0x4000000000000000000000000000000000000000000000000000000000000000;
     uint256 internal constant _ONE_FOR_ZERO_MASK = 1 << 255; // Mask for identifying if the swap is one-for-zero
     uint256 internal constant _WETH_UNWRAP_MASK = 1 << 253; // Mask for identifying if WETH should be unwrapped to ETH
+
+    uint256 internal constant _MODE_LEGACY = 0;
+    uint256 internal constant _MODE_NO_TRANSFER = 1 << 251;
+    uint256 internal constant _MODE_BY_INVEST = 1 << 250;
+    uint256 internal constant _MODE_PERMIT2 = 1 << 249;
+    
+    uint256 internal constant _TRANSFER_MODE_MASK = 0x0E00000000000000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _INPUT_INDEX_MASK =
+        0x0000000000000000ff0000000000000000000000000000000000000000000000;
+    uint256 internal constant _OUTPUT_INDEX_MASK =
+        0x000000000000000000ff00000000000000000000000000000000000000000000;
 
     /// @dev WETH address is network-specific and needs to be changed before deployment.
     /// It can not be moved to immutable as immutables are not supported in assembly
@@ -76,13 +87,4 @@ abstract contract CommonUtils {
     address public constant _WNATIVE_RELAY = 0x5703B683c7F928b721CA95Da988d73a3299d4757;
     // address public constant _WNATIVE_RELAY = 0x0B306BF915C4d645ff596e518fAf3F9669b97016;   // hardhat1
     // address public constant _WNATIVE_RELAY = 0x6A47346e722937B60Df7a1149168c0E76DD6520f;   // hardhat2
-
-    event OrderRecord(
-        address fromToken,
-        address toToken,
-        address sender,
-        uint256 fromAmount,
-        uint256 returnAmount
-    );
-    event SwapOrderId(uint256 id);
 }

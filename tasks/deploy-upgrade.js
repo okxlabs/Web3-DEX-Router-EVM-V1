@@ -3,23 +3,33 @@ const path = require('path');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { isZkSyncNetwork, buildZkWallet } = require('../scripts/utils/zksync');
+
+const getDeployedDir = (network) =>
+  network === 'zksync' ? 'zkSyncEra' : network;
 
 task("deploy-upgrade", "Deploys and upgrades the DEX contract")
   .setAction(async (taskArgs, hre) => {
     try {
       const network = hre.network.name;
+      const isZkSync = isZkSyncNetwork(hre, network);
 
       // Check balance first
-      const [deployer] = await hre.ethers.getSigners();
-      const balance = await hre.ethers.provider.getBalance(deployer.address);
+      let deployerAddress;
+      let balance;
+      if (isZkSync) {
+        const wallet = buildZkWallet(hre, network);
+        deployerAddress = wallet.address;
+        balance = await wallet.getBalance();
+      } else {
+        const [deployer] = await hre.ethers.getSigners();
+        deployerAddress = deployer.address;
+        balance = await hre.ethers.provider.getBalance(deployer.address);
+      }
       const balanceInEth = hre.ethers.utils.formatEther(balance);
 
-      console.log(`Deployer address: ${deployer.address}`);
+      console.log(`Deployer address: ${deployerAddress}`);
       console.log(`Balance: ${balanceInEth} ${network === 'bsc' ? 'BNB' : 'ETH'}`);
-
-      if (parseFloat(balanceInEth) < 0.001) {
-        throw new Error(`Insufficient balance. Need at least 0.01 ${network === 'bsc' ? 'BNB' : 'ETH'} to deploy`);
-      }
 
       // Step 0: Clean
       await hre.run("clean");
@@ -37,8 +47,12 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       });
       await hre.run("compile");
 
-      // Step 3: Deploy new implementation
-      console.log("\nStep 3: Deploying new implementation...");
+      // Step 3: Flatten the DexRouter contract for verification
+      console.log("\nStep 3: Running forge flatten...");
+      await execPromise(`forge flatten -o contracts/flatten/DexRouter_${network}.sol contracts/8/DexRouter.sol`);
+
+      // Step 4: Deploy new implementation
+      console.log("\nStep 4: Deploying new implementation...");
 
       const deployDexImp = require('../scripts/deploy_dex_imp');
       const newDexRouterAddress = await deployDexImp();
@@ -47,9 +61,10 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
         throw new Error("Could not get newly deployed dexRouter address");
       }
 
-      // Step 4: Update base.js with new implementation address
-      console.log("\nStep 4: Updating implementation address...");
-      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + network + '/base.js');
+      // Step 5: Update base.js with new implementation address
+      console.log("\nStep 5: Updating implementation address...");
+      const deployedDir = getDeployedDir(network);
+      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + deployedDir + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
 
       baseContent = baseContent.replace(
@@ -61,26 +76,23 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
       console.log(`Updated newImpl address to: ${newDexRouterAddress}`);
 
       if (network === 'zeta') {
-        // step 5: verify contract for zeta
-        console.log("\nStep 5: verifying contract for zeta")
+        // step 6: verify contract for zeta
+        console.log("\nStep 6: verifying contract for zeta")
         await hre.run("run", {
           script: "scripts/verify_zeta.js",
           network: network
         })
       } else {
-        // Step 5: Verify contracts
-        console.log("\nStep 5: Verifying contracts...");
+        // Step 6: Verify contracts
+        console.log("\nStep 6: Verifying contracts...");
         await hre.run("run", {
           script: "scripts/verify_etherscan_oklink.js",
           network: network
         });
       }
 
-
-
-
-      // Step 6: Restore original files
-      console.log("\nStep 6: Restoring original files...");
+      // Step 7: Restore original files
+      console.log("\nStep 7: Restoring original files...");
       await execPromise('git checkout -- contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
 
       console.log("\nDeployment and upgrade process completed successfully!");
@@ -94,13 +106,23 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
   .setAction(async (taskArgs, hre) => {
     try {
       const network = hre.network.name;
+      const isZkSync = isZkSyncNetwork(hre, network);
 
       // Check balance first
-      const [deployer] = await hre.ethers.getSigners();
-      const balance = await hre.ethers.provider.getBalance(deployer.address);
+      let deployerAddress;
+      let balance;
+      if (isZkSync) {
+        const wallet = buildZkWallet(hre, network);
+        deployerAddress = wallet.address;
+        balance = await wallet.getBalance();
+      } else {
+        const [deployer] = await hre.ethers.getSigners();
+        deployerAddress = deployer.address;
+        balance = await hre.ethers.provider.getBalance(deployer.address);
+      }
       const balanceInEth = hre.ethers.utils.formatEther(balance);
 
-      console.log(`Deployer address: ${deployer.address}`);
+      console.log(`Deployer address: ${deployerAddress}`);
       console.log(`Balance: ${balanceInEth} ${network === 'bsc' ? 'BNB' : 'ETH'}`);
 
       if (parseFloat(balanceInEth) < 0.001) {
@@ -135,7 +157,8 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 4: Update base.js with new implementation address
       console.log("\nStep 4: Updating implementation address...");
-      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + network + '/base.js');
+      const deployedDir = getDeployedDir(network);
+      const baseBasePath = path.join(process.cwd(), 'scripts/deployed/' + deployedDir + '/base.js');
       let baseContent = fs.readFileSync(baseBasePath, 'utf8');
 
       baseContent = baseContent.replace(

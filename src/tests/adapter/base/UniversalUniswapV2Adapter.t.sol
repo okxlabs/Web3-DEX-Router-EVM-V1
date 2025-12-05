@@ -24,7 +24,7 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](7);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](9);
         cases[0] = getApeSwapV2TestCases();
         cases[1] = getRDexV2TestCases();
         cases[2] = getLynexTestCases();
@@ -32,7 +32,52 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         cases[4] = getEtherexClassicTestCases();
         cases[5] = getDooarTestCases();
         cases[6] = getCronaSwapTestCases();
+        cases[7] = getAVAXTestCase();
+        cases[8] = getInSwapTestCases();
 
+        return cases;
+    }
+
+    function getInSwapTestCases() internal pure returns (SwapTestCase[] memory) {
+
+        address INS = 0x3099ba1C5018FA015230F47ceD588f20D4B20000;
+        address WOKB = 0xe538905cf8410324e03A5A23C1c177a474D59b2b;
+
+        address pool = 0x6e94C8B63BcE20C911E37bedb7D9A357f8AB3A4A;
+        SwapTestCase[] memory cases = new SwapTestCase[](2);
+        // https://www.oklink.com/zh-hans/x-layer/tx/0xa407577a825a4b7945731735985912349c1dcf223d1652d933f0408bee977c57
+        cases[0] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 42860621 - 1,
+            fromToken: INS,
+            toToken: WOKB,
+            pool: pool,
+            amount: 52407640217778534158649,
+            expectedOutput: 995008294477516994,
+            sellBase: true,
+            expectRevert: false,
+            description: "INS to WOKB on XLayer",
+            moreInfo: abi.encode(9975, 10000),
+            fromTokenPreTo: address(0)
+        });
+
+        address VALUE = 0xD938D723E758b6F4BC3C84e8eD78Cb10Af7f0000;
+        address pool2 = 0x8a54F70CE3f38D485235d8f05f9eB6829BDFf101;
+        //https://www.oklink.com/zh-hans/x-layer/tx/0x46a25460116a69544ca68fba6717416e7bde2bc007c4d4b15e17327c0aee07c4
+        cases[1] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 42864619,
+            fromToken: VALUE,
+            toToken: WOKB,
+            pool: pool2,
+            amount: 206183337205649775700712,
+            expectedOutput: 1431732787618451694,
+            sellBase: true,
+            expectRevert: false,
+            description: "VALUE to WOKB on XLayer",
+            moreInfo: abi.encode(9975, 10000),
+            fromTokenPreTo: address(0)
+        });
         return cases;
     }
 
@@ -234,6 +279,31 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "USDC to LYNX on Linea",
             moreInfo: lynexFee,
+            fromTokenPreTo: address(0)
+        });
+        
+        return cases;
+    }
+
+    function getAVAXTestCase() internal pure returns (SwapTestCase[] memory) {
+        address WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+        address FRAX = 0xD24C2Ad096400B6FBcd2ad8B24E7acBc21A1da64;
+
+        address WAVAX_FRAX_POOL = 0x677aFf5D7AA11BA5AD43C020B0860ff04bC1f69F;
+
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        cases[0] = SwapTestCase({
+            networkId: "avax",
+            forkBlock: 0, // 0 = latest block
+            fromToken: FRAX,
+            toToken: WAVAX,
+            pool: WAVAX_FRAX_POOL,
+            amount: 1000 * 10 ** 18,
+            expectedOutput: 0,
+            sellBase: false,
+            expectRevert: false,
+            description: "FRAX to WAVAX on AVAX", // Updated description
+            moreInfo: abi.encode(9975, 1000), // Standard Uniswap V2 fee (0.3%)
             fromTokenPreTo: address(0)
         });
         

@@ -1,19 +1,27 @@
 [profile.default]
 src = "contracts/8"
 out = "artifacts"
-
 test = "src/tests/adapter/"
 
 libs = ["node_modules", "lib"]
+optimizer = true
+optimizer_runs = 1
+# via_ir = true
 remappings = [
     "@ensdomains/=node_modules/@ensdomains/",
     "@openzeppelin/=node_modules/@openzeppelin/",
     "eth-gas-reporter/=node_modules/eth-gas-reporter/",
     "hardhat/=node_modules/hardhat/",
+    "@dex/=contracts/8/",
 ]
 
 evm_version = "cancun"
 fs_permissions = [{access = "read-write", path = "./"}]
+
+# Sourcify verification settings for Monad
+metadata = true
+metadata_hash = "none"
+use_literal_content = true
 
 [rpc_endpoints]
 arb = "https://arb1.lava.build"
@@ -35,3 +43,25 @@ polyzkevm = "https://zkevm-rpc.com"
 scroll = "https://rpc.scroll.io"
 xlayer = "https://rpc.xlayer.tech"
 sonic = "https://sonic-rpc.publicnode.com"
+unichain = "https://unichain.drpc.org"
+monad = "https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO"
+
+[fmt]
+line_length = 120
+tab_width = 4
+style = "space"
+bracket_spacing = false
+int_types = "long"
+multiline_func_header = "attributes_first"
+quote_style = "double"
+number_underscore = "preserve"
+hex_underscore = "remove"
+single_line_statement_blocks = "preserve"
+override_spacing = true
+wrap_comments = false
+docs_style = "preserve"
+ignore = []
+contract_new_lines = false
+sort_imports = true
+pow_no_space = true
+call_compact_args = true

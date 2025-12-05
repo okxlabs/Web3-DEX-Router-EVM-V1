@@ -25,6 +25,6 @@ module.exports = {
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
 
-    newImpl: "0x6015126d7D23648C2e4466693b8DeaB005ffaba8",
+    newImpl: "0x3156020dfF8D99af1dDC523ebDfb1ad2018554a0",
     newExactOutImpl: "0x5cb43Bae4f36E2f9f858232B4Dce0dbE27bb85e3", 
 }

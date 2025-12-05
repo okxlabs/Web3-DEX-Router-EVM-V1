@@ -222,46 +222,7 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 returndatacopy(0, 0, 32)
                 token1 := mload(0)
             }
-            function _emitEvent(
-                _firstPoolStart,
-                _lastPoolStart,
-                _returnAmount
-            ) {
-                let srcToken := _ETH
-                let toToken := _ETH
-                if eq(callvalue(), 0) {
-                    let firstPool := calldataload(_firstPoolStart)
-                    switch eq(0, and(firstPool, _ONE_FOR_ZERO_MASK))
-                    case true {
-                        srcToken := _token0(firstPool)
-                    }
-                    default {
-                        srcToken := _token1(firstPool)
-                    }
-                }
-                if eq(and(calldataload(_lastPoolStart), _WETH_UNWRAP_MASK), 0) {
-                    let lastPool := calldataload(_lastPoolStart)
-                    switch eq(0, and(lastPool, _ONE_FOR_ZERO_MASK))
-                    case true {
-                        toToken := _token1(lastPool)
-                    }
-                    default {
-                        toToken := _token0(lastPool)
-                    }
-                }
-                let freePtr := mload(0x40)
-                mstore(0, srcToken)
-                mstore(32, toToken)
-                mstore(64, origin())
-                // mstore(96, _initAmount) //avoid stack too deep, since i mstore the initAmount to 96, so no need to re-mstore it
-                mstore(128, _returnAmount)
-                log1(
-                    0,
-                    160,
-                    0x1bb43f2da90e35f7b0cf38521ca95a49e68eb42fac49924930a5bd73cdf7576c
-                )
-                mstore(0x40, freePtr)
-            }
+
             let firstPoolStart
             let lastPoolStart
 
@@ -331,13 +292,6 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
                 }
             }
 
-            if lt(returnAmount, minReturn) {
-                _revertWithReason(
-                    0x000000164d696e2072657475726e206e6f742072656163686564000000000000,
-                    90
-                ) // Min return not reached
-            }
-            _emitEvent(firstPoolStart, lastPoolStart, returnAmount)
         }
     }
 

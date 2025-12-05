@@ -279,7 +279,7 @@ contract DexRouterExactOut is
         address middleReceiver,
         uint256 targetTokenBefore
     ) internal returns (CommissionInfo memory, uint256, uint256, address) {
-        CommissionInfo memory commissionInfo = _getCommissionInfo();
+        (CommissionInfo memory commissionInfo, ) = _getCommissionAndTrimInfo();
         if (
             commissionInfo.isToTokenCommission &&
             commissionInfo.commissionRate > 0
@@ -301,7 +301,7 @@ contract DexRouterExactOut is
     // Handles commission.
     function _afterSwap(AfterSwapParams memory afterSwapParams) internal {
         // validate commission info
-        _validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken); // @notice For commission validation, ETH needs to be 0xEeee.
+        _validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, _MODE_LEGACY); // @notice For commission validation, ETH needs to be 0xEeee.
 
         // Handle commission from the source token if applicable.
         if (
@@ -324,7 +324,9 @@ contract DexRouterExactOut is
                 afterSwapParams.commissionInfo,
                 afterSwapParams.payer,
                 afterSwapParams.receiver,
-                afterSwapParams.consumeAmount
+                afterSwapParams.consumeAmount,
+                false,
+                afterSwapParams.toToken
             );
             if (
                 afterSwapParams.srcToken == _ETH &&
@@ -356,10 +358,13 @@ contract DexRouterExactOut is
             afterSwapParams.commissionInfo.isToTokenCommission &&
             afterSwapParams.commissionInfo.commissionRate > 0
         ) {
-            _doCommissionToToken(
+            TrimInfo memory trimInfo;
+            _doCommissionAndTrimToToken(
                 afterSwapParams.commissionInfo,
                 afterSwapParams.receiver,
-                afterSwapParams.targetTokenBefore
+                afterSwapParams.targetTokenBefore,
+                afterSwapParams.toToken,
+                trimInfo
             );
         }
     }

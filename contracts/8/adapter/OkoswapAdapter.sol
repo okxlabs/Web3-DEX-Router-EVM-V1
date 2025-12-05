@@ -52,8 +52,18 @@ contract OkoswapAdapter is IAdapter {
             IWETH(WOKB).deposit{value: amountOut}();
 
             SafeERC20.safeTransfer(IERC20(WOKB), to, amountOut);
-        } else { // Unsupport token
-            revert("Unsupported token pair");
+        } else { // Token -> Token
+            SafeERC20.safeApprove(IERC20(fromToken), router, amountIn);
+
+            IOkoswapRouter(router).swapExactTokensForTokens(
+                amountIn,
+                0,
+                path,
+                to,
+                block.timestamp
+            );
+
+            SafeERC20.safeTransfer(IERC20(toToken), to, IERC20(toToken).balanceOf(address(this)));
         }
     }
 

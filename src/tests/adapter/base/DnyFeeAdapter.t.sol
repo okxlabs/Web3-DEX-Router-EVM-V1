@@ -26,11 +26,12 @@ contract DnyFeeAdapterTest is AbstractAdapterTest {
         pure
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](4);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](5);
         cases[0] = getRocketForkUniV2TestCases();
         cases[1] = getLFGTestCases();
         cases[2] = getOKIETestCases(); // Skip OKIE tests
         cases[3] = getMonadTestCases();
+        cases[4] = getDFSwapTestCases();
 
         return cases;
     }
@@ -210,6 +211,53 @@ contract DnyFeeAdapterTest is AbstractAdapterTest {
             description: "WMON to USDC on Monad",
             moreInfo: abi.encode(uint256(30)), // 3/1000 fee (adjust based on actual pool fee)
             fromTokenPreTo: WMON_USDC_POOL // Transfer tokens to pool first
+        });
+
+        return cases;
+    }
+
+    function getDFSwapTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](2);
+
+        // DFSwap addresses on X Layer
+        address WOKB = 0xe538905cf8410324e03A5A23C1c177a474D59b2b;
+        address USDT0 = 0x779Ded0c9e1022225f8E0630b35a9b54bE713736;
+        address WOKB_USDT0_POOL = 0xb6fd17297544076228ae0f7f43975CD564d47551;
+
+        // Test: WOKB to USDT0 on DFSwap
+        // https://www.oklink.com/x-layer/tx/0x42e21f6a803933c5fcc46b33f83aa9cd75fab74e103b639ff5f83f3a2401c989
+        cases[0] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 38648250 - 1, // Block before the transaction
+            fromToken: WOKB,
+            toToken: USDT0,
+            pool: WOKB_USDT0_POOL,
+            amount: 261760427944461727, // amount1In from transaction
+            expectedOutput: 49923723, // amount0Out from transaction
+            sellBase: false, // WOKB is token1 (quote), USDT0 is token0 (base)
+            expectRevert: false,
+            description: "WOKB to USDT0 on DFSwap",
+            moreInfo: abi.encode(uint256(30)), // 3/1000 fee
+            fromTokenPreTo: WOKB_USDT0_POOL
+        });
+
+        cases[1] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 38648250 - 1, // Block before the transaction
+            fromToken: USDT0,
+            toToken: WOKB,
+            pool: WOKB_USDT0_POOL,
+            amount: 49923723, // amount0In from transaction
+            expectedOutput: 0, // amount0Out from transaction
+            sellBase: true, // USDT0 is token1 (quote), WOKB is token0 (base)
+            expectRevert: false,
+            description: "USDT0 to WOKB on DFSwap",
+            moreInfo: abi.encode(uint256(30)), // 3/1000 fee
+            fromTokenPreTo: WOKB_USDT0_POOL
         });
 
         return cases;

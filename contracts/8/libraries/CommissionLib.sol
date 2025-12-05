@@ -562,21 +562,27 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             function _transferTokenWithMode(token, mode, _payer, to, amount) {
                 if gt(amount, 0) {
-                    switch mode
-                    case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
-                        _transferTokenDirect(token, _payer, to, amount)
-                    }
-                    case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
-                        _transferTokenPermit2Allowance(token, _payer, to, amount)
-                    }
-                    case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
-                        _claimToken(token, _payer, to, amount)
+                    switch eq(_payer, address())
+                    case 1{
+                        _sendToken(token, to, amount)
                     }
                     default {
-                        _revertWithReason(
-                            0x0000001520696e76616c6964207472616e73666572206d6f6465000000000000,
-                            0x5a
-                        ) // "invalid transfer mode"
+                        switch mode
+                        case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
+                            _transferTokenDirect(token, _payer, to, amount)
+                        }
+                        case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
+                            _transferTokenPermit2Allowance(token, _payer, to, amount)
+                        }
+                        case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
+                            _claimToken(token, _payer, to, amount)
+                        }
+                        default {
+                            _revertWithReason(
+                                0x0000001520696e76616c6964207472616e73666572206d6f6465000000000000,
+                                0x5a
+                            ) // "invalid transfer mode"
+                        }
                     }
                 }
             }
@@ -618,7 +624,27 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     _emitCommissionFromToken(_ETH, amount, referrer, rate)
                 }
             }
-            if and(and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) { // commission token is ERC20 with no toB mode and transfer mode != _MODE_PERMIT2_SIGNATURE
+            if iszero(eq(token, _ETH)) {
+                let noNeedTransfer := and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, NO_TO_B_MODE)) // transferMode == _MODE_PERMIT2_SIGNATURE && ToC mode, the token has been transferred to referrers and no need to transfer again.
+                if or(
+                    and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, TO_B_MODE)), // transferMode == _MODE_PERMIT2_SIGNATURE && ToB mode, the token has been claimed to address(this)
+                    eq(mode, _MODE_BY_INVEST) // transferMode == _MODE_BY_INVEST, the token has been transferred to address(this)
+                ) {
+                    // require(payer == address(), "invalid payer");
+                    if iszero(eq(payer, address())) {
+                        _revertWithReason(
+                            0x0000000d20696e76616c69642070617965720000000000000000000000000000,
+                            0x52
+                        ) // "invalid payer"
+                    }
+                }
+                // ToB mode && transferMode != _MODE_PERMIT2_SIGNATURE/BY_INVEST, the token needs to be claimed to address(this) first
+                if and(eq(toBCommission, TO_B_MODE), iszero(or(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(mode, _MODE_BY_INVEST)))) {
+                    _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)
+                    payer := address()
+                    fromTokenCommissionAmount := _getBalanceOfToken(token)
+                }
+                // Execute the transfer to referrers
                 let sendAmount := 0
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
@@ -635,45 +661,70 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                         )
                         sendAmount := add(sendAmount, amount)
                     }
-                    if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
+                    if iszero(noNeedTransfer) {
                         _transferTokenWithMode(token, mode, payer, referrer, amount)
                     }
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }
-            if or(and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // commission token is ERC20 with toB mode or transfer mode == _MODE_PERMIT2_SIGNATURE
-                // If mode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed to address(this) first, and then get token balance to reset the fromTokenCommissionAmount.
-                if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
-                    _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)
-                    fromTokenCommissionAmount := _getBalanceOfToken(token)
-                }
-                let sendAmount := 0 // the amount of tokens already sent
-                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-                    let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
-                    let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
-                    let amountScaled
-                    switch eq(i, sub(referrerNum, 1))
-                    case 1 { // last referrer
-                        amountScaled := _safeSub(fromTokenCommissionAmount, sendAmount)
-                    }
-                    default { // not last referrer
-                        amountScaled := _mulDiv(
-                            _mulDiv(rate, WAD, totalRate),
-                            fromTokenCommissionAmount,
-                            WAD
-                        )
-                        if gt(amountScaled, fromTokenCommissionAmount) {
-                            _revertWithReason(
-                                0x0000001420696e76616c696420616d6f756e745363616c656400000000000000,
-                                0x59
-                            ) // "invalid amountScaled"
-                        }
-                        sendAmount := add(sendAmount, amountScaled)
-                    }
-                    _sendToken(token, referrer, amountScaled)
-                    _emitCommissionFromToken(token, amountScaled, referrer, rate)
-                }
-            }
+
+
+            // if and(and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) { // commission token is ERC20 with no toB mode and transfer mode != _MODE_PERMIT2_SIGNATURE
+            //     let sendAmount := 0
+            //     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+            //         let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+            //         let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+            //         let amount
+            //         switch eq(i, sub(referrerNum, 1))
+            //         case 1 {
+            //             amount := sub(fromTokenCommissionAmount, sendAmount)
+            //         }
+            //         default {
+            //             amount := div(
+            //                 mul(fromTokenCommissionAmount, rate),
+            //                 totalRate
+            //             )
+            //             sendAmount := add(sendAmount, amount)
+            //         }
+            //         if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
+            //             _transferTokenWithMode(token, mode, payer, referrer, amount)
+            //         }
+            //         _emitCommissionFromToken(token, amount, referrer, rate)
+            //     }
+            // }
+            // if or(and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // commission token is ERC20 with toB mode or transfer mode == _MODE_PERMIT2_SIGNATURE
+            //     // If mode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed to address(this) first, and then get token balance to reset the fromTokenCommissionAmount.
+            //     if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
+            //         _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)
+            //         fromTokenCommissionAmount := _getBalanceOfToken(token)
+            //     }
+            //     let sendAmount := 0 // the amount of tokens already sent
+            //     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+            //         let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+            //         let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+            //         let amountScaled
+            //         switch eq(i, sub(referrerNum, 1))
+            //         case 1 { // last referrer
+            //             amountScaled := _safeSub(fromTokenCommissionAmount, sendAmount)
+            //         }
+            //         default { // not last referrer
+            //             amountScaled := _mulDiv(
+            //                 _mulDiv(rate, WAD, totalRate),
+            //                 fromTokenCommissionAmount,
+            //                 WAD
+            //             )
+            //             if gt(amountScaled, fromTokenCommissionAmount) {
+            //                 _revertWithReason(
+            //                     0x0000001420696e76616c696420616d6f756e745363616c656400000000000000,
+            //                     0x59
+            //                 ) // "invalid amountScaled"
+            //             }
+            //             sendAmount := add(sendAmount, amountScaled)
+            //         }
+            //         _sendToken(token, referrer, amountScaled)
+            //         _emitCommissionFromToken(token, amountScaled, referrer, rate)
+            //     }
+            // }
         }
     }
 

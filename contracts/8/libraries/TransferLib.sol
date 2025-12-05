@@ -57,9 +57,10 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         // 2. isFromTokenCommission=true && toBCommission=TO_B_MODE: means the fromToken needs to be claimed to address(this) and then transfer commission to referrers.
         // And when isFromTokenCommission=true && toBCommission=NO_TO_B_MODE, the commission needs to be transferred to referrers immediately.
         address to;
+        uint256 toBCommission = extraData.commissionInfo.toBCommission;
         if (mode == _MODE_PERMIT2_SIGNATURE) {
             // Get the address `to` according to the situation.
-            if (onlyOneAssetTo == address(0) || (extraData.commissionInfo.isFromTokenCommission && extraData.commissionInfo.toBCommission == TO_B_MODE)) {
+            if (onlyOneAssetTo == address(0) || (extraData.commissionInfo.isFromTokenCommission && toBCommission == TO_B_MODE)) {
                 to = address(this);
             } else {
                 to = onlyOneAssetTo;
@@ -75,9 +76,7 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
             );  
         }
 
-        // If the to address is address(this) or mode==_MODE_BY_INVEST(means fromToken is transferred to address(this)), scale the inputAmount and fromTokenCommissionAmount according to the token balance.
-        // If not, return directly. The payer should be set to address(0), which means the fromToken has been paid and no need to pay later.
-        if (to == address(this) || mode == _MODE_BY_INVEST) {
+        if ((to == address(this) && toBCommission != NO_TO_B_MODE) || mode == _MODE_BY_INVEST) {
             uint256 balance;
             if (mode == _MODE_BY_INVEST) {
                 balance = inputAmount; // For BY_INVEST mode, inputAmount is already the token balance.
@@ -87,8 +86,10 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
             inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
             fromTokenCommissionAmount = balance - inputAmount;
             return (address(this), inputAmount, fromTokenCommissionAmount);
+        } else if (to == address(this) && toBCommission == NO_TO_B_MODE) {
+            return (address(this), inputAmount, fromTokenCommissionAmount);
         } else {
-            return (address(0), inputAmount, 0);
+            return (address(0), inputAmount, fromTokenCommissionAmount);
         }
     }
 

@@ -7,14 +7,13 @@ import "../interfaces/IAspectaKeyPool.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/IERC20.sol";
 import "../libraries/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 
 /// @title AspectaAdapter
 /// @notice AspectaAdapter is a contract that allows to swap between NativeToken and Key
 /// @dev For sellQuote, the fromToken is the key, the key is always keep under the control
 /// of the seller address and not transferable, so refund logic is not needed.
-contract AspectaAdapter is IAdapter, Ownable {
+contract AspectaAdapter is IAdapter {
     uint256 constant ORIGIN_PAYER = 0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000; // 0x3ca20afc
     uint256 constant ADDRESS_MASK = 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff;
     address constant NATIVE_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -69,7 +68,7 @@ contract AspectaAdapter is IAdapter, Ownable {
                 SafeERC20.safeTransfer(IERC20(WNATIVETOKEN), payerOrigin, refundAmount);
             }
             uint256 toAmount = IAspectaKeyPool(pool).balanceOf(to) - toAmountBefore;
-            emit OrderRecord(true, NATIVE_ADDRESS, pool, totalPriceWithFee, toAmount);
+            emit OrderRecord(true, NATIVE_ADDRESS, pool, fromAmount, toAmount);
         } else {
             address payerOrigin = _getPayerOrigin();
             require(payerOrigin != address(0), "AspectaAdapter: payerOrigin is zero");

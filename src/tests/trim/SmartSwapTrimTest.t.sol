@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./TrimTestBase.t.sol";
+import "../common/TrimAndCommissionTestBase.t.sol";
 
 /*
  * The smartSwap method is tested with condition1 * condition2 + condition3 * condition4:
@@ -32,7 +32,7 @@ import "./TrimTestBase.t.sol";
  *     (5) 2trim + 2fromCommission
  *     (6) 2trim + 2toCommission
 */
-contract SmartSwapTrimTest is TrimTestBase {
+contract SmartSwapTrimTest is TrimAndCommissionTestBase {
     // ==================== ERC20->ERC20 ====================
     // WETH->USDT with noTrim and noCommission
     function test_trim_smartSwapTo_WETH2USDT_noTrim_noCommission() tokenLogAndCheck(WETH, USDT, oneEther, false, false, false, false, false)  public {

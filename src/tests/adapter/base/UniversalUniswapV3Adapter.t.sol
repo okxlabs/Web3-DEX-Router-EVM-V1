@@ -31,6 +31,7 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
         nativeWrappedTokens["polygon"] = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270; // POLYGON_WMATIC
         nativeWrappedTokens["avax"] = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7; // AVALANCHE_WAVAX
         nativeWrappedTokens["base"] = 0x4200000000000000000000000000000000000006; // BASE_WETH
+        nativeWrappedTokens["monad"] = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // MONAD_WMON
 
         address nativeWrappedToken = nativeWrappedTokens[networkId];
         require(nativeWrappedToken != address(0), "Unsupported network");
@@ -523,6 +524,56 @@ contract UniversalUniswapV3AdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "WETH to USDT in Etherex on Linea",
             moreInfo: abi.encode(uint160(0), abi.encode(WETH, USDT)),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getMonadUniswapV3TestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        SwapTestCase[] memory cases = new SwapTestCase[](2);
+
+        // Token addresses on Monad network
+        address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A; // Wrapped MON
+        address USDC = 0x754704Bc059F8C67012fEd69BC8A327a5aafb603; // USDC
+
+        // Uniswap V3 pool: WMON/USDC (fee: 3000, tickSpacing: 60)
+        address WMON_USDC_POOL = 0x659bD0BC4167BA25c62E05656F78043E7eD4a9da;
+
+        // Test 1: WMON to USDC
+        // Note: Monad has higher cold state access costs (10,100 gas for account, 8,100 gas for storage)
+        cases[0] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 0, // Set to specific block when testing
+            fromToken: WMON,
+            toToken: USDC,
+            pool: WMON_USDC_POOL,
+            amount: 1 * 10 ** 18, // 1 WMON
+            expectedOutput: 0, // dynamic
+            sellBase: true, // WMON is token0 (base)
+            expectRevert: false,
+            description: "WMON to USDC on Monad Uniswap V3",
+            moreInfo: abi.encode(uint160(0), abi.encode(WMON, USDC, uint24(3000))), // fee: 3000 (0.3%)
+            fromTokenPreTo: address(0)
+        });
+
+        // Test 2: USDC to WMON
+        cases[1] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 0, // Set to specific block when testing
+            fromToken: USDC,
+            toToken: WMON,
+            pool: WMON_USDC_POOL,
+            amount: 10 * 10 ** 6, // 10 USDC (6 decimals)
+            expectedOutput: 0, // dynamic
+            sellBase: false, // USDC is token1 (quote)
+            expectRevert: false,
+            description: "USDC to WMON on Monad Uniswap V3",
+            moreInfo: abi.encode(uint160(0), abi.encode(USDC, WMON, uint24(3000))), // fee: 3000 (0.3%)
             fromTokenPreTo: address(0)
         });
 

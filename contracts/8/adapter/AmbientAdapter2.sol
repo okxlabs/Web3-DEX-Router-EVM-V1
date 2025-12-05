@@ -79,11 +79,12 @@ contract AmbientAdapter2 is IAdapter {
             IAmbient(CrocSwapDex).userCmd{value: ethAmount}(proxyIdx, cmd);
         }
 
+        if (toToken == address(0)) {
+            IWETH(_WETH).deposit{value: address(this).balance}();
+            toToken = _WETH;
+        }
+
         if (to != address(this)) {
-            if (toToken == address(0)) {
-                IWETH(_WETH).deposit{value: address(this).balance}();
-                toToken = _WETH;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

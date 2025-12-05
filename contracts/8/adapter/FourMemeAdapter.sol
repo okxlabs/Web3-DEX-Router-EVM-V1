@@ -81,7 +81,7 @@ contract FourMemeAdapter is IAdapter {
                 }
             }
             amountOut = IERC20(tradeInfo.tokenAddress).balanceOf(to) - amountOut;
-            emit OrderRecord(true, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn - dust, amountOut);
+            emit OrderRecord(true, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn, amountOut);
         } else {
             amountIn = tradeInfo.sellMemeAmount;
             if (amountIn % GWEI != 0) {
@@ -104,7 +104,7 @@ contract FourMemeAdapter is IAdapter {
             
             amountOut = _getBalance(fundToken, tx.origin) - amountOut;
             require(amountOut >= tradeInfo.minReturnAmount, "Min return not reached");
-            emit OrderRecord(false, tradeInfo.tokenAddress, tradeInfo.fundAddress, amountIn, amountOut);
+            emit OrderRecord(false, tradeInfo.tokenAddress, tradeInfo.fundAddress, tradeInfo.sellMemeAmount, amountOut);
         }
     }
 

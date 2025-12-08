@@ -73,7 +73,6 @@ abstract contract ExtraDataLib is CommonUtils {
                 eq(flag, FROM_TOKEN_COMMISSION_MULTIPLE),
                 eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
             ) {
-                // referrerNum := 3 // default referrer num to load real encoded referrer num
                 commissionData := calldataload(sub(endPoint, 0x40))
                 referrerNum := shr(240, and(commissionData, _COMMISSION_LENGTH_MASK))
                 if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
@@ -107,10 +106,11 @@ abstract contract ExtraDataLib is CommonUtils {
             // Get permit2Info data endPoint and length
             endPoint := sub(endPoint, mul(length, 0x20)) // refresh endPoint for permit2Info data
             let permit2InfoData := calldataload(sub(endPoint, 0x20))
+            flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
             length := 0 // refresh length to 0 for permit2Info data
             if or(
-                eq(permit2InfoData, PERMIT2_INFO_SIG65_FLAG),
-                eq(permit2InfoData, PERMIT2_INFO_SIG64_FLAG)
+                eq(flag, PERMIT2_INFO_SIG65_FLAG),
+                eq(flag, PERMIT2_INFO_SIG64_FLAG)
             ) {
                 let amountLength := shr(200, and(permit2InfoData, _PERMIT2_INFO_AMOUNT_LENGTH_MASK))
                 length := add(amountLength, 4) 
@@ -370,8 +370,8 @@ abstract contract ExtraDataLib is CommonUtils {
             // get all amounts
             let amountsPosition := mload(add(permit2Info, 0x80))
             for { let i := 0 } lt(i, amountLength) { i := add(i, 1) } {
-                permit2InfoData := calldataload(sub(endPoint, add(0x80, mul(i, 0x20))))
-                mstore(add(amountsPosition, mul(i, 0x20)), permit2InfoData) // permit2Info.amounts[i]
+                permit2InfoData := calldataload(sub(endPoint, add(0xa0, mul(i, 0x20))))
+                mstore(add(amountsPosition, mul(add(i, 1), 0x20)), permit2InfoData) // permit2Info.amounts[i]
             }
         }
         if (permit2InfoFlag == PERMIT2_INFO_SIG65_FLAG) {

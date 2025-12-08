@@ -227,7 +227,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
             // get first bytes32 of permit2Info
             let permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x20)))
-            let refundToOffset
+            let refundToOffset := permit2InfoOffset
             permit2InfoFlag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
             if or(
                 eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG),

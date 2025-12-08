@@ -11,6 +11,7 @@ import "@dex/adapter/UniAdapter.sol";
 import "@dex/interfaces/IPermit2.sol";
 import "./CommissionHelper.t.sol";
 import "./TrimHelper.t.sol";
+import "./Permit2Helper.t.sol";
 
 interface ISafeMoon {
     function owner() external view returns (address);
@@ -24,7 +25,7 @@ interface IPermit2Approve {
     function approve(address token, address spender, uint160 amount, uint48 expiration) external;
 }
 
-contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
+contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit2Helper {
     // transfer modes
     uint256 internal constant _MODE_LEGACY =
         0x0000000000000000000000000000000000000000000000000000000000000000; // 0b000 in [bit251, bit250, bit249]

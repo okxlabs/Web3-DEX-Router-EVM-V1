@@ -5,7 +5,7 @@ import "../common/TrimAndCommissionTestBase.t.sol";
 import "../common/Permit2Helper.t.sol";
 import "@dex/interfaces/IPermit2.sol";
 
-contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
+contract FromTokenCommissionTest is TrimAndCommissionTestBase {
     uint256 public arnaudPrivateKey = 11111111111111111111;
 
     // ==================== Test fromToken commission with multi transfer modes ===================
@@ -91,14 +91,24 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase, Permit2Helper {
     }
 
     // (9) WETH->USDT, 3fromCommission, no-toBCommission, by invest mode
-    function test_fromTokenCommission_WETH2USDT_3fromCommissionToC_byInvest() public {
-
+    function test_fromTokenCommission_WETH2USDT_3fromCommissionToC_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_BY_INVEST) public {
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_BY_INVEST);
+        bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
+        bytes memory data = bytes.concat(swapData, commissionData);
+        IERC20(WETH).transfer(address(dexRouter), 2 * 10 ** 18);
+        (bool success, ) = address(dexRouter).call(data);
+        require(success, "call failed");
     }
 
     // (10) WETH->USDT, 3fromCommission, toBCommission, by invest mode
-    function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_byInvest() public {
-
-    }
+    function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_BY_INVEST) public {
+        bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_BY_INVEST);
+        bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
+        bytes memory data = bytes.concat(swapData, commissionData);
+        IERC20(WETH).transfer(address(dexRouter), 2 * 10 ** 18);
+        (bool success, ) = address(dexRouter).call(data);
+        require(success, "call failed");
+    }   
 
 
     // ==================== Internal Functions ====================

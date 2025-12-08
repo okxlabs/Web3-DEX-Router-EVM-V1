@@ -667,64 +667,6 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }
-
-
-            // if and(and(iszero(eq(token, _ETH)), eq(toBCommission, NO_TO_B_MODE)), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) { // commission token is ERC20 with no toB mode and transfer mode != _MODE_PERMIT2_SIGNATURE
-            //     let sendAmount := 0
-            //     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-            //         let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
-            //         let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
-            //         let amount
-            //         switch eq(i, sub(referrerNum, 1))
-            //         case 1 {
-            //             amount := sub(fromTokenCommissionAmount, sendAmount)
-            //         }
-            //         default {
-            //             amount := div(
-            //                 mul(fromTokenCommissionAmount, rate),
-            //                 totalRate
-            //             )
-            //             sendAmount := add(sendAmount, amount)
-            //         }
-            //         if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
-            //             _transferTokenWithMode(token, mode, payer, referrer, amount)
-            //         }
-            //         _emitCommissionFromToken(token, amount, referrer, rate)
-            //     }
-            // }
-            // if or(and(iszero(eq(token, _ETH)), eq(toBCommission, TO_B_MODE)), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // commission token is ERC20 with toB mode or transfer mode == _MODE_PERMIT2_SIGNATURE
-            //     // If mode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed to address(this) first, and then get token balance to reset the fromTokenCommissionAmount.
-            //     if iszero(eq(mode, _MODE_PERMIT2_SIGNATURE)) {
-            //         _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)
-            //         fromTokenCommissionAmount := _getBalanceOfToken(token)
-            //     }
-            //     let sendAmount := 0 // the amount of tokens already sent
-            //     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-            //         let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
-            //         let referrer := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
-            //         let amountScaled
-            //         switch eq(i, sub(referrerNum, 1))
-            //         case 1 { // last referrer
-            //             amountScaled := _safeSub(fromTokenCommissionAmount, sendAmount)
-            //         }
-            //         default { // not last referrer
-            //             amountScaled := _mulDiv(
-            //                 _mulDiv(rate, WAD, totalRate),
-            //                 fromTokenCommissionAmount,
-            //                 WAD
-            //             )
-            //             if gt(amountScaled, fromTokenCommissionAmount) {
-            //                 _revertWithReason(
-            //                     0x0000001420696e76616c696420616d6f756e745363616c656400000000000000,
-            //                     0x59
-            //                 ) // "invalid amountScaled"
-            //             }
-            //             sendAmount := add(sendAmount, amountScaled)
-            //         }
-            //         _sendToken(token, referrer, amountScaled)
-            //         _emitCommissionFromToken(token, amountScaled, referrer, rate)
-            //     }
-            // }
         }
     }
 
@@ -998,19 +940,11 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 revert(0, len)
             }
 
-            // if ((
-            //     (mode == _MODE_NO_TRANSFER)
-            // || (mode == _MODE_BY_INVEST)
-            // )
-            // && commissionInfo.isFromTokenCommission) {
+            // if (mode == _MODE_NO_TRANSFER && commissionInfo.isFromTokenCommission) {
             //     revert("From commission not support");
             // }
-            let flag := or(
-                eq(mode, _MODE_NO_TRANSFER),
-                eq(mode, _MODE_BY_INVEST)
-            )
             let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
-            if and(flag, isFromTokenCommission) {
+            if and(eq(mode, _MODE_NO_TRANSFER), isFromTokenCommission) {
                 _revertWithReason(
                     0x0000001b2046726f6d20636f6d6d697373696f6e206e6f7420737570706f7274,
                     0x60
@@ -1045,7 +979,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             //     "Invalid commission info"
             // );
             let token := and(mload(add(commissionInfo, 0x40)), _ADDRESS_MASK) // commissionInfo.token
-            flag := and(isFromTokenCommission, eq(token, fromToken))
+            let flag := and(isFromTokenCommission, eq(token, fromToken))
             flag := or(flag, and(isToTokenCommission, eq(token, toToken)))
             flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))
             if iszero(flag) {

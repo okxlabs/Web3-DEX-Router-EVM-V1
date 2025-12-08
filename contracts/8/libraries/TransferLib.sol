@@ -73,21 +73,26 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
                 to,
                 totalRate,
                 extraData
-            );  
+            );
         }
 
-        if ((to == address(this) && toBCommission != NO_TO_B_MODE) || mode == _MODE_BY_INVEST) {
+        if (to == address(this) || mode == _MODE_BY_INVEST) {
+            // Get balance of token according to the mode.
             uint256 balance;
             if (mode == _MODE_BY_INVEST) {
                 balance = inputAmount; // For BY_INVEST mode, inputAmount is already the token balance.
             } else {
-                balance = IERC20(token).balanceOf(address(this));
+                balance = IERC20(token).balanceOf(address(this)); // For other situations, the balance needs to be got because the token has been claimed to address(this).
             }
-            inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
-            fromTokenCommissionAmount = balance - inputAmount;
-            return (address(this), inputAmount, fromTokenCommissionAmount);
-        } else if (to == address(this) && toBCommission == NO_TO_B_MODE) {
-            return (address(this), inputAmount, fromTokenCommissionAmount);
+
+            // Calculate the inputAmount and fromTokenCommissionAmount according to the mode.
+            if (mode == _MODE_PERMIT2_SIGNATURE && toBCommission == NO_TO_B_MODE) { // For Permit2Signature mode && ToC mode, the commission has been transferred to referrers so the newInputAmount is the balance.
+                return (address(this), balance, fromTokenCommissionAmount);
+            } else { // For other situations (Permit2Signature mode && ToB mode, ByInvest mode), the inputAmount and fromTokenCommissionAmount need to be calculated.
+                inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
+                fromTokenCommissionAmount = balance - inputAmount;
+                return (address(this), inputAmount, fromTokenCommissionAmount);   
+            }
         } else {
             return (address(0), inputAmount, fromTokenCommissionAmount);
         }

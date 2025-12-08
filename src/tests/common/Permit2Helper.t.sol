@@ -166,13 +166,13 @@ contract Permit2Helper is Test {
     }
 
     /// =============================== For permitTransferFrom with array ===============================
-    function _buildPermit2InfoUnified(
+    function _buildPermit2InfoUnifiedBatch(
         uint256[] memory maxAmounts,
         uint256 nonce,
         uint256 deadline,
         address owner,
         bytes memory signature
-    ) internal pure returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         require(signature.length == 64 || signature.length == 65, "signature length must be 64 or 65");
         uint256 flag = signature.length == 65 ? PERMIT2_INFO_SIG65_FLAG : PERMIT2_INFO_SIG64_FLAG;
 
@@ -210,7 +210,7 @@ contract Permit2Helper is Test {
             ),
             bytes32(
                 (flag & 0xffffffffffff0000000000000000000000000000000000000000000000000000) |
-                (maxAmountsLength & 0x000000000000ff00000000000000000000000000000000000000000000000000) |
+                ((maxAmountsLength << 200) & 0x000000000000ff00000000000000000000000000000000000000000000000000) |
                 uint256(uint160(owner)) & 0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
             )
         );

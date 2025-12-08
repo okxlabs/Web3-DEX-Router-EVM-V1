@@ -260,13 +260,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 // get all amounts
                 let amountsPosition := mload(add(permit2Info, 0x80))
                 for { let i := 0 } lt(i, amountLength) { i := add(i, 1) } {
-                    permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, add(0x80, mul(i, 0x20)))))
-                    mstore(add(amountsPosition, mul(i, 0x20)), permit2InfoData) // permit2Info.amounts[i]
+                    permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, add(0xa0, mul(i, 0x20)))))
+                    mstore(add(amountsPosition, mul(add(i, 1), 0x20)), permit2InfoData) // permit2Info.amounts[i]
                 }
                 mstore(amountsPosition, amountLength) // reset length for amounts array
 
                 // get refundTo offset
-                refundToOffset := add(permit2InfoOffset, mul(5, 0x20))
+                refundToOffset := add(permit2InfoOffset, mul(add(4, amountLength), 0x20))
             }
             // decode refundTo
             let refundToData := calldataload(sub(calldatasize(), add(refundToOffset, 0x20)))

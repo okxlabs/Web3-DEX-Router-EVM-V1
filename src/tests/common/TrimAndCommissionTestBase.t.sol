@@ -40,6 +40,8 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         0x0A00000000000000000000000000000000000000000000000000000000000000; // 0b101 in [bit251, bit250, bit249]
     uint256 internal constant _TRANSFER_MODE_MASK =
         0x0E00000000000000000000000000000000000000000000000000000000000000; // 0b111 in [bit251, bit250, bit249]
+    uint256 internal constant REFUND_TO_ADDRESS_FLAG =
+        0xac3a7da8b1c60000000000000000000000000000000000000000000000000000; // bytes6(keccak256("RefundTo"))
 
     // tokens
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -426,5 +428,9 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             commissionRates_,
             referrerAddresses_
         );
+    }
+
+    function _generateRefundToData(address refundTo) internal view returns (bytes memory) {
+        return abi.encodePacked(bytes32(REFUND_TO_ADDRESS_FLAG | uint256(uint160(refundTo))));
     }
 }

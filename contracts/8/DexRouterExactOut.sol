@@ -23,6 +23,7 @@ import "./libraries/TempStorage.sol";
 import "./storage/PMMRouterStorage.sol";
 import "./storage/DexRouterStorage.sol";
 import "./libraries/UniswapTokenInfoHelper.sol";
+import "./libraries/ExtraDataLib.sol";
 
 /// @title DexRouterExactOut
 /// @notice Entrance of Split trading in Dex platform, must be inherited from UnxswapExactOutRouter and UnxswapV3ExactOutRouter
@@ -38,7 +39,8 @@ contract DexRouterExactOut is
     DexRouterStorage,
     CommissionLib,
     PMMRouterStorage,
-    UniswapTokenInfoHelper
+    UniswapTokenInfoHelper,
+    ExtraDataLib
 {
     string public constant version = "v1.0.5-tee";
     using UniversalERC20 for IERC20;
@@ -279,7 +281,7 @@ contract DexRouterExactOut is
         address middleReceiver,
         uint256 targetTokenBefore
     ) internal returns (CommissionInfo memory, uint256, uint256, address) {
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
         CommissionInfo memory commissionInfo = extraData.commissionInfo;
         if (
             commissionInfo.isToTokenCommission &&

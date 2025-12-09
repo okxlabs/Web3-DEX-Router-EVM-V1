@@ -58,9 +58,11 @@ interface IDexRouter {
     }
 
     struct Permit2Info {
-        IPermit2.PermitTransferFrom permit;
-        address owner;
-        bytes signature;
+        address owner; // 0x00
+        uint256 nonce; // 0x20
+        uint256 deadline; // 0x40
+        bytes signature; // 0x60
+        uint256[] amounts; // 0x80
     }
 
     struct ExtraData {

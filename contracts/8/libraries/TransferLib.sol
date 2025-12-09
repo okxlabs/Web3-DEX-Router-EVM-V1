@@ -123,7 +123,7 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
             deadline: extraData.permit2Info.deadline
         });
         IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
-        if (permitLength == 1) {
+        if (permitLength == 1) { // Generate permit params without ToC mode
             permitBatchTransferFrom.permitted[0] = IPermit2.TokenPermissions({
                 token: token,
                 amount: extraData.permit2Info.amounts[0]
@@ -132,13 +132,14 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
                 to: to,
                 requestedAmount: inputAmount + fromTokenCommissionAmount
             });
-        } else {
+        } else { // Generate permit params with ToC mode
             for (uint256 i = 0; i < permitLength; i++) {
                 permitBatchTransferFrom.permitted[i] = IPermit2.TokenPermissions({
                     token: token,
                     amount: extraData.permit2Info.amounts[i]
                 });
             }
+            // transferDetails[0] is swap part, and the rest are commission parts.
             transferDetails[0] = IPermit2.SignatureTransferDetails({
                 to: to,
                 requestedAmount: inputAmount

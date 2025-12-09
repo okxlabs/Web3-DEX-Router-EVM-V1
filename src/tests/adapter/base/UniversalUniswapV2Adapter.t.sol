@@ -24,7 +24,7 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](9);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](10);
         cases[0] = getApeSwapV2TestCases();
         cases[1] = getRDexV2TestCases();
         cases[2] = getLynexTestCases();
@@ -34,6 +34,7 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         cases[6] = getCronaSwapTestCases();
         cases[7] = getAVAXTestCase();
         cases[8] = getInSwapTestCases();
+        cases[9] = getMonadJoeTestCases();
 
         return cases;
     }
@@ -307,6 +308,32 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
             fromTokenPreTo: address(0)
         });
         
+        return cases;
+    }
+
+    function getMonadJoeTestCases() internal pure returns (SwapTestCase[] memory) {
+        address JOE = 0x371c7ec6D8039ff7933a2AA28EB827Ffe1F52f07;
+        address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A;
+
+        address JOE_WMON_PAIR = 0xD38eD09999c1FB29cAB12862a51618ed52BA65A1;
+
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        // https://monadvision.com/tx/0xd329b1e9591b7d576ebac0c43452aa49da487efdc653a8d143bef637417cce69
+        cases[0] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 40847265 - 1,
+            fromToken: WMON,
+            toToken: JOE,
+            pool: JOE_WMON_PAIR,
+            amount: 49500000000000000000,
+            expectedOutput: 18374430384319061977,
+            sellBase: false,
+            expectRevert: false,
+            description: "WMON to JOE on Monad",
+            moreInfo: abi.encode(997, 1000),
+            fromTokenPreTo: address(0)
+        });
+
         return cases;
     }
 } 

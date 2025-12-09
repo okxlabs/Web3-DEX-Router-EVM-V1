@@ -11,6 +11,7 @@ import "@dex/adapter/UniAdapter.sol";
 import "@dex/interfaces/IPermit2.sol";
 import "./CommissionHelper.t.sol";
 import "./TrimHelper.t.sol";
+import "./Permit2Helper.t.sol";
 
 interface ISafeMoon {
     function owner() external view returns (address);
@@ -24,7 +25,7 @@ interface IPermit2Approve {
     function approve(address token, address spender, uint160 amount, uint48 expiration) external;
 }
 
-contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
+contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit2Helper {
     // transfer modes
     uint256 internal constant _MODE_LEGACY =
         0x0000000000000000000000000000000000000000000000000000000000000000; // 0b000 in [bit251, bit250, bit249]
@@ -40,6 +41,8 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         0x0A00000000000000000000000000000000000000000000000000000000000000; // 0b101 in [bit251, bit250, bit249]
     uint256 internal constant _TRANSFER_MODE_MASK =
         0x0E00000000000000000000000000000000000000000000000000000000000000; // 0b111 in [bit251, bit250, bit249]
+    uint256 internal constant REFUND_TO_ADDRESS_FLAG =
+        0xac3a7da8b1c60000000000000000000000000000000000000000000000000000; // bytes6(keccak256("RefundTo"))
 
     // tokens
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -426,5 +429,9 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             commissionRates_,
             referrerAddresses_
         );
+    }
+
+    function _generateRefundToData(address refundTo) internal view returns (bytes memory) {
+        return abi.encodePacked(bytes32(REFUND_TO_ADDRESS_FLAG | uint256(uint160(refundTo))));
     }
 }

@@ -13,9 +13,8 @@ import "./libraries/CommissionLib.sol";
 import "./libraries/EthReceiver.sol";
 import "./libraries/UniswapTokenInfoHelper.sol";
 import "./libraries/CommonLib.sol";
-
+import "./libraries/ExtraDataLib.sol";
 import "./DagRouter.sol";
-
 
 /// @title DexRouterV1
 /// @notice Entrance of Split trading in Dex platform
@@ -26,7 +25,8 @@ contract DexRouter is
     UnxswapV3Router,
     CommissionLib,
     UniswapTokenInfoHelper,
-    DagRouter
+    DagRouter,
+    ExtraDataLib
 {
     string public constant version = "v1.0.7-multi-commission";
     using UniversalERC20 for IERC20;
@@ -391,7 +391,7 @@ contract DexRouter is
         uint256 minReturn,
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
         // add permit2
         _validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
         // TODO add mode to commissionInfo.tokenWithMode
@@ -505,7 +505,7 @@ contract DexRouter is
         uint256[] memory batchesAmount,
         RouterPath[][] memory batches
     ) internal returns (uint256 returnAmount) {
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
         
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
@@ -612,7 +612,7 @@ contract DexRouter is
         bytes32[] calldata pools
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
 
         _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, _MODE_LEGACY);
         returnAmount = _getBalanceOf(toToken, receiver);
@@ -789,7 +789,7 @@ contract DexRouter is
         require(amount > 0, "amount must be > 0");
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
 
         address srcToken = reversed ? _WETH : _ETH;
         address toToken = reversed ? _ETH : _WETH;
@@ -931,7 +931,7 @@ contract DexRouter is
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        ExtraData memory extraData = _getExtraData();
+        ExtraData memory extraData = getDecodedExtraData();
         
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         

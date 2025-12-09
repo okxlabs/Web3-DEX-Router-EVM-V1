@@ -13,7 +13,7 @@ abstract contract ExtraDataLib is CommonUtils {
 
     /// @notice Decode extra data and get structs
     /// Same function as _getCommissionAndTrimInfo() in CommissionLib.sol
-    function getDecodedExtraData() internal pure returns (ExtraData memory extraData) {
+    function getDecodedExtraData() internal returns (ExtraData memory extraData) {
         // ensure the calldata length is 4 + 32 * N bytes
         uint256 calldataSize;
         assembly {
@@ -30,6 +30,15 @@ abstract contract ExtraDataLib is CommonUtils {
             permit2Info: parsePermit2Info(endPoints[2], lengths[2]),
             refundTo: parseRefundTo(endPoints[3], lengths[3])
         });
+
+        if (extraData.commissionInfo.isFromTokenCommission || extraData.commissionInfo.isToTokenCommission || extraData.trimInfo.hasTrim) {
+            emit CommissionAndTrimInfo(
+                extraData.commissionInfo.toBCommission,
+                extraData.trimInfo.toBTrim,
+                extraData.trimInfo.trimRate,
+                extraData.trimInfo.chargeRate
+            );
+        }
 
         return extraData;
     }

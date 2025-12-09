@@ -86,8 +86,8 @@ abstract contract ExtraDataLib is CommonUtils {
                 referrerNum := shr(240, and(commissionData, _COMMISSION_LENGTH_MASK))
                 if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
                     _revertWithReason(
-                        0x00000014696e76616c6964207265666572726572206e756d0000000000000000,
-                        0x58
+                        0x0000001520696e76616c6964207265666572726572206e756d00000000000000,
+                        0x59
                     ) // "invalid referrer num"
                 }
             }
@@ -212,8 +212,8 @@ abstract contract ExtraDataLib is CommonUtils {
                     let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
                     if iszero(eq(flag, flag2)) {
                         _revertWithReason(
-                            0x00000017696e76616c696420636f6d6d697373696f6e20666c61670000000000,
-                            0x5b
+                            0x0000001820696e76616c696420636f6d6d697373696f6e20666c616700000000,
+                            0x5c
                         ) // "invalid commission flag"
                     }
                     mstore(
@@ -275,8 +275,8 @@ abstract contract ExtraDataLib is CommonUtils {
                 let flag := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(trimFlag, flag)) {
                     _revertWithReason(
-                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
-                        0x55
+                        0x0000001220696e76616c6964207472696d20666c616700000000000000000000,
+                        0x56
                     ) // "invalid trim flag"
                 }
                 let toBTrim := NO_TO_B_MODE // default toBTrim is 1 for no-toB trim when trimData exists
@@ -305,8 +305,8 @@ abstract contract ExtraDataLib is CommonUtils {
                 let flag := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(trimFlag, flag)) {
                     _revertWithReason(
-                        0x00000011696e76616c6964207472696d20666c61670000000000000000000000,
-                        0x55
+                        0x0000001220696e76616c6964207472696d20666c616700000000000000000000,
+                        0x56
                     ) // "invalid trim flag"
                 }
                 mstore(
@@ -361,8 +361,8 @@ abstract contract ExtraDataLib is CommonUtils {
             let flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
             if iszero(eq(permit2InfoFlag, flag)) {
                 _revertWithReason(
-                    0x00000018696e76616c6964207065726d697432496e666f20666c616700000000,
-                    0x5c
+                    0x0000001920696e76616c6964207065726d697432496e666f20666c6167000000,
+                    0x5d
                 ) // "invalid permit2Info flag"
             }
             mstore(add(permit2Info, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // nonce

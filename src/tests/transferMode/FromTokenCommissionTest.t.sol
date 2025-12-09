@@ -91,23 +91,23 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
     }
 
     // (9) WETH->USDT, 3fromCommission, no-toBCommission, by invest mode
-    function test_fromTokenCommission_WETH2USDT_3fromCommissionToC_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_BY_INVEST) public {
+    function test_fromTokenCommission_WETH2USDT_3fromCommissionToC_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 0, _MODE_BY_INVEST) public {
         bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_BY_INVEST);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, false, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         IERC20(WETH).transfer(address(dexRouter), 2 * 10 ** 18);
         (bool success, ) = address(dexRouter).call(data);
-        require(success, "call failed");
+        require(!success, "fromToken commission with byInvest mode is not supported");
     }
 
     // (10) WETH->USDT, 3fromCommission, toBCommission, by invest mode
-    function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 3, _MODE_BY_INVEST) public {
+    function test_fromTokenCommission_WETH2USDT_3fromCommissionToB_byInvest() tokenLogAndCheck3(WETH, USDT, 2 * 10 ** 18, false, false, true, 0, _MODE_BY_INVEST) public {
         bytes memory swapData = _generateWETH2USDTDagSwapData(_MODE_BY_INVEST);
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         bytes memory data = bytes.concat(swapData, commissionData);
         IERC20(WETH).transfer(address(dexRouter), 2 * 10 ** 18);
         (bool success, ) = address(dexRouter).call(data);
-        require(success, "call failed");
+        require(!success, "fromToken commission with byInvest mode is not supported");
     }   
 
 

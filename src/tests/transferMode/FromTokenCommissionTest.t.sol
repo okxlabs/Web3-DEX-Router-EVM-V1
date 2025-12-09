@@ -72,7 +72,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
         for (uint256 i = 1; i < amounts.length; i++) {
             amounts[i] = 1 * 10 ** 18;
         }
-        bytes memory permit2Info = _generatePermit2InfoBatch(WETH, amounts);
+        bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
         bytes memory data = bytes.concat(swapData, permit2Info, commissionData);
         (bool success, ) = address(dexRouter).call(data);
         require(success, "call failed");
@@ -84,7 +84,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
         bytes memory commissionData = _generateMultipleCommissionData(true, WETH, true, 3);
         uint256[] memory amounts = new uint256[](1); // swapAmount + all ToB commission amounts
         amounts[0] = 3 * 10 ** 18;
-        bytes memory permit2Info = _generatePermit2InfoBatch(WETH, amounts);
+        bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
         bytes memory data = bytes.concat(swapData, permit2Info, commissionData);
         (bool success, ) = address(dexRouter).call(data);
         require(success, "call failed");
@@ -201,34 +201,6 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
 
     function _generatePermit2Info(
         address token,
-        uint256 amount
-    ) internal view returns (bytes memory) {
-        IPermit2.PermitTransferFrom memory permit = getPermitTransferFrom(
-            token, // token
-            amount, // amount
-            2, // nonce
-            2524579200 // deadline 2050-01-01 00:00:00
-        );
-        bytes memory signature = getPermitTransferSignature(
-            permit,
-            11111111111111111111, // private key
-            address(dexRouter), // spender
-            Permit2EthDomainSeperator
-        );
-
-        bytes memory permit2Info = _buildPermit2InfoUnified(
-            permit.permitted.amount,
-            permit.nonce,
-            permit.deadline,
-            arnaud,
-            signature
-        );
-
-        return permit2Info;
-    }
-
-    function _generatePermit2InfoBatch(
-        address token,
         uint256[] memory amounts
     ) internal view returns (bytes memory) {
         IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
@@ -243,7 +215,7 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
             address(dexRouter),
             Permit2EthDomainSeperator
         );
-        bytes memory permit2Info = _buildPermit2InfoUnifiedBatch(
+        bytes memory permit2Info = _buildPermit2InfoUnified(
             amounts,
             permit.nonce,
             permit.deadline,

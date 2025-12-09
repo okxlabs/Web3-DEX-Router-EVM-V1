@@ -10,7 +10,7 @@ import "./TrimHelper.t.sol";
 import "./Permit2Helper.t.sol";
 
 contract ExtraDataLibTestHelper is ExtraDataLib {
-    function getExtraData(bytes memory data) public view returns (ExtraData memory) {
+    function getExtraData(bytes memory data) public returns (ExtraData memory) {
         return getDecodedExtraData();
     }
 }
@@ -338,7 +338,7 @@ contract ExtraDataLibTest is Test, CommissionHelper, TrimHelper, Permit2Helper {
         for (uint256 i = 0; i < maxAmountsLength_; i++) {
             maxAmounts_[i] = maxAmounts[i];
         }
-        return _buildPermit2InfoUnifiedBatch(
+        return _buildPermit2InfoUnified(
             maxAmounts_,
             nonce,
             deadline,

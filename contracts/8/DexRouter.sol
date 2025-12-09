@@ -813,9 +813,8 @@ contract DexRouter is
             reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
             swapParams.payer,
             amount,
-            extraData.commissionInfo,
             address(0),
-            extraData.permit2Info
+            extraData
         );
 
         (

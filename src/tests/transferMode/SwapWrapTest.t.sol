@@ -12,7 +12,7 @@ import "forge-std/console.sol";
  * @notice Test swapWrap and swapWrapToWithBaseRequest with different transfer modes
  * @dev Tests ETH <-> WETH swaps with LEGACY, DIRECT, PERMIT2_ALLOWANCE, and PERMIT2_SIGNATURE modes
  */
-contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
+contract SwapWrapTest is TrimAndCommissionTestBase {
     uint256 constant SWAP_AMOUNT = 1 ether;
     uint256 constant REVERSE_MASK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     
@@ -159,23 +159,25 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
         uint256 nonce = 0;
         uint48 deadline = uint48(block.timestamp + 1000);
         
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({
-                token: WETH,
-                amount: SWAP_AMOUNT
-            }),
-            nonce: nonce,
-            deadline: deadline
-        });
+        // Use batch transfer with single amount
+        uint256[] memory maxAmounts = new uint256[](1);
+        maxAmounts[0] = SWAP_AMOUNT;
         
-        bytes memory signature = getPermitTransferSignature(
+        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+            WETH,
+            maxAmounts,
+            nonce,
+            deadline
+        );
+        
+        bytes memory signature = getPermitBatchTransferSignature(
             permit,
             alicePrivateKey,
             address(dexRouter),
             Permit2EthDomainSeperator
         );
         
-        bytes memory permit2Data = encodePermit2Info(permit, alice, signature);
+        bytes memory permit2Data = _buildPermit2InfoUnified(maxAmounts, nonce, deadline, alice, signature);
         
         vm.startPrank(alice);
         
@@ -235,16 +237,18 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
             uint256 orderId = 12350;
             uint256 rawdata = REVERSE_MASK | _MODE_PERMIT2_SIGNATURE | inputAmount;
             
-            IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-                permitted: IPermit2.TokenPermissions({
-                    token: WETH,
-                    amount: totalAmount
-                }),
-                nonce: 0,
-                deadline: uint48(block.timestamp + 1000)
-            });
+            // For ToB mode, all tokens (swap + commission) go to router, so permitLength = 1
+            uint256[] memory maxAmounts = new uint256[](1);
+            maxAmounts[0] = totalAmount;  // Total amount including commission
             
-            bytes memory signature = getPermitTransferSignature(
+            IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+                WETH, 
+                maxAmounts, 
+                0, 
+                uint48(block.timestamp + 1000)
+            );
+            
+            bytes memory signature = getPermitBatchTransferSignature(
                 permit,
                 alicePrivateKey,
                 address(dexRouter),
@@ -286,7 +290,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
             callData = abi.encodeWithSelector(dexRouter.swapWrap.selector, orderId, rawdata);
             callData = bytes.concat(
                 callData,
-                encodePermit2Info(permit, alice, signature),
+                _buildPermit2InfoUnified(maxAmounts, 0, uint48(block.timestamp + 1000), alice, signature),
                 trimData,
                 commissionData
             );
@@ -554,16 +558,18 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
         uint256 nonce = 0;
         uint48 deadline = uint48(block.timestamp + 1000);
         
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({
-                token: WETH,
-                amount: SWAP_AMOUNT
-            }),
-            nonce: nonce,
-            deadline: deadline
-        });
+        // Use batch transfer with single amount
+        uint256[] memory maxAmounts = new uint256[](1);
+        maxAmounts[0] = SWAP_AMOUNT;
         
-        bytes memory signature = getPermitTransferSignature(
+        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+            WETH,
+            maxAmounts,
+            nonce,
+            deadline
+        );
+        
+        bytes memory signature = getPermitBatchTransferSignature(
             permit,
             alicePrivateKey,
             address(dexRouter),
@@ -571,7 +577,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
         );
         
         // Encode Permit2Info in calldata
-        bytes memory permit2Data = encodePermit2Info(permit, alice, signature);
+        bytes memory permit2Data = _buildPermit2InfoUnified(maxAmounts, nonce, deadline, alice, signature);
         
         vm.startPrank(alice);
         
@@ -625,55 +631,5 @@ contract SwapWrapTest is TrimAndCommissionTestBase, Permit2Helper {
         vm.stopPrank();
     }
 
-    // ============================================
-    // Helper functions
-    // ============================================
-
-    /// @notice Encode Permit2Info according to DexRouter's expected format
-    function encodePermit2Info(
-        IPermit2.PermitTransferFrom memory permit,
-        address owner,
-        bytes memory signature
-    ) internal pure returns (bytes memory) {
-        // Match the format expected by _getCommissionAndTrimInfo()
-        // Reading order (from calldata end):
-        // bytes32_5: signature_s
-        // bytes32_4: signature_r  
-        // bytes32_3: amount
-        // bytes32_2: flag(6) + padding(13) + v(1) + deadline(6) + nonce(6)
-        // bytes32_1: flag(6) + padding(5) + length(1) + owner(20)
-        
-        bytes32 signatureR;
-        bytes32 signatureS;
-        uint8 signatureV;
-        
-        assembly {
-            signatureR := mload(add(signature, 0x20))
-            signatureS := mload(add(signature, 0x40))
-            signatureV := byte(0, mload(add(signature, 0x60)))
-        }
-        
-        // Construct bytes32_1: flag(6) + padding(5) + length(1) + owner(20)
-        bytes32 slot1 = bytes32(
-            (uint256(0x92527fff1a65) << 208) |  // flag at high bits
-            (uint256(1) << 160) |                // amount_length = 1
-            uint256(uint160(owner))              // owner at low bits
-        );
-        
-        // Construct bytes32_2: flag(6) + padding(13) + v(1) + deadline(6) + nonce(6)
-        bytes32 slot2 = bytes32(
-            (uint256(0x92527fff1a65) << 208) |  // flag at high bits
-            (uint256(signatureV) << 96) |        // v at bit 96
-            (uint256(permit.deadline) << 48) |   // deadline at bit 48
-            uint256(permit.nonce)                // nonce at low bits
-        );
-        
-        bytes32 slot3 = signatureR;                        // signature_r
-        bytes32 slot4 = signatureS;                        // signature_s
-        bytes32 slot5 = bytes32(permit.permitted.amount);  // amount
-        
-        // Order: amount (slot5), s (slot4), r (slot3), slot2, slot1
-        return abi.encodePacked(slot5, slot4, slot3, slot2, slot1);
-    }
 }
 

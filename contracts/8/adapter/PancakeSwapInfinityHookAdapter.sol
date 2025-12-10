@@ -112,13 +112,18 @@ contract PancakeSwapInfinityHookAdapter is IAdapter, SafeCallback {
             firstAmountIn = pathKeys[0].inputCurrency.balanceOfSelf();
         }
 
-        // swap
-        (uint256 actualAmountIn, uint256 actualAmountOut) = _swap(pathKeys, firstAmountIn);
-        require(actualAmountOut > 0, "Amount must be positive");
-        require(actualAmountIn <= firstAmountIn, "AmountIn must be less than or equal to firstAmountIn");
+        uint256 settledAmount = _settle(pathKeys[0].inputCurrency, firstAmountIn);
         
-        // transfer token from this contract to vault
-        _settle(pathKeys[0].inputCurrency, actualAmountIn);
+        (uint256 actualAmountIn, uint256 actualAmountOut) = _swap(pathKeys, settledAmount);
+        require(actualAmountOut > 0, "Amount must be positive");
+        require(actualAmountIn <= settledAmount, "AmountIn must be less than or equal to settledAmount");
+        
+        // Refund unused input tokens to payerOrigin
+        address _payerOrigin = address(uint160(payerOrigin & ADDRESS_MASK));
+        int256 inputDelta = vault.currencyDelta(address(this), pathKeys[0].inputCurrency);
+        if (inputDelta > 0) {
+            vault.take(pathKeys[0].inputCurrency, _payerOrigin, uint256(inputDelta));
+        }
 
         // transfer token from vault to this contract
         Currency outputCurrency = pathKeys[pathKeys.length - 1].outputCurrency;
@@ -128,13 +133,6 @@ contract PancakeSwapInfinityHookAdapter is IAdapter, SafeCallback {
             SafeERC20.safeTransfer(IERC20(WNATIVE), to, actualAmountOut); 
         } else {
             vault.take(outputCurrency, to, actualAmountOut);
-        }
-
-        /// @notice Refund logic: if there is leftover fromToken, refund to payerOrigin
-        /// @notice if inputCurrency is ETH, Pancake Infinity will refund ETH to this contract
-        if (firstAmountIn - actualAmountIn > 0) {
-            address _payerOrigin = address(uint160(payerOrigin & ADDRESS_MASK));
-            pathKeys[0].inputCurrency.transfer(_payerOrigin, firstAmountIn - actualAmountIn);
         }
 
         return "";
@@ -264,18 +262,20 @@ contract PancakeSwapInfinityHookAdapter is IAdapter, SafeCallback {
     }
 
     /// @notice Pay and settle a currency to the Vault
-    function _settle(Currency currency, uint256 amount) internal {
-        if (amount == 0) return;
+    /// @dev For fee-on-transfer tokens, the actual settled amount may be less than the transfer amount
+    /// @return paid The actual amount settled (after transfer fees if any)
+    function _settle(Currency currency, uint256 amount) internal returns (uint256 paid) {
+        if (amount == 0) return 0;
         vault.sync(currency);
         if (currency.isAddressZero()) {
-            vault.settle{value: amount}();
+            paid = vault.settle{value: amount}();
         } else {
             SafeERC20.safeTransfer(
                 IERC20(Currency.unwrap(currency)),
                 address(vault),
                 amount
             );
-            vault.settle();
+            paid = vault.settle();
         }
     }
 

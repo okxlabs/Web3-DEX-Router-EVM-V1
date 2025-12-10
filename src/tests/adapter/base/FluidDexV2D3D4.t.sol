@@ -15,7 +15,7 @@ contract FluidDexV2D3D4AdapterTest is AbstractAdapterTest {
         return address(
             new FluidDexV2D3D4Adapter(
                 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270, // WPOL
-                0xe16aD4692B2505d21959f22Ff32D18d808D35759 // FluidDexV2Router
+                0x713fD04a47Db41AB5684AEC2A2063d5278A53616 // FluidDexV2Router
             )
         );
     }
@@ -80,131 +80,78 @@ contract FluidDexV2D3D4AdapterTest is AbstractAdapterTest {
         });
 
         SwapTestCase[] memory cases = new SwapTestCase[](6);
-        address[][] memory paths = new address[][](6);
-        IFluidDexV2Router.SwapInConfig[][] memory swapInConfigs = new IFluidDexV2Router.SwapInConfig[][](6);
 
         // Test1: USDC to USDT0 by D3 pool
-        // tx: https://polygonscan.com/tx/0x94c968f8a8f6967d50d1b7a4fe1ed44aa796fdd44311ea1ab13af61fa567af3e
-        paths[0] = new address[](2);
-        paths[0][0] = USDC;
-        paths[0][1] = USDT0;
-        swapInConfigs[0] = new IFluidDexV2Router.SwapInConfig[](1);
-        swapInConfigs[0][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 3,
-            dexKey: d3USDCUSDT0,   
-            amountOutMin: 0,
-            controllerData: ""
-        });  
+        // tx: https://polygonscan.com/tx/0x37a8dd3ea253dba568cdd2901c0b0197d311884349a21c67570b73a63083528a
         cases[0] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153756 - 1,
+            forkBlock: 79892383 - 1,
             fromToken: USDC,
             toToken: USDT0,
             pool: address(0),
             amount: 10000000,
-            expectedOutput: 9955621,
+            expectedOutput: 10007854,
             sellBase: true,
             expectRevert: false,
             description: "USDC to USDT0 by D3 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[0], swapInConfigs[0]),
+            moreInfo: abi.encode(3, d3USDCUSDT0, true, "0x"),
             fromTokenPreTo: address(0)
         });
 
-        // Test2: USDC to USDT0 by D4 pool
-        // tx: https://polygonscan.com/tx/0x30d14aef9d8af59d6a3dc65f96d1781cd1a6de54c1afd6a315369aa60d8a7d08
-        paths[1] = new address[](2);
-        paths[1][0] = USDC;
-        paths[1][1] = USDT0;
-        swapInConfigs[1] = new IFluidDexV2Router.SwapInConfig[](1);
-        swapInConfigs[1][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 4,
-            dexKey: d4USDCUSDT0,
-            amountOutMin: 0,
-            controllerData: ""
-        });
+        // Test2: USDT0 to USDC by D4 pool
+        // tx: https://polygonscan.com/tx/0x7ac0d7d32b632a04d7265e0035d8d20e98737c6adb8fea1e7a034806f67e8cab
         cases[1] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153759 - 1,
-            fromToken: USDC,
-            toToken: USDT0,
+            forkBlock: 79892448 - 1,
+            fromToken: USDT0,
+            toToken: USDC,
             pool: address(0),
             amount: 10000000,
-            expectedOutput: 9922468,
+            expectedOutput: 9999082,
             sellBase: true,
             expectRevert: false,
-            description: "USDC to USDT0 by D4 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[1], swapInConfigs[1]),
+            description: "USDT0 to USDC by D4 pool on Polygon FluidDexV2D3D4",
+            moreInfo: abi.encode(4, d4USDCUSDT0, false, "0x"),
             fromTokenPreTo: address(0)
         });
 
         // Test3: NativeToken to USDC by D3 pool
-        // tx: https://polygonscan.com/tx/0xff52f9d2ee6e1bf9b565d9ace163407e1eded1b060cfe5f983fdaf03639ded46
-        paths[2] = new address[](2);
-        paths[2][0] = NativeToken;
-        swapInConfigs[2] = new IFluidDexV2Router.SwapInConfig[](1);
-        paths[2][1] = USDC;
-        swapInConfigs[2][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 3,
-            dexKey: d3USDCNativeToken,
-            amountOutMin: 0,
-            controllerData: ""
-        });
         cases[2] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153763 - 1,
+            forkBlock: 79892455,
             fromToken: WNativeToken,
             toToken: USDC,
             pool: address(0),
             amount: 10 * 10 ** 18,
-            expectedOutput: 50842827,
+            expectedOutput: 0,
             sellBase: true,
             expectRevert: false,
             description: "NativeToken to USDC by D3 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[2], swapInConfigs[2]),
+            moreInfo: abi.encode(3, d3USDCNativeToken, false, "0x"),
             fromTokenPreTo: address(0)
         });
 
         // Test4: NativeToken to USDC by D4 pool
-        // tx: https://polygonscan.com/tx/0x01abc8dd2f40394375f9afdce25607ebe5e411a89c0644d676c1b24423b2582d
-        paths[3] = new address[](2);
-        paths[3][0] = NativeToken;
-        paths[3][1] = USDC;
-        swapInConfigs[3] = new IFluidDexV2Router.SwapInConfig[](1);
-        swapInConfigs[3][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 4,
-            dexKey: d4USDCNativeToken,
-            amountOutMin: 0,
-            controllerData: ""
-        });
         cases[3] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153765 - 1,
+            forkBlock: 79892455,
             fromToken: WNativeToken,
             toToken: USDC,
             pool: address(0),
             amount: 10 * 10 ** 18,
-            expectedOutput: 50799556,
+            expectedOutput: 0,
             sellBase: true,
             expectRevert: false,
             description: "NativeToken to USDC by D4 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[3], swapInConfigs[3]),
+            moreInfo: abi.encode(4, d4USDCNativeToken, false, "0x"),
             fromTokenPreTo: address(0)
         });
 
         // Test5: USDC to NativeToken by D3 pool
-        paths[4] = new address[](2);
-        paths[4][0] = USDC;
-        paths[4][1] = NativeToken;
-        swapInConfigs[4] = new IFluidDexV2Router.SwapInConfig[](1);
-        swapInConfigs[4][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 3,
-            dexKey: d3USDCNativeToken,
-            amountOutMin: 0,
-            controllerData: ""
-        });
+        // tx: https://polygonscan.com/tx/0xeae3f85daa86e9746dcf4123737ab72185f3657ca1f8f045f2a0dbe1de64027a
         cases[4] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153765,
+            forkBlock: 79892450 - 1,
             fromToken: USDC,
             toToken: WNativeToken,
             pool: address(0),
@@ -213,24 +160,15 @@ contract FluidDexV2D3D4AdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "USDC to NativeToken by D3 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[4], swapInConfigs[4]),
+            moreInfo: abi.encode(3, d3USDCNativeToken, true, ""),
             fromTokenPreTo: address(0)
         });
 
         // Test6: USDC to NativeToken by D4 pool
-        paths[5] = new address[](2);
-        paths[5][0] = USDC;
-        paths[5][1] = NativeToken;
-        swapInConfigs[5] = new IFluidDexV2Router.SwapInConfig[](1);
-        swapInConfigs[5][0] = IFluidDexV2Router.SwapInConfig({
-            dexType: 4,
-            dexKey: d4USDCNativeToken,
-            amountOutMin: 0,
-            controllerData: ""
-        });
+        // tx: https://polygonscan.com/tx/0x52454e79bb86a713bc511471b55204bc58c74207ff3d075a6a57b86262555573
         cases[5] = SwapTestCase({
             networkId: "polygon",
-            forkBlock: 79153765,
+            forkBlock: 79892453 - 1,
             fromToken: USDC,
             toToken: WNativeToken,
             pool: address(0),
@@ -239,7 +177,7 @@ contract FluidDexV2D3D4AdapterTest is AbstractAdapterTest {
             sellBase: true,
             expectRevert: false,
             description: "USDC to NativeToken by D4 pool on Polygon FluidDexV2D3D4",
-            moreInfo: abi.encode(paths[5], swapInConfigs[5]),
+            moreInfo: abi.encode(4, d4USDCNativeToken, true, "0x"),
             fromTokenPreTo: address(0)
         });
 

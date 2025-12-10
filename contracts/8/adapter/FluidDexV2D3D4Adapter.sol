@@ -43,23 +43,21 @@ contract FluidDexV2D3D4Adapter is IAdapter {
         address to,
         bytes memory moreInfo
     ) internal {
-        // path_ is the array of token addresses defining the swap route. Length must be swapInConfigs_.length + 1.
-        // The ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE in the path_ array and dexKey in swapInConfigs array.
-        (address[] memory path_, IFluidDexV2Router.SwapInConfig[] memory swapInConfigs_) = abi.decode(moreInfo, (address[], IFluidDexV2Router.SwapInConfig[]));
+        (uint256 dexType_, IFluidDexV2Router.DexKey memory dexKey, bool swap0To1, bytes memory controllerData) = abi.decode(moreInfo, (uint256, IFluidDexV2Router.DexKey, bool, bytes));
 
-        address fromToken = path_[0];
-        address toToken = path_[path_.length - 1];
+        address fromToken = swap0To1 ? dexKey.token0 : dexKey.token1;
+        address toToken = swap0To1 ? dexKey.token1 : dexKey.token0;
         address receiver = toToken == ETH ? address(this) : to; // If the toToken is ETH, the ETH needs to be wrapped to WETH and sent to the to address
 
         // Execute swap
         if (fromToken == ETH) {
             uint256 amountIn = IWETH(WETH).balanceOf(address(this));
             IWETH(WETH).withdraw(amountIn);
-            IFluidDexV2Router(FLUID_DEX_V2_ROUTER).swapInMulti{value: amountIn}(path_, swapInConfigs_, amountIn, receiver);
+            IFluidDexV2Router(FLUID_DEX_V2_ROUTER).swapIn{value: amountIn}(dexType_, IFluidDexV2Router.SwapInParams({dexKey: dexKey, swap0To1: swap0To1, amountIn: amountIn, amountOutMin: 0, controllerData: controllerData}), receiver);
         } else {
             uint256 amountIn = IERC20(fromToken).balanceOf(address(this));
             SafeERC20.safeApprove(IERC20(fromToken), FLUID_DEX_V2_ROUTER, amountIn);
-            IFluidDexV2Router(FLUID_DEX_V2_ROUTER).swapInMulti(path_, swapInConfigs_, amountIn, receiver);
+            IFluidDexV2Router(FLUID_DEX_V2_ROUTER).swapIn(dexType_, IFluidDexV2Router.SwapInParams({dexKey: dexKey, swap0To1: swap0To1, amountIn: amountIn, amountOutMin: 0, controllerData: controllerData}), receiver);
         }
 
         if (toToken == ETH) {

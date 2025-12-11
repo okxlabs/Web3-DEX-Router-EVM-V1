@@ -516,7 +516,7 @@ contract DexRouter is
 
         uint256 fromTokenCommissionAmount;
         {
-            address onlyOneAssetTo = (batches.length == 1 && batches[0][0].assetTo.length == 1)
+            address onlyOneAssetTo = (batches.length == 1 && batches[0].length > 0 && batches[0][0].assetTo.length == 1)
                 ? batches[0][0].assetTo[0]
                 : address(0);
             (

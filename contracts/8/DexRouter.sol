@@ -513,8 +513,25 @@ contract DexRouter is
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = _getBalanceOf(baseRequest.toToken, swapParams.receiver);
-        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
-        // TODO (swapParams.payer, baseRequest.fromTokenAmount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
+
+        uint256 fromTokenCommissionAmount;
+        {
+            address onlyOneAssetTo = (batches.length == 1 && batches[0][0].assetTo.length == 1)
+                ? batches[0][0].assetTo[0]
+                : address(0);
+            (
+                swapParams.payer,
+                baseRequest.fromTokenAmount,
+                fromTokenCommissionAmount
+            ) = _handlePermit2SignatureModeWithCommission(
+                batches[0][0].fromToken,
+                swapParams.payer,
+                baseRequest.fromTokenAmount,
+                onlyOneAssetTo,
+                extraData
+            );
+        }
+
         {
             (
                 address middleReceiver,
@@ -522,7 +539,7 @@ contract DexRouter is
             ) = _doCommissionFromToken(
                     extraData.commissionInfo,
                     swapParams,
-                    baseRequest.fromTokenAmount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                    fromTokenCommissionAmount,
                     extraData.trimInfo.hasTrim
                 );
 

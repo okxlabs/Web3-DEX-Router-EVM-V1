@@ -85,6 +85,8 @@ abstract contract CommonUtils is IDexRouter {
     /// @notice Permit2 signature related mask and flag constants
     uint256 internal constant _PERMIT2_INFO_FLAG_MASK =
         0xffffffffffff0000000000000000000000000000000000000000000000000000;
+    uint256 internal constant _PERMIT2_INFO_AMOUNT_LENGTH_MASK =
+        0x000000000000ff00000000000000000000000000000000000000000000000000;
     uint256 internal constant _PERMIT2_INFO_NONCE_MASK =
         0x0000000000000000000000000000000000000000000000000000ffffffffffff;
     uint256 internal constant _PERMIT2_INFO_DEADLINE_MASK =

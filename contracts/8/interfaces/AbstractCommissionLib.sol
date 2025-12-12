@@ -5,11 +5,6 @@ import "./IDexRouter.sol";
 
 /// @title Abstract base contract with virtual functions
 abstract contract AbstractCommissionLib is IDexRouter {
-    function _getExtraData()
-        internal
-        virtual
-        returns (ExtraData memory);
-
     // function _getBalanceOf(address token, address user)
     //     internal
     //     virtual

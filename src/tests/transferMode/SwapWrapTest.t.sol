@@ -631,5 +631,135 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         vm.stopPrank();
     }
 
+    // ============================================
+    // Test Refund Logic
+    // ============================================
+
+    /// @notice Test 1: ETH -> WETH with overpayment, should refund excess ETH
+    function test_swapWrap_Refund_ExcessETH() public {
+        // Clean up router balances from previous tests
+        if (address(dexRouter).balance > 0) {
+            vm.deal(address(dexRouter), 0);
+        }
+        
+        uint256 orderId = 30001;
+        uint256 rawdata = SWAP_AMOUNT; // mode = 0 (LEGACY), reversed = false
+        uint256 excessAmount = 0.1 ether; // User sends extra 0.1 ETH
+        uint256 totalSent = SWAP_AMOUNT + excessAmount;
+        
+        uint256 wethBefore = IERC20(WETH).balanceOf(alice);
+        uint256 ethBefore = alice.balance;
+        uint256 routerEthBefore = address(dexRouter).balance;
+        
+        // Send more ETH than needed
+        // Use vm.prank(origin, sender) to set both tx.origin and msg.sender to alice
+        vm.prank(alice, alice);
+        dexRouter.swapWrap{value: totalSent}(orderId, rawdata);
+        
+        uint256 wethAfter = IERC20(WETH).balanceOf(alice);
+        uint256 ethAfter = alice.balance;
+        uint256 routerEthAfter = address(dexRouter).balance;
+        
+        console.log("ETH sent:", totalSent);
+        console.log("WETH received:", wethAfter - wethBefore);
+        console.log("ETH spent:", ethBefore - ethAfter);
+        console.log("ETH refunded:", totalSent - (ethBefore - ethAfter));
+        console.log("Router ETH balance:", routerEthAfter);
+        
+        // Assertions
+        assertEq(wethAfter - wethBefore, SWAP_AMOUNT, "WETH should increase by exact SWAP_AMOUNT");
+        assertEq(ethBefore - ethAfter, SWAP_AMOUNT, "ETH spent should be exact SWAP_AMOUNT (excess refunded)");
+        assertEq(routerEthAfter, routerEthBefore, "Router should not keep any ETH");
+    }
+
+    /// @notice Test 3: WETH -> ETH with excess WETH in router, should refund to user
+    /// @dev Simulates scenario where router has leftover WETH and verifies it gets refunded
+    function test_swapWrap_Refund_ExcessWETH() public {
+        // Clean up router balances from previous tests
+        if (address(dexRouter).balance > 0) {
+            vm.deal(address(dexRouter), 0);
+        }
+        uint256 routerWethBalance = IERC20(WETH).balanceOf(address(dexRouter));
+        if (routerWethBalance > 0) {
+            vm.prank(address(dexRouter));
+            IERC20(WETH).transfer(address(0xdead), routerWethBalance);
+        }
+        
+        uint256 orderId = 30003;
+        uint256 rawdata = REVERSE_MASK | SWAP_AMOUNT; // mode = 0 (LEGACY), reversed = true
+        uint256 excessAmount = 0.08 ether; // Simulate leftover WETH
+        
+        vm.startPrank(alice, alice);
+        
+        // Approve WETH to ApproveProxy
+        IERC20(WETH).approve(address(tokenApprove), type(uint256).max);
+        
+        uint256 wethBefore = IERC20(WETH).balanceOf(alice);
+        uint256 ethBefore = alice.balance;
+        
+        // Simulate leftover WETH in router (e.g., from rounding in previous operations)
+        // This represents WETH that belongs to no one and should be refunded to current user
+        IERC20(WETH).transfer(address(dexRouter), excessAmount);
+        
+        dexRouter.swapWrap(orderId, rawdata);
+        
+        uint256 wethAfter = IERC20(WETH).balanceOf(alice);
+        uint256 ethAfter = alice.balance;
+        uint256 routerWethAfter = IERC20(WETH).balanceOf(address(dexRouter));
+        
+        console.log("WETH spent (including excess):", wethBefore - wethAfter);
+        console.log("ETH received:", ethAfter - ethBefore);
+        console.log("WETH refunded:", wethAfter - (wethBefore - SWAP_AMOUNT - excessAmount));
+        console.log("Router WETH after:", routerWethAfter);
+        
+        // Assertions
+        // Net WETH change: Alice sent excessAmount manually, then SWAP_AMOUNT via swap, got excessAmount back
+        assertEq(wethBefore - wethAfter, SWAP_AMOUNT, "Net WETH spent should be SWAP_AMOUNT (excess refunded)");
+        assertEq(ethAfter - ethBefore, SWAP_AMOUNT, "ETH received should be SWAP_AMOUNT");
+        assertEq(routerWethAfter, 0, "Router should not keep any WETH (all excess refunded)");
+        
+        vm.stopPrank();
+    }
+
+    /// @notice Test: swapWrapToWithBaseRequest with ETH overpayment, should refund excess ETH
+    /// @dev Verifies refund logic works correctly through swapWrapToWithBaseRequest entry point
+    function test_swapWrapToWithBaseRequest_Refund_ExcessETH() public {
+        // Clean up router balances from previous tests
+        if (address(dexRouter).balance > 0) {
+            vm.deal(address(dexRouter), 0);
+        }
+        
+        uint256 orderId = 40001;
+        uint256 excessAmount = 0.15 ether; // User sends extra 0.15 ETH
+        uint256 totalSent = SWAP_AMOUNT + excessAmount;
+        
+        IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
+            fromToken: uint256(uint160(ETH)), // mode = 0 (LEGACY)
+            toToken: WETH,
+            fromTokenAmount: SWAP_AMOUNT,
+            minReturnAmount: SWAP_AMOUNT,
+            deadLine: block.timestamp + 1000
+        });
+        
+        uint256 wethBefore = IERC20(WETH).balanceOf(bob);
+        uint256 aliceEthBefore = alice.balance;
+        
+        // Send more ETH than needed, receiver is bob
+        vm.prank(alice, alice);
+        dexRouter.swapWrapToWithBaseRequest{value: totalSent}(orderId, bob, baseRequest);
+        
+        uint256 wethAfter = IERC20(WETH).balanceOf(bob);
+        uint256 aliceEthAfter = alice.balance;
+        
+        console.log("ETH sent:", totalSent);
+        console.log("Bob WETH received:", wethAfter - wethBefore);
+        console.log("Alice ETH spent:", aliceEthBefore - aliceEthAfter);
+        console.log("Alice ETH refunded:", totalSent - (aliceEthBefore - aliceEthAfter));
+        
+        // Assertions
+        assertEq(wethAfter - wethBefore, SWAP_AMOUNT, "Bob should receive exact SWAP_AMOUNT WETH");
+        assertEq(aliceEthBefore - aliceEthAfter, SWAP_AMOUNT, "Alice should only spend SWAP_AMOUNT ETH (excess refunded)");
+        assertEq(address(dexRouter).balance, 0, "Router should not keep any ETH");
+    }
 }
 

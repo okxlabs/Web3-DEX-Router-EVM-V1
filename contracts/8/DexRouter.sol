@@ -788,7 +788,13 @@ contract DexRouter is
         emit SwapOrderId(orderId);
 
         require(amount > 0, "amount must be > 0");
-        require(mode != _MODE_NO_TRANSFER && mode != _MODE_BY_INVEST, "SwapWrap: unsupported mode");
+        require(
+            mode == _MODE_LEGACY || 
+            mode == _MODE_DIRECT || 
+            mode == _MODE_PERMIT2_ALLOWANCE || 
+            mode == _MODE_PERMIT2_SIGNATURE,
+            "SwapWrap: invalid mode"
+        );
         
         receiver = receiver == address(0) ? msg.sender : receiver;
 
@@ -837,13 +843,12 @@ contract DexRouter is
             IWETH(_WETH).withdraw(amount);
             if (middleReceiver != address(this)) {
                 (bool success, ) = payable(middleReceiver).call{
-                    value: address(this).balance
+                    value: amount
                 }("");
                 require(success, "transfer native token failed");
             }
         } else {
-            require(msg.value >= amount + fromTokenCommissionAmount, "msg.value < amount + commission");
-            uint256 amount = address(this).balance;
+            require(msg.value >= amount + fromTokenCommissionAmount, "SwapWrap: value not enough");
             IWETH(_WETH).deposit{value: amount}();
             if (middleReceiver != address(this)) {
                 SafeERC20.safeTransfer(IERC20(_WETH), middleReceiver, amount);
@@ -857,6 +862,20 @@ contract DexRouter is
             swapParams.toToken,
             extraData.trimInfo
         );
+
+        // Refund unused fromToken
+        uint256 refundAmount = reversed 
+            ? IERC20(_WETH).balanceOf(address(this)) 
+            : address(this).balance;
+        
+        if (refundAmount > 0) {
+            if (reversed) {
+                SafeERC20.safeTransfer(IERC20(_WETH), tx.origin, refundAmount);
+            } else {
+                (bool success, ) = payable(tx.origin).call{value: refundAmount}("");
+                require(success, "SwapWrap: refund failed");
+            }
+        }
 
         emit OrderRecord(
             reversed ? _WETH : _ETH,

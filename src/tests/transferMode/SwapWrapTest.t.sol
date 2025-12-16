@@ -652,8 +652,8 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         uint256 routerEthBefore = address(dexRouter).balance;
         
         // Send more ETH than needed
-        // Use vm.prank(origin, sender) to set both tx.origin and msg.sender to alice
-        vm.prank(alice, alice);
+        // Refund will be sent to msg.sender (alice) via swapParams.refundTo
+        vm.prank(alice);
         dexRouter.swapWrap{value: totalSent}(orderId, rawdata);
         
         uint256 wethAfter = IERC20(WETH).balanceOf(alice);
@@ -689,7 +689,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         uint256 rawdata = REVERSE_MASK | SWAP_AMOUNT; // mode = 0 (LEGACY), reversed = true
         uint256 excessAmount = 0.08 ether; // Simulate leftover WETH
         
-        vm.startPrank(alice, alice);
+        vm.startPrank(alice);
         
         // Approve WETH to ApproveProxy
         IERC20(WETH).approve(address(tokenApprove), type(uint256).max);
@@ -745,7 +745,8 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         uint256 aliceEthBefore = alice.balance;
         
         // Send more ETH than needed, receiver is bob
-        vm.prank(alice, alice);
+        // Refund will be sent to msg.sender (alice) via swapParams.refundTo
+        vm.prank(alice);
         dexRouter.swapWrapToWithBaseRequest{value: totalSent}(orderId, bob, baseRequest);
         
         uint256 wethAfter = IERC20(WETH).balanceOf(bob);

@@ -842,6 +842,10 @@ contract DexRouter is
             );
             IWETH(_WETH).withdraw(amount);
             if (middleReceiver != address(this)) {
+                // External ETH call - Reentrancy is safe here because:
+                // 1. Router is stateless (no user state stored)
+                // 2. Subsequent operations (_doCommissionAndTrimToToken) use `balanceBefore` to calculate delta
+                // 3. No exploitable state inconsistency even if reentered
                 (bool success, ) = payable(middleReceiver).call{
                     value: amount
                 }("");
@@ -870,9 +874,9 @@ contract DexRouter is
         
         if (refundAmount > 0) {
             if (reversed) {
-                SafeERC20.safeTransfer(IERC20(_WETH), tx.origin, refundAmount);
+                SafeERC20.safeTransfer(IERC20(_WETH), swapParams.refundTo, refundAmount);
             } else {
-                (bool success, ) = payable(tx.origin).call{value: refundAmount}("");
+                (bool success, ) = payable(swapParams.refundTo).call{value: refundAmount}("");
                 require(success, "SwapWrap: refund failed");
             }
         }

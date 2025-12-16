@@ -888,13 +888,13 @@ contract DexRouter is
 
     /// @notice Executes a swap between ETH and WETH using structured base request parameters to a specified receiver.
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
-    /// @param receiver The receiver address with transfer mode encoded in high bits [251:249].
-    /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
+    /// @param receiver The address that will receive the swapped tokens.
+    /// @param baseRequest Struct containing essential swap parameters including source token (with mode in high bits [251:249]), destination token, amount, minimum return, and deadline.
     /// @dev This function validates that the token pair is either ETH->WETH or WETH->ETH and executes the swap accordingly.
-    /// It extracts the amount from the baseRequest and determines the swap direction based on the token addresses.
+    /// It extracts the amount and mode from the baseRequest and determines the swap direction based on the token addresses.
     function swapWrapToWithBaseRequest(
         uint256 orderId,
-        uint256 receiver,
+        address receiver,
         BaseRequest calldata baseRequest
     )
         external
@@ -911,7 +911,7 @@ contract DexRouter is
             revert("SwapWrap: invalid token pair");
         }
 
-        _swapWrap(orderId, _bytes32ToAddress(receiver), reversed, baseRequest.fromTokenAmount, receiver & _TRANSFER_MODE_MASK);
+        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK);
     }
 
     function dagSwapByOrderId(

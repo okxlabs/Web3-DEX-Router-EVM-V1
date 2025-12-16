@@ -412,7 +412,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
             );
             
             IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-                fromToken: uint256(uint160(ETH)),
+                fromToken: uint256(uint160(ETH)), // mode = 0 (LEGACY)
                 toToken: WETH,
                 fromTokenAmount: swapAmount,
                 minReturnAmount: swapAmount,
@@ -422,7 +422,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
             callData = abi.encodeWithSelector(
                 dexRouter.swapWrapToWithBaseRequest.selector, 
                 22360, 
-                uint256(uint160(bob)), 
+                bob, 
                 baseRequest
             );
             callData = bytes.concat(callData, commissionData);
@@ -460,10 +460,10 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
     /// @notice Test ETH -> WETH with LEGACY mode
     function test_swapWrapToWithBaseRequest_ETH_to_WETH_Legacy() public {
         uint256 orderId = 22345;
-        uint256 receiver = uint256(uint160(bob)); // mode = 0 (LEGACY)
+        address receiver = bob;
         
         IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-            fromToken: uint256(uint160(ETH)),
+            fromToken: uint256(uint160(ETH)), // mode = 0 (LEGACY)
             toToken: WETH,
             fromTokenAmount: SWAP_AMOUNT,
             minReturnAmount: SWAP_AMOUNT,
@@ -486,10 +486,10 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
     /// @notice Test WETH -> ETH with LEGACY mode
     function test_swapWrapToWithBaseRequest_WETH_to_ETH_Legacy() public {
         uint256 orderId = 22346;
-        uint256 receiver = uint256(uint160(bob)); // mode = 0 (LEGACY)
+        address receiver = bob;
         
         IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-            fromToken: uint256(uint160(WETH)),
+            fromToken: uint256(uint160(WETH)), // mode = 0 (LEGACY)
             toToken: ETH,
             fromTokenAmount: SWAP_AMOUNT,
             minReturnAmount: SWAP_AMOUNT,
@@ -515,10 +515,10 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
     /// @notice Test WETH -> ETH with PERMIT2_ALLOWANCE mode
     function test_swapWrapToWithBaseRequest_WETH_to_ETH_Permit2Allowance() public {
         uint256 orderId = 22347;
-        uint256 receiver = _MODE_PERMIT2_ALLOWANCE | uint256(uint160(bob));
+        address receiver = bob;
         
         IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-            fromToken: uint256(uint160(WETH)),
+            fromToken: _MODE_PERMIT2_ALLOWANCE | uint256(uint160(WETH)),
             toToken: ETH,
             fromTokenAmount: SWAP_AMOUNT,
             minReturnAmount: SWAP_AMOUNT,
@@ -544,10 +544,10 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
     /// @notice Test WETH -> ETH with PERMIT2_SIGNATURE mode
     function test_swapWrapToWithBaseRequest_WETH_to_ETH_Permit2Signature() public {
         uint256 orderId = 22348;
-        uint256 receiver = _MODE_PERMIT2_SIGNATURE | uint256(uint160(bob));
+        address receiver = bob;
         
         IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-            fromToken: uint256(uint160(WETH)),
+            fromToken: _MODE_PERMIT2_SIGNATURE | uint256(uint160(WETH)),
             toToken: ETH,
             fromTokenAmount: SWAP_AMOUNT,
             minReturnAmount: SWAP_AMOUNT,
@@ -605,10 +605,10 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
     /// @notice Test WETH -> ETH with DIRECT mode
     function test_swapWrapToWithBaseRequest_WETH_to_ETH_Direct() public {
         uint256 orderId = 22349;
-        uint256 receiver = _MODE_DIRECT | uint256(uint160(bob));
+        address receiver = bob;
         
         IDexRouter.BaseRequest memory baseRequest = IDexRouter.BaseRequest({
-            fromToken: uint256(uint160(WETH)),
+            fromToken: _MODE_DIRECT | uint256(uint160(WETH)),
             toToken: ETH,
             fromTokenAmount: SWAP_AMOUNT,
             minReturnAmount: SWAP_AMOUNT,

@@ -799,57 +799,74 @@ contract DexRouter is
         uint256 orderId,
         address receiver,
         bool reversed,
-        uint256 amount
+        uint256 amount,
+        uint256 mode
     ) internal {
         emit SwapOrderId(orderId);
 
         require(amount > 0, "amount must be > 0");
+        require(
+            mode == _MODE_LEGACY || 
+            mode == _MODE_DIRECT || 
+            mode == _MODE_PERMIT2_ALLOWANCE || 
+            mode == _MODE_PERMIT2_SIGNATURE,
+            "SwapWrap: invalid mode"
+        );
+        
         receiver = receiver == address(0) ? msg.sender : receiver;
 
         ExtraData memory extraData = getDecodedExtraData();
 
-        address srcToken = reversed ? _WETH : _ETH;
-        address toToken = reversed ? _ETH : _WETH;
-
-        _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, _MODE_LEGACY);
-        // TODO add mode to commissionInfo.tokenWithMode
+        _validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         SwapParams memory swapParams = SwapParams({
             payer: msg.sender,
             refundTo: msg.sender,
             receiver: receiver,
-            toToken: toToken
+            toToken: reversed ? _ETH : _WETH
         });
-        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
-        // TODO (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
+
+        uint256 fromTokenCommissionAmount;
+        (
+            swapParams.payer, 
+            amount, 
+            fromTokenCommissionAmount
+        ) = _handlePermit2SignatureModeWithCommission(
+            reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
+            swapParams.payer,
+            amount,
+            address(0),
+            extraData
+        );
+
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 extraData.commissionInfo,
                 swapParams,
-                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                fromTokenCommissionAmount,
                 extraData.trimInfo.hasTrim
             );
 
         if (reversed) {
-            IApproveProxy(_APPROVE_PROXY).claimTokens(
-                _WETH,
-                msg.sender,
-                _WNATIVE_RELAY,
+            _transferInternal(
+                swapParams.payer,
+                address(this),
+                mode | uint256(uint160(_WETH)),
                 amount
             );
-            IWNativeRelayer(_WNATIVE_RELAY).withdraw(amount);
+            IWETH(_WETH).withdraw(amount);
             if (middleReceiver != address(this)) {
+                // Invariant: `middleReceiver != address(this)` implies no toToken commission and no trim
                 (bool success, ) = payable(middleReceiver).call{
-                    value: address(this).balance
+                    value: amount
                 }("");
                 require(success, "transfer native token failed");
             }
         } else {
-            if (!extraData.commissionInfo.isFromTokenCommission) {
-                require(msg.value == amount, "value not equal amount");
-            }
+            require(msg.value >= amount + fromTokenCommissionAmount, "SwapWrap: value not enough");
             IWETH(_WETH).deposit{value: amount}();
             if (middleReceiver != address(this)) {
                 SafeERC20.safeTransfer(IERC20(_WETH), middleReceiver, amount);
@@ -860,13 +877,27 @@ contract DexRouter is
             extraData.commissionInfo,
             receiver,
             balanceBefore,
-            toToken,
+            swapParams.toToken,
             extraData.trimInfo
         );
 
+        // Refund unused fromToken
+        uint256 refundAmount = reversed 
+            ? IERC20(_WETH).balanceOf(address(this)) 
+            : address(this).balance;
+        
+        if (refundAmount > 0) {
+            if (reversed) {
+                SafeERC20.safeTransfer(IERC20(_WETH), swapParams.refundTo, refundAmount);
+            } else {
+                (bool success, ) = payable(swapParams.refundTo).call{value: refundAmount}("");
+                require(success, "SwapWrap: refund failed");
+            }
+        }
+
         emit OrderRecord(
-            srcToken,
-            toToken,
+            reversed ? _WETH : _ETH,
+            swapParams.toToken,
             tx.origin,
             amount,
             amount - toTokenCommissionAndTrimAmount
@@ -875,26 +906,29 @@ contract DexRouter is
 
     /// @notice Executes a simple swap between ETH and WETH using encoded parameters.
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
-    /// @param rawdata Encoded data containing swap direction and amount information using bit masks.
+    /// @param rawdata Encoded data containing swap direction, transfer mode and amount information using bit masks.
     /// @dev This function supports bidirectional swaps between ETH and WETH with minimal gas overhead.
-    /// The rawdata parameter encodes both the direction (reversed flag) and amount using bit operations.
-    /// When reversed=false: ETH -> WETH, when reversed=true: WETH -> ETH.
+    /// The rawdata parameter encodes:
+    /// - Transfer mode in bits [251:249]: LEGACY(0b000), PERMIT2_ALLOWANCE(0b001), PERMIT2_SIGNATURE(0b011), DIRECT(0b101)
+    /// - Direction (reversed flag) in bit 255: false=ETH->WETH, true=WETH->ETH
     function swapWrap(uint256 orderId, uint256 rawdata) external payable {
         bool reversed;
         uint128 amount;
+        uint256 mode;
         assembly {
             reversed := and(rawdata, _REVERSE_MASK)
             amount := and(rawdata, SWAP_AMOUNT)
+            mode := and(rawdata, _TRANSFER_MODE_MASK)
         }
-        _swapWrap(orderId, msg.sender, reversed, amount);
+        _swapWrap(orderId, msg.sender, reversed, amount, mode);
     }
 
     /// @notice Executes a swap between ETH and WETH using structured base request parameters to a specified receiver.
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
     /// @param receiver The address that will receive the swapped tokens.
-    /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
+    /// @param baseRequest Struct containing essential swap parameters including source token (with mode in high bits [251:249]), destination token, amount, minimum return, and deadline.
     /// @dev This function validates that the token pair is either ETH->WETH or WETH->ETH and executes the swap accordingly.
-    /// It extracts the amount from the baseRequest and determines the swap direction based on the token addresses.
+    /// It extracts the amount and mode from the baseRequest and determines the swap direction based on the token addresses.
     function swapWrapToWithBaseRequest(
         uint256 orderId,
         address receiver,
@@ -914,7 +948,7 @@ contract DexRouter is
             revert("SwapWrap: invalid token pair");
         }
 
-        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount);
+        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK);
     }
 
     function dagSwapByOrderId(

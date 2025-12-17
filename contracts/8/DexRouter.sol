@@ -842,10 +842,7 @@ contract DexRouter is
             );
             IWETH(_WETH).withdraw(amount);
             if (middleReceiver != address(this)) {
-                // External ETH call - Reentrancy is safe here because:
-                // 1. Router is stateless (no user state stored)
-                // 2. Subsequent operations (_doCommissionAndTrimToToken) use `balanceBefore` to calculate delta
-                // 3. No exploitable state inconsistency even if reentered
+                // Invariant: `middleReceiver != address(this)` implies no toToken commission and no trim
                 (bool success, ) = payable(middleReceiver).call{
                     value: amount
                 }("");

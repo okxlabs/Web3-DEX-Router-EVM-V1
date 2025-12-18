@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "@dex/DexRouter.sol";
+import "@dex/DexRouterLegacy.sol";
+import "@dex/UniversalRouter.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
@@ -67,7 +69,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
     address[] public referrerAddresses = new address[](8);
     
     // contracts
-    DexRouter public dexRouter;
+    UniversalRouter public dexRouter;
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f); // ETH
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58); // ETH
     WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757)); // ETH
@@ -318,7 +320,9 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
         vm.createSelectFork(vm.envString("ETH_RPC_URL"), 23293873); // 2025.9.5 10:18
         vm.startPrank(admin);
         UniV2Adapter = address(new UniAdapter());
-        dexRouter = new DexRouter();
+        DexRouter dexRouterImpl = new DexRouter();
+        DexRouterLegacy dexRouterLegacyImpl = new DexRouterLegacy();
+        dexRouter = new UniversalRouter(admin, address(dexRouterImpl), address(dexRouterLegacyImpl));
         vm.stopPrank();
         address wNativeRelayerOwner = wNativeRelayer.owner();
         vm.startPrank(wNativeRelayerOwner);

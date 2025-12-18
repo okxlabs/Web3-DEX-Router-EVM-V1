@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import {Test, console2} from "forge-std/test.sol";
 import "@dex/adapter/FourMemeAdapter.sol";
 import "@dex/DexRouter.sol";
+import "@dex/DexRouterLegacy.sol";
+import "@dex/UniversalRouter.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/libraries/CommonUtils.sol";
@@ -14,7 +16,7 @@ contract NoTransferTest is Test {
     uint256 internal constant _MODE_NO_TRANSFER = 1 << 251;
 
     address amy = vm.rememberKey(1);
-    DexRouter dexRouter;
+    UniversalRouter dexRouter;
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0xd99cAE3FAC551f6b6Ba7B9f19bDD316951eeEE98);
     TokenApprove tokenApprove = TokenApprove(0x2c34A2Fb1d0b4f55de51E1d0bDEfaDDce6b7cDD6);
     address tokenApproveProxyAdmin = 0xAcE2B3E7c752d5deBca72210141d464371b3B9b1;
@@ -25,7 +27,9 @@ contract NoTransferTest is Test {
 
     function setUp() public {
         vm.createSelectFork("https://bsc-dataseed1.binance.org/");
-        dexRouter = new DexRouter();
+        DexRouter dexRouterImpl = new DexRouter();
+        DexRouterLegacy dexRouterLegacyImpl = new DexRouterLegacy();
+        dexRouter = new UniversalRouter(amy, address(dexRouterImpl), address(dexRouterLegacyImpl));
         vm.startPrank(tokenApproveProxyAdmin);
         tokenApproveProxy.addProxy(address(dexRouter));
         vm.stopPrank();
@@ -39,9 +43,9 @@ contract NoTransferTest is Test {
 
     struct SwapInfo {
         uint256 orderId;
-        DexRouter.BaseRequest baseRequest;
+        UniversalRouter.BaseRequest baseRequest;
         uint256[] batchesAmount;
-        DexRouter.RouterPath[][] batches;
+        UniversalRouter.RouterPath[][] batches;
         PMMLib.PMMSwapRequest[] extraData;
     }
 
@@ -86,8 +90,8 @@ contract NoTransferTest is Test {
         swapInfo.batchesAmount = new uint[](1);
         swapInfo.batchesAmount[0] = 1550234 * 10 ** 18;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -172,8 +176,8 @@ contract NoTransferTest is Test {
         swapInfo.batchesAmount = new uint[](1);
         swapInfo.batchesAmount[0] = 1550234 * 10 ** 18;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);

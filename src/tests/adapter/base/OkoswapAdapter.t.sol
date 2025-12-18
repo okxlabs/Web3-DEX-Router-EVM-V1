@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "@dex/DexRouter.sol";
+import "@dex/UniversalRouter.sol";
 import "@dex/adapter/OkoswapAdapter.sol";
 import "@dex/interfaces/IERC20.sol";
 import "@dex/interfaces/IWETH.sol";
@@ -11,7 +11,7 @@ import "@dex/libraries/SafeERC20.sol";
 
 contract OkoswapAdapterTest is Test {
     OkoswapAdapter adapter;
-    DexRouter dexRouter = DexRouter(payable(0x69C236E021F5775B0D0328ded5EaC708E3B869DF));
+    UniversalRouter dexRouter = UniversalRouter(payable(0x69C236E021F5775B0D0328ded5EaC708E3B869DF));
     address token_approve = 0x8b773D83bc66Be128c60e07E17C8901f7a64F000;
     address pool = 0x41F933b2C46E4343CAe58c1f8a024DD7F3a0832F;
     
@@ -37,9 +37,9 @@ contract OkoswapAdapterTest is Test {
 
     struct SwapInfo {
         uint orderId;
-        DexRouter.BaseRequest baseRequest;
+        UniversalRouter.BaseRequest baseRequest;
         uint[] batchesAmount;
-        DexRouter.RouterPath[][] batches;
+        UniversalRouter.RouterPath[][] batches;
         PMMLib.PMMSwapRequest[] extraData;
     }
 
@@ -61,8 +61,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -128,8 +128,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -195,8 +195,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -262,8 +262,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -327,8 +327,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -394,8 +394,8 @@ contract OkoswapAdapterTest is Test {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = amount;
 
-        swapInfo.batches = new DexRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
+        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);

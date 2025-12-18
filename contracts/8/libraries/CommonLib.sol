@@ -15,6 +15,13 @@ import "../interfaces/IERC20.sol";
 abstract contract CommonLib is CommonUtils {
     using UniversalERC20 for IERC20;
 
+    /// @notice Ensures a function is called before a specified deadline.
+    /// @param deadLine The UNIX timestamp deadline.
+    modifier isExpired(uint256 deadLine) {
+        require(deadLine >= block.timestamp, "Route: expired");
+        _;
+    }
+
     function _exeAdapter(
         bool reverse,
         address adapter,

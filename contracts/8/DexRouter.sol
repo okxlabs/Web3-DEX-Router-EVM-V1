@@ -109,9 +109,8 @@ contract DexRouter is
             pools[0],
             swapParams.payer,
             amount,
-            extraData.commissionInfo,
             address(0),
-            extraData.permit2Info
+            extraData
         );
 
         _doUniswapV3Swap(
@@ -238,7 +237,9 @@ contract DexRouter is
         receiver = receiver == address(0) ? msg.sender : receiver;
         ExtraData memory extraData = getDecodedExtraData();
 
-        _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, _MODE_LEGACY);
+        uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
+
+        _validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
         returnAmount = _getBalanceOf(toToken, receiver);
 
         SwapParams memory swapParams = SwapParams({
@@ -255,15 +256,14 @@ contract DexRouter is
             //待定，直接取池子地址还是address(0),取决于分佣地址数？
             address onlyOneAssetTo = address(uint160(uint256(pools[0]) & _ADDRESS_MASK));
             
-            (swapParams.payer, amount, fromTokenCommissionAmount) = 
-                _handlePermit2SignatureModeWithCommission(
-                    fromTokenWithMode,
-                    swapParams.payer,
-                    amount,
-                    commissionInfo,
-                    onlyOneAssetTo,
-                    permit2Info
-                );
+            // (swapParams.payer, amount, fromTokenCommissionAmount) = 
+            //     _handlePermit2SignatureModeWithCommission(
+            //         fromTokenWithMode,
+            //         swapParams.payer,
+            //         amount,
+            //         onlyOneAssetTo,
+            //         extraData
+            //     );
         }
         
         _doUnxswap(
@@ -273,7 +273,8 @@ contract DexRouter is
             minReturn,
             pools,
             extraData.commissionInfo,
-            extraData.trimInfo
+            extraData.trimInfo,
+            fromTokenCommissionAmount
         );
 
         // check minReturnAmount

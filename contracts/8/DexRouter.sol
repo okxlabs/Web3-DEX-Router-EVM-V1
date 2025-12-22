@@ -315,14 +315,14 @@ contract DexRouter is
                 trimInfo.hasTrim
             );
 
-        _unxswapInternal(
-            IERC20(srcToken),
-            amount,
-            minReturn,
-            pools,
-            swapParams.payer,
-            middleReceiver
-        );
+        // _unxswapInternal(
+        //     IERC20(srcToken),
+        //     amount,
+        //     minReturn,
+        //     pools,
+        //     swapParams.payer,
+        //     middleReceiver
+        // );
 
         _doCommissionAndTrimToToken(
             commissionInfo,

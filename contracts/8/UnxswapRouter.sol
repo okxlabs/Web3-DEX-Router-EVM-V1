@@ -225,6 +225,111 @@ contract UnxswapRouter is CommonUtils {
                 }
             }
 
+            // ========== Transfer Helper Functions ==========
+            function _claimToken(token, _payer, to, amt) {
+                if gt(amt, 0) {
+                    let freePtr := mload(0x40)
+                    mstore(0x40, add(freePtr, 0x84))
+                    mstore(
+                        freePtr,
+                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                    ) // claimTokens
+                    mstore(add(freePtr, 0x04), token)
+                    mstore(add(freePtr, 0x24), _payer)
+                    mstore(add(freePtr, 0x44), to)
+                    mstore(add(freePtr, 0x64), amt)
+                    let success := call(
+                        gas(),
+                        _APPROVE_PROXY,
+                        0,
+                        freePtr,
+                        0x84,
+                        0,
+                        0
+                    )
+                    if eq(success, 0) {
+                        revertWithReason(
+                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
+                            0x57
+                        ) // "claim tokens failed"
+                    }
+                }
+            }
+            function _transferTokenDirect(token, from, to, amt) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x64)) // calldata size == 0x64
+                mstore(
+                    freePtr,
+                    0x23b872dd00000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint256)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), amt)
+                let success := call(
+                    gas(),
+                    token,
+                    0,
+                    freePtr,
+                    0x64,
+                    0,
+                    0x20
+                )
+                if eq(success, 0) {
+                    revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+            function _transferTokenPermit2Allowance(token, from, to, amt) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84)) // calldata size == 0x84
+                mstore(
+                    freePtr,
+                    0x36c7851600000000000000000000000000000000000000000000000000000000
+                ) // transferFrom(address,address,uint160,address)
+                mstore(add(freePtr, 0x04), from)
+                mstore(add(freePtr, 0x24), to)
+                mstore(add(freePtr, 0x44), shr(96, shl(96, amt)))
+                mstore(add(freePtr, 0x64), token)
+                let success := call(
+                    gas(),
+                    _PERMIT2,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    revertWithReason(
+                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x5f
+                    ) // "transfer token referer fail"
+                }
+            }
+            function _transferTokenWithMode(token, mode, _payer, to, amt) {
+                if gt(amt, 0) {
+                    switch mode
+                    case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
+                        _transferTokenDirect(token, _payer, to, amt)
+                    }
+                    case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
+                        _transferTokenPermit2Allowance(token, _payer, to, amt)
+                    }
+                    case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
+                        _claimToken(token, _payer, to, amt)
+                    }
+                    default {
+                        revertWithReason(
+                            0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
+                            0x59
+                        ) // "invalid transfer mode"
+                    }
+                }
+            }
+            // ========== End Transfer Helper Functions ==========
+
             let poolsOffset
             let poolsEndOffset
             {
@@ -241,8 +346,13 @@ contract UnxswapRouter is CommonUtils {
             }
             let emptyPtr := mload(0x40)
             let rawPair := calldataload(poolsOffset)
+            
+            // Extract transfer mode from pools[0]
+            let mode := and(rawPair, _TRANSFER_MODE_MASK)
+            
             switch eq(_ETH, srcToken)
             case 1 {
+                // ========== ETH Transfer ==========
                 // require callvalue() >= amount, lt: if x < y return 1，else return 0
                 if eq(lt(callvalue(), amount), 1) {
                     revertWithReason(
@@ -270,6 +380,7 @@ contract UnxswapRouter is CommonUtils {
                 }
             }
             default {
+                // ========== ERC20 Transfer ==========
                 if callvalue() {
                     revertWithReason(
                         0x00000011696e76616c6964206d73672e76616c75650000000000000000000000,
@@ -277,18 +388,10 @@ contract UnxswapRouter is CommonUtils {
                     ) // "invalid msg.value"
                 }
 
-                mstore(emptyPtr, _CLAIM_TOKENS_CALL_SELECTOR_32)
-                mstore(add(emptyPtr, 0x4), srcToken)
-                mstore(add(emptyPtr, 0x24), payer)
-                mstore(add(emptyPtr, 0x44), and(rawPair, _ADDRESS_MASK))
-                mstore(add(emptyPtr, 0x64), amount)
-                if iszero(
-                    call(gas(), _APPROVE_PROXY, 0, emptyPtr, 0x84, 0, 0)
-                ) {
-                    revertWithReason(
-                        0x00000012636c61696d20746f6b656e206661696c656400000000000000000000,
-                        0x56
-                    ) // "claim token failed"
+                // PERMIT2_SIGNATURE mode: token already transferred via permitTransferFrom, skip
+                // Other modes: use _transferTokenWithMode
+                if iszero(eq(mode, 0x0600000000000000000000000000000000000000000000000000000000000000)) {
+                    _transferTokenWithMode(srcToken, mode, payer, and(rawPair, _ADDRESS_MASK), amount)
                 }
             }
 
@@ -453,26 +556,20 @@ contract UnxswapRouter is CommonUtils {
                     address()
                 )
 
-                mstore(emptyPtr, _WITHDRAW_TRNASFER_SELECTOR)
-                mstore(add(emptyPtr, 0x08), _WNATIVE_RELAY)
-                mstore(add(emptyPtr, 0x28), returnAmount)
-                if iszero(
-                    call(gas(), _WETH, 0, add(0x04, emptyPtr), 0x44, 0, 0x20)
-                ) {
-                    revertWithReason(
-                        0x000000147472616e736665722057455448206661696c65640000000000000000,
-                        0x58
-                    ) // "transfer WETH failed"
-                }
+                // Directly call WETH.withdraw(returnAmount) instead of using WNativeRelayer
+                // withdraw(uint256) selector: 0x2e1a7d4d
+                mstore(emptyPtr, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
                 mstore(add(emptyPtr, 0x04), returnAmount)
                 if iszero(
-                    call(gas(), _WNATIVE_RELAY, 0, emptyPtr, 0x24, 0, 0x20)
+                    call(gas(), _WETH, 0, emptyPtr, 0x24, 0, 0)
                 ) {
                     revertWithReason(
-                        0x00000013776974686472617720455448206661696c6564000000000000000000,
+                        0x00000013574554482077697468647261772066616c6c6564000000000000000000,
                         0x57
-                    ) // "withdraw ETH failed"
+                    ) // "WETH withdraw failed"
                 }
+                
+                // Send ETH to receiver
                 if iszero(call(gas(), receiver, returnAmount, 0, 0, 0, 0)) {
                     revertWithReason(
                         0x000000137472616e7366657220455448206661696c6564000000000000000000,

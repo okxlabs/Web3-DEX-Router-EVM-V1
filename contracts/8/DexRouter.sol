@@ -224,8 +224,25 @@ contract DexRouter is
             receiver: receiver,
             toToken: toToken
         });
-        // call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
-        // (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
+        
+        // Handle Permit2Signature mode and fromToken commission
+        uint256 fromTokenCommissionAmount;
+        {
+            uint256 fromTokenWithMode = uint256(uint160(srcToken)) | mode;
+            //待定，直接取池子地址还是address(0),取决于分佣地址数？
+            address onlyOneAssetTo = address(uint160(uint256(pools[0]) & _ADDRESS_MASK));
+            
+            (swapParams.payer, amount, fromTokenCommissionAmount) = 
+                _handlePermit2SignatureModeWithCommission(
+                    fromTokenWithMode,
+                    swapParams.payer,
+                    amount,
+                    commissionInfo,
+                    onlyOneAssetTo,
+                    permit2Info
+                );
+        }
+        
         _doUnxswap(
             swapParams,
             srcToken,
@@ -261,7 +278,8 @@ contract DexRouter is
         uint256 minReturn,
         bytes32[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo
+        TrimInfo memory trimInfo,
+        uint256 fromTokenCommissionAmount
     ) private {
         (
             address middleReceiver,
@@ -269,7 +287,7 @@ contract DexRouter is
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                fromTokenCommissionAmount,
                 trimInfo.hasTrim
             );
 

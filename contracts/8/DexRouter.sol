@@ -99,16 +99,30 @@ contract DexRouter is
         // TODO add mode to commissionInfo.tokenWithMode
 
         returnAmount = _getBalanceOf(swapParams.toToken, swapParams.receiver);
+       
+        uint256 fromTokenCommissionAmount;
+        (
+            swapParams.payer,
+            amount,
+            fromTokenCommissionAmount
+        ) = _handlePermit2SignatureModeWithCommission(
+            pools[0],
+            swapParams.payer,
+            amount,
+            extraData.commissionInfo,
+            address(0),
+            extraData.permit2Info
+        );
 
-        // TODO call _handlePermit2SignatureModeWithCommission to handle permit2Signature mode and fromTokenCommission
-        // (swapParams.payer, amount, fromTokenCommissionAmount) = _handlePermit2SignatureModeWithCommission();
         _doUniswapV3Swap(
             swapParams,
             amount,
             minReturn,
             pools,
             extraData.commissionInfo,
-            extraData.trimInfo
+            extraData.trimInfo,
+            extraData.permit2Info,
+            fromTokenCommissionAmount
         );
 
         // check minReturnAmount
@@ -133,18 +147,27 @@ contract DexRouter is
         uint256 minReturn,
         uint256[] calldata pools,
         CommissionInfo memory commissionInfo,
-        TrimInfo memory trimInfo
+        TrimInfo memory trimInfo,
+        Permit2Info memory permit2Info,
+        uint256 fromTokenCommissionAmount
     ) private {
+        
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = _doCommissionFromToken(
                 commissionInfo,
                 swapParams,
-                amount, // TODO should be fromTokenCommissionAmount gotten from _handlePermit2SignatureModeWithCommission
+                fromTokenCommissionAmount,
                 trimInfo.hasTrim
             );
 
+        // In permit2sig mode: regardless of B-side or C-side, with or without commission, swapParams.payer is address(this)
+        // In legacy, permit2allowance, direct modes: 
+        //                  Without commission + C/B-side: swapParams.payer is user address
+        //                  With commission + C-side: swapParams.payer is user address
+        //                  With commission + B-side: swapParams.payer is address(this)
+        // In byinvest mode: swapParams.payer is address(this)
         _uniswapV3Swap(
             swapParams.payer,
             payable(middleReceiver),

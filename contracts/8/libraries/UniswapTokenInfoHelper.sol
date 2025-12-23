@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {CommonUtils} from "./CommonUtils.sol";
+import "../libraries/Constants.sol";
 import {IUni} from "../interfaces/IUni.sol";
 import {IUniV3} from "../interfaces/IUniV3.sol";
 
@@ -10,8 +10,8 @@ import {IUniV3} from "../interfaces/IUniV3.sol";
 /// encoded pools array of unxswap and uniswapV3Swap methods.
 /// @dev This contract will be used in DexRouter and DexRouterExactOut. So the
 /// masks are re-defined here and keep the same as in the original contracts.
-abstract contract UniswapTokenInfoHelper is CommonUtils {
-    function _getUnxswapTokenInfo(bool sendValue, bytes32[] calldata pools)
+library UniswapTokenInfoHelper {
+    function getUnxswapTokenInfo(bool sendValue, bytes32[] calldata pools)
         internal
         view
         returns (address fromToken, address toToken)
@@ -39,7 +39,7 @@ abstract contract UniswapTokenInfoHelper is CommonUtils {
     }
 
 
-    function _getUniswapV3TokenInfo(bool sendValue, uint256[] calldata pools)
+    function getUniswapV3TokenInfo(bool sendValue, uint256[] calldata pools)
         internal
         view
         returns (address fromToken, address toToken)

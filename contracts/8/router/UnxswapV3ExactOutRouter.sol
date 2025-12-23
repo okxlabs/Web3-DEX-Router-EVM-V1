@@ -1,19 +1,16 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "./interfaces/IUniswapV3SwapCallback.sol";
-import "./interfaces/IUniV3.sol";
-import "./interfaces/uniV3/IUniswapV3Factory.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IWNativeRelayer.sol";
-import "./interfaces/IERC20.sol";
-import "./interfaces/IApproveProxy.sol";
-import "./libraries/Address.sol";
-import "./libraries/CommonUtils.sol";
-import "./libraries/RouterErrors.sol";
-import "./libraries/SafeCast.sol";
-import "./libraries/TempStorage.sol";
-contract UnxswapV3ExactOutRouter is IUniswapV3SwapCallback, CommonUtils {
+import "../libraries/Constants.sol";
+import "../libraries/EventLib.sol";
+import "../libraries/ExactOutSwapHelper.sol";
+import "../libraries/UniswapTokenInfoHelper.sol";
+import "../libraries/TempStorage.sol";
+import "../libraries/SafeCast.sol";
+import "../interfaces/IDexRouter.sol";
+import "../interfaces/uniV3/IUniswapV3Factory.sol";
+
+library UnxswapV3ExactOutRouter {
     using Address for address payable;
 
     event Swap(
@@ -44,7 +41,104 @@ contract UnxswapV3ExactOutRouter is IUniswapV3SwapCallback, CommonUtils {
         0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff; // Maximum int256
     uint256 private constant _INT256_MIN =
         0x8000000000000000000000000000000000000000000000000000000000000000; // Minimum int256
-    
+
+    // ================================================================================
+    // ============================== Public Functions ================================
+    // ================================================================================
+    /// @notice Executes an exact output swap using the Uniswap V3 protocol, including commission handling.
+    /// @param receiver The address to receive the output tokens (encoded as uint256).
+    /// @param amountOut The exact amount of output tokens to receive.
+    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
+    /// @param pools The list of pool identifiers to use for the swap path.
+    /// @return consumeAmount The actual amount of source tokens consumed.
+    function uniswapV3SwapExactOutTo(
+        uint256 receiver,
+        uint256 amountOut,
+        uint256 maxConsume,
+        uint256[] calldata pools
+    ) public returns (uint256 consumeAmount) {
+        EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
+        consumeAmount = _uniswapV3SwapExactOutTo(
+            msg.sender,
+            receiver,
+            amountOut,
+            maxConsume,
+            pools
+        );
+    }
+
+    /// @notice Handles the callback from Uniswap V3 pool during a swap, paying the required input tokens and continuing the swap path if needed.
+    /// @param amount0Delta The change in token0 balance (positive means the contract must pay token0).
+    /// @param amount1Delta The change in token1 balance (positive means the contract must pay token1).
+    /// @param data Encoded callback data containing the payer and remaining pools.
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata data
+    ) public {
+        _uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
+    }
+
+
+    // ================================================================================
+    // ============================== Private Functions ===============================
+    // ================================================================================
+    /// @notice Internal function to perform an exact output swap using the Uniswap V3 protocol, handling commission logic for both source and target tokens.
+    /// @param payer The address paying the source tokens.
+    /// @param receiver The address to receive the output tokens (encoded as uint256).
+    /// @param amountOut The exact amount of output tokens to receive.
+    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
+    /// @param pools The list of pool identifiers to use for the swap path.
+    /// @return consumeAmount The actual amount of source tokens consumed.
+    function _uniswapV3SwapExactOutTo(
+        address payer,
+        uint256 receiver,
+        uint256 amountOut,
+        uint256 maxConsume,
+        uint256[] calldata pools
+    ) private returns (uint256 consumeAmount) {
+        require(address(uint160(receiver)) != address(0), "not addr(0)");
+        // Step 1: If the swap starts from ETH, the contract will wrap ETH to WETH in the last pool.
+        TempStorage.setEthAmount(msg.value);
+        // Step 2: Adjust the target output amount to include commission if commission is taken from the output token.
+        uint256 targetTokenBefore = 0;
+        address middleReceiver = address(uint160(receiver));
+        IDexRouter.CommissionInfo memory commissionInfo;
+        (
+            commissionInfo,
+            amountOut,
+            targetTokenBefore,
+            middleReceiver
+        ) = ExactOutSwapHelper.beforeSwap(amountOut, middleReceiver, targetTokenBefore);
+        // Step 3: Determine the source token and to token for the swap.
+        (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
+
+        // Step 4: Execute the swap. If srcToken is ETH, any excess ETH will be refunded after the swap.
+        consumeAmount = _uniswapV3SwapExactOut(
+            payer,
+            payable(middleReceiver),
+            amountOut,
+            maxConsume,
+            pools
+        );
+
+        // Step 5: Handle commission from the source token if applicable.
+        ExactOutSwapHelper.afterSwap(
+            IDexRouter.AfterSwapParams({
+                commissionInfo: commissionInfo,
+                consumeAmount: consumeAmount,
+                targetTokenBefore: targetTokenBefore,
+                srcToken: srcToken,
+                toToken: toToken,
+                receiver: address(uint160(receiver)),
+                payer: payer
+            })
+        );
+
+        // Step 6: Reset ethAmount to zero after the swap.
+        TempStorage.setEthAmount(0);
+    }
+
     /// @notice Recursively executes an exact output swap using Uniswap V3 pools.
     /// @param payer The address paying the input tokens.
     /// @param receiver The address receiving the output tokens.
@@ -58,7 +152,7 @@ contract UnxswapV3ExactOutRouter is IUniswapV3SwapCallback, CommonUtils {
         uint256 amountOut,
         uint256 maxConsume,
         uint256[] calldata pools
-    ) internal returns (uint256 consumedAmount) {
+    ) private returns (uint256 consumedAmount) {
         require(pools.length > 0, "empty pools");
 
         // Get the last pool in the path and check if WETH should be unwrapped to ETH after the swap.
@@ -131,16 +225,15 @@ contract UnxswapV3ExactOutRouter is IUniswapV3SwapCallback, CommonUtils {
         );
     }
 
-    /// @inheritdoc IUniswapV3SwapCallback
     /// @notice Handles the callback from Uniswap V3 pool during a swap, paying the required input tokens and continuing the swap path if needed.
     /// @param amount0Delta The change in token0 balance (positive means the contract must pay token0).
     /// @param amount1Delta The change in token1 balance (positive means the contract must pay token1).
     /// @param data Encoded callback data containing the payer and remaining pools.
-    function uniswapV3SwapCallback(
+    function _uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata data
-    ) external override {
+    ) private {
         // Validate that the caller is a legitimate Uniswap V3 pool.
         address token0 = IUniV3(msg.sender).token0();
         address token1 = IUniV3(msg.sender).token1();
@@ -217,4 +310,3 @@ contract UnxswapV3ExactOutRouter is IUniswapV3SwapCallback, CommonUtils {
         IERC20(_WETH).transfer(recipient, amount);
     }
 }
-

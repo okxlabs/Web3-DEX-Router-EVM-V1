@@ -1,16 +1,13 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+/// SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
 
-import "./interfaces/IUni.sol";
+import "../libraries/Constants.sol";
+import "../libraries/ExactOutSwapHelper.sol";
+import "../libraries/UniswapTokenInfoHelper.sol";
+import "../libraries/EventLib.sol";
+import "../interfaces/IDexRouter.sol";
 
-import "./libraries/UniversalERC20.sol";
-import "./libraries/CommonUtils.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IERC20.sol";
-import "./interfaces/IApproveProxy.sol";
-
-contract UnxswapExactOutRouter is CommonUtils {
-
+library UnxswapExactOutRouter {
     uint256 private constant _NUMERATOR_MASK =
         0x0000000000000000ffffffff0000000000000000000000000000000000000000;
 
@@ -24,6 +21,127 @@ contract UnxswapExactOutRouter is CommonUtils {
         uint256 returnAmount,
         uint256 amount
     );
+
+    // ================================================================================
+    // ============================== Public Functions ================================
+    // ================================================================================
+    /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling.
+    /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
+    /// @param amount The target output amount to receive.
+    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
+    /// @param receiver The address to receive the output tokens.
+    /// @param pools The list of pool identifiers to use for the swap path.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
+    function unxswapExactOutTo(
+        uint256 srcToken,
+        uint256 amount,
+        uint256 maxConsume,
+        address receiver,
+        bytes32[] calldata pools
+    ) public returns (uint256 consumeAmount) {
+        EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+        return
+            _unxswapExactOutTo(
+                srcToken,
+                amount,
+                maxConsume,
+                msg.sender,
+                receiver,
+                pools
+            );
+    }
+
+    /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling. The receiver is set to msg.sender.
+    /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
+    /// @param amount The target output amount to receive.
+    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
+    /// @param pools The list of pool identifiers to use for the swap path.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
+    function unxswapExactOutToByOrderID(
+        uint256 srcToken,
+        uint256 amount,
+        uint256 maxConsume,
+        bytes32[] calldata pools
+    ) public returns (uint256 consumeAmount) {
+        EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+        return
+            _unxswapExactOutTo(
+                srcToken,
+                amount,
+                maxConsume,
+                msg.sender,
+                msg.sender,
+                pools
+            );
+    }
+
+
+    // ================================================================================
+    // ============================== Private Functions ===============================
+    // ================================================================================
+    /// @notice Internal function to perform an exact output swap using the Unxswap protocol, handling commission logic for both source and target tokens.
+    /// @notice ETH address on this parameter srcToken is 0x0000000000000000000000000000000000000000
+    /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
+    /// @param amount The target output amount to receive.
+    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
+    /// @param payer The address paying the source tokens.
+    /// @param receiver The address to receive the output tokens.
+    /// @param pools The list of pool identifiers to use for the swap path.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
+    function _unxswapExactOutTo(
+        uint256 srcToken,
+        uint256 amount,
+        uint256 maxConsume,
+        address payer,
+        address receiver,
+        bytes32[] calldata pools
+    ) private returns (uint256 consumeAmount) {
+        require(receiver != address(0), "not addr(0)");
+        // Step 1: Adjust the target output amount to include commission if commission is taken from the output token.
+        uint256 targetTokenBefore = 0;
+        address middleReceiver = receiver;
+        IDexRouter.CommissionInfo memory commissionInfo;
+        (
+            commissionInfo,
+            amount,
+            targetTokenBefore,
+            middleReceiver
+        ) = ExactOutSwapHelper.beforeSwap(amount, middleReceiver, targetTokenBefore);
+
+        // Step 2: Validate and execute the swap.
+        // If srcToken is ETH, the user must prepay ETH; any excess will be refunded after the swap.
+        address srcTokenAddress = address(uint160(srcToken & _ADDRESS_MASK));
+        address toToken;
+        {
+            address fromToken;
+            (fromToken, toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
+            require(
+                (srcTokenAddress == fromToken && fromToken != _ETH) || (srcTokenAddress == address(0) && fromToken == _ETH),
+                "unxswap: token mismatch"
+            );
+        }
+        consumeAmount = _unxswapExactOutInternal(
+            IERC20(srcTokenAddress),
+            amount,
+            maxConsume,
+            pools,
+            payer,
+            middleReceiver
+        );
+
+        // Step 3: Handle commission from the source token if applicable.
+        ExactOutSwapHelper.afterSwap(
+            IDexRouter.AfterSwapParams({
+                commissionInfo: commissionInfo,
+                consumeAmount: consumeAmount,
+                targetTokenBefore: targetTokenBefore,
+                srcToken: srcTokenAddress == address(0) ? _ETH : srcTokenAddress,
+                toToken: toToken,
+                receiver: receiver,
+                payer: payer
+            })
+        );
+    }
 
     /// @notice Executes an exact output swap (ExactOut mode) using the Unxswap protocol.
     /// @param srcToken The source token to be swapped.
@@ -41,7 +159,7 @@ contract UnxswapExactOutRouter is CommonUtils {
         bytes32[] calldata pools,
         address payer,
         address receiver
-    ) internal returns (uint256 returnAmount) {
+    ) private returns (uint256 returnAmount) {
         require(pools.length > 0, "empty pools");
         
         // Calculate the required input amount for each pool in the path, working backwards from the output.

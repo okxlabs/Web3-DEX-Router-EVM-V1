@@ -1,18 +1,15 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./CommonUtils.sol";
+import "./Constants.sol";
 import "./SafeERC20.sol";
-import "./UniversalERC20.sol";
+import "../interfaces/IDexRouter.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IPermit2.sol";
 import "../interfaces/IApproveProxy.sol";
-import "../interfaces/AbstractCommissionLib.sol";
 
-/// @title Base contract to handle multi transfer modes including Permit2.
-abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
-    using UniversalERC20 for IERC20;
-
+/// @title Library to handle multi transfer modes including Permit2.
+library TransferLib {
     /// @notice Handle Permit2Signature/ByInvest mode and fromTokenCommission mainly.
     /// @param fromTokenWithMode The fromToken with mode encoded in high bits.
     /// @param payer The address of the payer.
@@ -22,12 +19,12 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
     /// @return The new payer, the new inputAmount, and the fromTokenCommissionAmount. The new payer can be (1) original payer, (2) address(this), or (3) address(0).
     ///         The address(0) means the fromToken has been paid and no need to pay later.
     /// @dev  Since the permitTransferFrom can only be called once in a transaction, this function is designed to handle multiple scenarios and call permitTransferFrom if necessary.
-    function _handlePermit2SignatureModeWithCommission(
+    function handlePermit2SignatureModeWithCommission(
         uint256 fromTokenWithMode,
         address payer,
         uint256 inputAmount,
         address onlyOneAssetTo,
-        ExtraData memory extraData
+        IDexRouter.ExtraData memory extraData
     ) internal returns (address, uint256, uint256) {
         uint256 mode = fromTokenWithMode & _TRANSFER_MODE_MASK;
         address token = address(uint160(fromTokenWithMode & _ADDRESS_MASK));
@@ -94,15 +91,16 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
         }
     }
 
+    /// @notice Private function to execute permitTransferFrom.
     function _executePermitTransferFrom(
         uint256 inputAmount,
         uint256 fromTokenCommissionAmount,
         address token,
         address to,
         uint256 totalRate,
-        ExtraData memory extraData
-    ) internal {
-        CommissionInfo memory commissionInfo = extraData.commissionInfo;
+        IDexRouter.ExtraData memory extraData
+    ) private {
+        IDexRouter.CommissionInfo memory commissionInfo = extraData.commissionInfo;
         // Get permitTransferFrom parameters
         uint256 permitLength;
         if (commissionInfo.isFromTokenCommission && commissionInfo.toBCommission == NO_TO_B_MODE) {
@@ -171,7 +169,7 @@ abstract contract TransferLib is AbstractCommissionLib, CommonUtils {
     /// @param fromTokenWithMode FromToken with mode encoded in high bits
     /// @param amount The amount of tokens to be transferred.
     /// @dev Handles the transfer of ERC20 tokens.
-    function _transferInternal(
+    function transferInternal(
         address payer,
         address to,
         uint256 fromTokenWithMode,

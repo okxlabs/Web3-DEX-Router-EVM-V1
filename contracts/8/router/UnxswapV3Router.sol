@@ -1,16 +1,17 @@
-/// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "./interfaces/IUniswapV3SwapCallback.sol";
-import "./interfaces/IUniV3.sol";
-import "./interfaces/IWETH.sol";
+import "../libraries/Constants.sol";
+import "../libraries/EventLib.sol";
+import "../libraries/UniswapTokenInfoHelper.sol";
+import "../libraries/CommonLib.sol";
+import "../libraries/ExtraDataLib.sol";
+import "../libraries/CommissionLib.sol";
+import "../libraries/TransferLib.sol";
+import "../interfaces/IDexRouter.sol";
+import "../interfaces/IERC20.sol";
 
-import "./libraries/Address.sol";
-import "./libraries/CommonUtils.sol";
-import "./libraries/RouterErrors.sol";
-import "./libraries/SafeCast.sol";
-
-contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
+library UnxswapV3Router {
     using Address for address payable;
 
     bytes32 private constant _POOL_INIT_CODE_HASH =
@@ -34,11 +35,198 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
     uint256 private constant _INT256_MIN =
         0x8000000000000000000000000000000000000000000000000000000000000000; // Minimum int256
 
+    // ================================================================================
+    // ============================== Public Functions ================================
+    // ================================================================================
+    /// @notice Executes a swap using the Uniswap V3 protocol.
+    /// @param receiver The address that will receive the swap funds.
+    /// @param amount The amount of the source token to be swapped.
+    /// @param minReturn The minimum acceptable amount of tokens to receive from the swap, guarding against excessive slippage.
+    /// @param pools An array of pool identifiers used to define the swap route within Uniswap V3.
+    /// @return returnAmount The amount of tokens received after the completion of the swap.
+    /// @dev This function wraps and unwraps ETH as required, ensuring the transaction only accepts non-zero `msg.value` for ETH swaps. It invokes `_uniswapV3Swap` to execute the actual swap and handles commission post-swap.
+    function uniswapV3SwapTo(
+        uint256 receiver,
+        uint256 amount,
+        uint256 minReturn,
+        uint256[] calldata pools
+    ) public returns (uint256 returnAmount) {
+        EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
+        (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
+        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: (receiver & _ADDRESS_MASK) == 0 ? msg.sender : CommonLib.bytes32ToAddress(receiver),
+            toToken: toToken
+        });
+        return
+            _uniswapV3SwapTo(
+                swapParams,
+                srcToken,
+                amount,
+                minReturn,
+                pools
+            );
+    }
+
+    /// @notice Executes a Uniswap V3 token swap to a specified receiver using structured base request parameters. For uniswapV3, if fromToken or toToken is ETH, the address needs to be 0xEeee.
+    /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
+    /// @param receiver The address that will receive the swapped tokens.
+    /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
+    /// @param pools An array of pool identifiers defining the Uniswap V3 swap route, with encoded swap direction and unwrap flags.
+    /// @return returnAmount The total amount of destination tokens received from the swap.
+    /// @dev This function validates token compatibility with the provided pool route and ensures proper swap execution.
+    /// It supports both ETH and ERC20 token swaps, with automatic WETH wrapping/unwrapping as needed.
+    /// The function verifies that fromToken matches the first pool and toToken matches the last pool in the route.
+    function uniswapV3SwapToWithBaseRequest(
+        uint256 orderId,
+        address receiver,
+        IDexRouter.BaseRequest calldata baseRequest,
+        uint256[] calldata pools
+    )
+        public
+        returns (uint256 returnAmount)
+    {
+        CommonLib.validateDeadline(baseRequest.deadLine);
+
+        EventLib.emitSwapOrderId(orderId);
+
+        (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
+
+        // validate fromToken and toToken from baseRequest
+        require(
+            CommonLib.bytes32ToAddress(baseRequest.fromToken) == srcToken && baseRequest.toToken == toToken,
+            "uniswapV3: token mismatch"
+        );
+
+        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+            payer: msg.sender,
+            refundTo: msg.sender,
+            receiver: receiver == address(0) ? msg.sender : receiver,
+            toToken: toToken
+        });
+        return
+            _uniswapV3SwapTo(
+                swapParams,
+                srcToken,
+                baseRequest.fromTokenAmount,
+                baseRequest.minReturnAmount,
+                pools
+            );
+    }
+
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata /*data*/
+    ) public {
+        _uniswapV3SwapCallback(amount0Delta, amount1Delta);
+    }
+
+
+    // ================================================================================
+    // ============================== Private Functions ===============================
+    // ================================================================================
+    /// @notice If srcToken or toToken is ETH, the address needs to be 0xEeee. And for commission validation, ETH needs to be 0xEeee.
+    function _uniswapV3SwapTo(
+        IDexRouter.SwapParams memory swapParams,
+        address srcToken,
+        uint256 amount,
+        uint256 minReturn,
+        uint256[] calldata pools
+    ) private returns (uint256 returnAmount) {
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        // add permit2
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
+        // TODO add mode to commissionInfo.tokenWithMode
+
+        returnAmount = CommonLib.getBalanceOf(swapParams.toToken, swapParams.receiver);
+       
+        uint256 fromTokenCommissionAmount;
+        (
+            swapParams.payer,
+            amount,
+            fromTokenCommissionAmount
+        ) = TransferLib.handlePermit2SignatureModeWithCommission(
+            pools[0],
+            swapParams.payer,
+            amount,
+            address(0),
+            extraData
+        );
+
+        _doUniswapV3Swap(
+            swapParams,
+            amount,
+            pools,
+            extraData.commissionInfo,
+            extraData.trimInfo,
+            extraData.permit2Info,
+            fromTokenCommissionAmount
+        );
+
+        // check minReturnAmount
+        returnAmount = CommonLib.getBalanceOf(swapParams.toToken, swapParams.receiver) - returnAmount;
+        require(
+            returnAmount >= minReturn,
+            "Min return not reached"
+        );
+
+        EventLib.emitOrderRecord(
+            srcToken,
+            swapParams.toToken,
+            tx.origin,
+            amount,
+            returnAmount
+        );
+    }
+
+    function _doUniswapV3Swap(
+        IDexRouter.SwapParams memory swapParams,
+        uint256 amount,
+        uint256[] calldata pools,
+        IDexRouter.CommissionInfo memory commissionInfo,
+        IDexRouter.TrimInfo memory trimInfo,
+        IDexRouter.Permit2Info memory permit2Info,
+        uint256 fromTokenCommissionAmount
+    ) private {
+        
+        (
+            address middleReceiver,
+            uint256 balanceBefore
+        ) = CommissionLib.doCommissionFromToken(
+                commissionInfo,
+                swapParams,
+                fromTokenCommissionAmount,
+                trimInfo.hasTrim
+            );
+
+        // In permit2sig mode: regardless of B-side or C-side, with or without commission, swapParams.payer is address(this)
+        // In legacy, permit2allowance, direct modes: 
+        //                  Without commission + C/B-side: swapParams.payer is user address
+        //                  With commission + C-side: swapParams.payer is user address
+        //                  With commission + B-side: swapParams.payer is address(this)
+        // In byinvest mode: swapParams.payer is address(this)
+        _uniswapV3Swap(
+            swapParams.payer,
+            payable(middleReceiver),
+            amount,
+            pools
+        );
+
+        CommissionLib.doCommissionAndTrimToToken(
+            commissionInfo,
+            swapParams.receiver,
+            balanceBefore,
+            swapParams.toToken,
+            trimInfo
+        );
+    }
+
     /// @notice Conducts a swap using the Uniswap V3 protocol internally within the contract.
     /// @param payer The address of the account providing the tokens for the swap.
     /// @param receiver The address that will receive the tokens after the swap.
     /// @param amount The amount of the source token to be swapped.
-    /// @param minReturn The minimum amount of tokens that must be received for the swap to be valid, safeguarding against excessive slippage.
     /// @param pools An array of pool identifiers defining the swap route within Uniswap V3.
     /// @return returnAmount The amount of tokens received from the swap.
     /// @dev This internal function encapsulates the core logic for executing swaps on Uniswap V3. It is intended to be used by other functions in the contract that prepare and pass the necessary parameters. The function handles the swapping process, ensuring that the minimum return is met and managing the transfer of tokens.
@@ -46,7 +234,6 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
         address payer,
         address payable receiver,
         uint256 amount,
-        uint256 minReturn,
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
         assembly {
@@ -289,12 +476,10 @@ contract UnxswapV3Router is IUniswapV3SwapCallback, CommonUtils {
         }
     }
 
-    /// @inheritdoc IUniswapV3SwapCallback
-    function uniswapV3SwapCallback(
+    function _uniswapV3SwapCallback(
         int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata /*data*/
-    ) external override {
+        int256 amount1Delta
+    ) private {
         assembly {
             // solhint-disable-line no-inline-assembly
             function reRevert() {

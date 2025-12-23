@@ -1,353 +1,20 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./CommonUtils.sol";
-import "../interfaces/AbstractCommissionLib.sol";
-/// @title Base contract with common permit handling logics
+import "./Constants.sol";
+import "./CommonLib.sol";
+import "../interfaces/IDexRouter.sol";
 
-abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
-    // function _getExtraData()
-    //     internal
-    //     override
-    //     returns (ExtraData memory)
-    // {
-    //     CommissionInfo memory commissionInfo;
-    //     TrimInfo memory trimInfo;
-    //     Permit2Info memory permit2Info;
-    //     address refundTo;
-
-    //     permit2Info.amounts = new uint256[](1 + MAX_COMMISSION_MULTIPLE_NUM);
-    //     uint256 permit2InfoFlag;
-    //     uint256[] memory permit2SignatureCache = new uint256[](3); // signature r, signature s, signature v
-    //     assembly ("memory-safe") {
-    //         function _revertWithReason(m, len) {
-    //             mstore(
-    //                 0,
-    //                 0x08c379a000000000000000000000000000000000000000000000000000000000
-    //             )
-    //             mstore(
-    //                 0x20,
-    //                 0x0000002000000000000000000000000000000000000000000000000000000000
-    //             )
-    //             mstore(0x40, m)
-    //             revert(0, len)
-    //         }
-
-    //         let commissionData := calldataload(sub(calldatasize(), 0x20))
-    //         let flag := and(commissionData, _COMMISSION_FLAG_MASK)
-    //         let referrerNum := 0
-    //         if or(
-    //             eq(flag, FROM_TOKEN_COMMISSION),
-    //             eq(flag, TO_TOKEN_COMMISSION)
-    //         ) {
-    //             referrerNum := 1
-    //         }
-    //         if or(
-    //             eq(flag, FROM_TOKEN_COMMISSION_DUAL),
-    //             eq(flag, TO_TOKEN_COMMISSION_DUAL)
-    //         ) {
-    //             referrerNum := 2
-    //         }
-    //         if or(
-    //             eq(flag, FROM_TOKEN_COMMISSION_MULTIPLE),
-    //             eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
-    //         ) {
-    //             referrerNum := 3 // default referrer num to load real encoded referrer num
-    //         }
-    //         mstore(
-    //             commissionInfo,
-    //             or(
-    //                 or(
-    //                     eq(flag, FROM_TOKEN_COMMISSION),
-    //                     eq(flag, FROM_TOKEN_COMMISSION_DUAL)
-    //                 ),
-    //                 eq(flag, FROM_TOKEN_COMMISSION_MULTIPLE)
-    //             )
-    //         ) // isFromTokenCommission
-    //         mstore(
-    //             add(0x20, commissionInfo),
-    //             or(
-    //                 or(
-    //                     eq(flag, TO_TOKEN_COMMISSION),
-    //                     eq(flag, TO_TOKEN_COMMISSION_DUAL)
-    //                 ),
-    //                 eq(flag, TO_TOKEN_COMMISSION_MULTIPLE)
-    //             )
-    //         ) // isToTokenCommission
-    //         switch gt(referrerNum, 0)
-    //         case 1 {
-    //             mstore(
-    //                 add(0xa0, commissionInfo),
-    //                 shr(160, and(commissionData, _COMMISSION_RATE_MASK))
-    //             ) // 1st commissionRate
-    //             mstore(
-    //                 add(0xc0, commissionInfo),
-    //                 and(commissionData, _ADDRESS_MASK)
-    //             ) // 1st referrerAddress
-    //             commissionData := calldataload(sub(calldatasize(), 0x40))
-    //             let toBCommission := NO_TO_B_MODE // default toBCommission is 1 for no-toB commission when commissionData exists
-    //             if gt(and(commissionData, _TO_B_COMMISSION_MASK), 0) {
-    //                 toBCommission := TO_B_MODE // toB commission value when commissionData exists
-    //             }
-    //             mstore(
-    //                 add(0x60, commissionInfo),
-    //                 toBCommission //toBCommission
-    //             )
-    //             mstore(
-    //                 add(0x40, commissionInfo),
-    //                 and(commissionData, _ADDRESS_MASK) //token
-    //             )
-    //             // For multiple commission mode, load the encoded commission length and validate
-    //             if gt(referrerNum, 2) {
-    //                 referrerNum := shr(240, and(commissionData, _COMMISSION_LENGTH_MASK))
-    //                 // require(referrerNum >= MIN_COMMISSION_MULTIPLE_NUM && referrerNum <= MAX_COMMISSION_MULTIPLE_NUM, "invalid referrer num")
-    //                 if or(lt(referrerNum, MIN_COMMISSION_MULTIPLE_NUM), gt(referrerNum, MAX_COMMISSION_MULTIPLE_NUM)) {
-    //                     _revertWithReason(
-    //                         0x0000001420696e76616c6964207265666572726572206e756d00000000000000,
-    //                         0x59
-    //                     ) // "invalid referrer num"
-    //                 }
-    //             }
-    //             mstore(add(0x80, commissionInfo), referrerNum) //commissionLength
-    //         }
-    //         default {
-    //             let eraseNum := add(mul(MAX_COMMISSION_MULTIPLE_NUM, 2), 3) // 2 * MAX_COMMISSION_MULTIPLE_NUM + 3: token, toBCommission, commissionLength and all commission pairs
-    //             for { let i := 0 } lt(i, eraseNum) { i := add(i, 1) } {
-    //                 mstore(add(add(commissionInfo, 0x40), mul(i, 0x20)), 0) // erase commissionInfo.token ~ all commission pairs
-    //             }
-    //         }
-    //         if gt(referrerNum, 1) {
-    //             for { let i := 1 } lt(i, MAX_COMMISSION_MULTIPLE_NUM) { i := add(i, 1) } {
-    //                 switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
-    //                 case 1 {
-    //                     commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
-    //                     let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
-    //                     if iszero(eq(flag, flag2)) {
-    //                         _revertWithReason(
-    //                             0x0000001720696e76616c696420636f6d6d697373696f6e20666c616700000000,
-    //                             0x5c
-    //                         ) // "invalid commission flag"
-    //                     }
-    //                     mstore(
-    //                         add(add(0xa0, commissionInfo), mul(i, 0x40)), // 0xa0: commissionRate0, 0xa0 + 0x40 * i: i-th commissionRate
-    //                         shr(160, and(commissionData, _COMMISSION_RATE_MASK))
-    //                     ) //i-th commissionRate
-    //                     mstore(
-    //                         add(add(0xc0, commissionInfo), mul(i, 0x40)), // 0xc0: referrerAddress0, 0xc0 + 0x40 * i: i-th referrerAddress
-    //                         and(commissionData, _ADDRESS_MASK)
-    //                     ) //i-th referrerAddress
-    //                 }
-    //                 default { // if i >= referrerNum, the i-th commission pair is invalid, and erase it
-    //                     mstore(add(add(0xa0, commissionInfo), mul(i, 0x40)), 0) // erase i-th commissionRate
-    //                     mstore(add(add(0xc0, commissionInfo), mul(i, 0x40)), 0) // erase i-th referrerAddress
-    //                 }
-    //             }
-    //         }
-    //         // calculate offset based on referrerNum
-    //         let offset := 0
-    //         let permit2InfoOffset := 0
-    //         if gt(referrerNum, 0) {
-    //             offset := mul(add(referrerNum, 1), 0x20)
-    //         }
-    //         // get first bytes32 of trim data
-    //         let trimData := calldataload(sub(calldatasize(), add(offset, 0x20)))
-    //         flag := and(trimData, _TRIM_FLAG_MASK)
-    //         let hasTrim := or(
-    //             eq(flag, TRIM_FLAG),
-    //             eq(flag, TRIM_DUAL_FLAG)
-    //         )
-    //         mstore(
-    //             trimInfo,
-    //             hasTrim
-    //         ) // hasTrim
-    //         switch eq(hasTrim, 1)
-    //         case 1{
-    //             mstore(
-    //                 add(0x20, trimInfo),
-    //                 shr(160, and(trimData, _TRIM_RATE_MASK))
-    //             ) // trimRate
-    //             mstore(
-    //                 add(0x40, trimInfo),
-    //                 and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
-    //             ) // trimAddress
-    //             // get second bytes32 of trim data
-    //             trimData := calldataload(sub(calldatasize(), add(offset, 0x40)))
-    //             let flag2 := and(trimData, _TRIM_FLAG_MASK)
-    //             if iszero(eq(flag, flag2)) {
-    //                 _revertWithReason(
-    //                     0x0000001120696e76616c6964207472696d20666c616700000000000000000000,
-    //                     0x56
-    //                 ) // "invalid trim flag"
-    //             }
-    //             let toBTrim := NO_TO_B_MODE // default toBTrim is 1 for no-toB trim when trimData exists
-    //             if gt(and(trimData, _TO_B_TRIM_MASK), 0) {
-    //                 toBTrim := TO_B_MODE // toB trim value when trimData exists
-    //             }
-    //             mstore(
-    //                 add(0x60, trimInfo),
-    //                 toBTrim //toBTrim
-    //             )
-    //             mstore(
-    //                 add(0x80, trimInfo),
-    //                 and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
-    //             ) // expectAmountOut
-    //             permit2InfoOffset := add(offset, 0x40)
-    //         }
-    //         default {
-    //             mstore(add(0x20, trimInfo), 0) // trimRate
-    //             mstore(add(0x40, trimInfo), 0) // trimAddress
-    //             mstore(add(0x60, trimInfo), 0) // toBTrim
-    //             mstore(add(0x80, trimInfo), 0) // expectAmountOut
-    //             permit2InfoOffset := offset
-    //         }
-    //         switch eq(flag, TRIM_DUAL_FLAG)
-    //         case 1 {
-    //             // get third bytes32 of trim data
-    //             trimData := calldataload(sub(calldatasize(), add(offset, 0x60)))
-    //             let flag2 := and(trimData, _TRIM_FLAG_MASK)
-    //             if iszero(eq(flag, flag2)) {
-    //                 _revertWithReason(
-    //                     0x0000001120696e76616c6964207472696d20666c616700000000000000000000,
-    //                     0x56
-    //                 ) // "invalid trim flag"
-    //             }
-    //             mstore(
-    //                 add(0xa0, trimInfo),
-    //                 shr(160, and(trimData, _TRIM_RATE_MASK))
-    //             ) // chargeRate
-    //             mstore(
-    //                 add(0xc0, trimInfo),
-    //                 and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
-    //             ) // chargeAddress
-    //             permit2InfoOffset := add(offset, 0x60)
-    //         }
-    //         default {
-    //             mstore(add(0xa0, trimInfo), 0) // chargeRate
-    //             mstore(add(0xc0, trimInfo), 0) // chargeAddress
-    //         }
-    //         // get first bytes32 of permit2Info
-    //         let permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x20)))
-    //         let refundToOffset := permit2InfoOffset
-    //         permit2InfoFlag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
-    //         if or(
-    //             eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG),
-    //             eq(permit2InfoFlag, PERMIT2_INFO_SIG64_FLAG)
-    //         ) {
-    //             let amountLength := shr(200, and(permit2InfoData, _PERMIT2_INFO_AMOUNT_LENGTH_MASK))
-    //             mstore(permit2Info, and(permit2InfoData, _ADDRESS_MASK)) // owner
-
-    //             // get second bytes32 of permit2Info
-    //             permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x40)))
-    //             flag := and(permit2InfoData, _PERMIT2_INFO_FLAG_MASK)
-    //             if iszero(eq(permit2InfoFlag, flag)) {
-    //                 _revertWithReason(
-    //                     0x0000001820696e76616c6964207065726d697432496e666f20666c6167000000,
-    //                     0x5d
-    //                 ) // "invalid permit2Info flag"
-    //             }
-    //             mstore(add(permit2Info, 0x20), and(permit2InfoData, _PERMIT2_INFO_NONCE_MASK)) // nonce
-    //             mstore(add(permit2Info, 0x40), shr(48, and(permit2InfoData, _PERMIT2_INFO_DEADLINE_MASK))) // deadline
-    //             if eq(permit2InfoFlag, PERMIT2_INFO_SIG65_FLAG) {
-    //                 mstore(add(permit2SignatureCache, 0x60), shr(96, and(permit2InfoData, _PERMIT2_INFO_SIGNATURE_V_MASK))) // signature v
-    //             }
-
-    //             // get third bytes32 of permit2Info
-    //             permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x60)))
-    //             mstore(add(permit2SignatureCache, 0x20), permit2InfoData) // signature r
-    //             // get fourth bytes32 of permit2Info
-    //             permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, 0x80)))
-    //             mstore(add(permit2SignatureCache, 0x40), permit2InfoData) // signature s
-    //             // get all amounts
-    //             let amountsPosition := mload(add(permit2Info, 0x80))
-    //             for { let i := 0 } lt(i, amountLength) { i := add(i, 1) } {
-    //                 permit2InfoData := calldataload(sub(calldatasize(), add(permit2InfoOffset, add(0xa0, mul(i, 0x20)))))
-    //                 mstore(add(amountsPosition, mul(add(i, 1), 0x20)), permit2InfoData) // permit2Info.amounts[i]
-    //             }
-    //             mstore(amountsPosition, amountLength) // reset length for amounts array
-
-    //             // get refundTo offset
-    //             refundToOffset := add(permit2InfoOffset, mul(add(4, amountLength), 0x20))
-    //         }
-    //         // decode refundTo
-    //         let refundToData := calldataload(sub(calldatasize(), add(refundToOffset, 0x20)))
-    //         if eq(and(refundToData, _REFUND_TO_MASK), REFUND_TO_ADDRESS_FLAG) {
-    //             refundTo := and(refundToData, _ADDRESS_MASK)
-    //         }
-    //     }
-
-    //     if (permit2InfoFlag == PERMIT2_INFO_SIG65_FLAG) {
-    //         permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]), bytes1(uint8(permit2SignatureCache[2])));
-    //     } else if (permit2InfoFlag == PERMIT2_INFO_SIG64_FLAG) {
-    //         permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]));
-    //     }
-
-    //     if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
-    //         emit CommissionAndTrimInfo(
-    //             commissionInfo.toBCommission,
-    //             trimInfo.toBTrim,
-    //             trimInfo.trimRate,
-    //             trimInfo.chargeRate
-    //         );
-    //     }
-
-    //     return ExtraData({
-    //         commissionInfo: commissionInfo,
-    //         trimInfo: trimInfo,
-    //         permit2Info: permit2Info,
-    //         refundTo: refundTo
-    //     });
-    // }
-
-    function _getBalanceOf(
-        address token,
-        address user
-    ) internal returns (uint256 amount) {
-        assembly {
-            function _revertWithReason(m, len) {
-                mstore(
-                    0,
-                    0x08c379a000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(
-                    0x20,
-                    0x0000002000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(0x40, m)
-                revert(0, len)
-            }
-            switch eq(token, _ETH)
-            case 1 {
-                amount := balance(user)
-            }
-            default {
-                let freePtr := mload(0x40)
-                mstore(0x40, add(freePtr, 0x24))
-                mstore(
-                    freePtr,
-                    0x70a0823100000000000000000000000000000000000000000000000000000000
-                ) //balanceOf
-                mstore(add(freePtr, 0x04), user)
-                let success := staticcall(gas(), token, freePtr, 0x24, 0, 0x20)
-                if eq(success, 0) {
-                    _revertWithReason(
-                        0x00000015206765742062616c616e63654f66206661696c656400000000000000,
-                        0x59
-                    ) // "get balanceOf failed"
-                }
-                amount := mload(0x00)
-            }
-        }
-    }
-
-    function _doCommissionFromToken(
-        CommissionInfo memory commissionInfo,
-        SwapParams memory swapParams,
+library CommissionLib {
+    function doCommissionFromToken(
+        IDexRouter.CommissionInfo memory commissionInfo,
+        IDexRouter.SwapParams memory swapParams,
         uint256 fromTokenCommissionAmount,
         bool hasTrim
-    ) internal override returns (address middleReceiver, uint256 balanceBefore) {
+    ) internal returns (address middleReceiver, uint256 balanceBefore) {
         if (commissionInfo.isToTokenCommission || hasTrim) {
             middleReceiver = address(this);
-            balanceBefore = _getBalanceOf(swapParams.toToken, address(this));
+            balanceBefore = CommonLib.getBalanceOf(swapParams.toToken, address(this));
         } else {
             middleReceiver = swapParams.receiver;
         }
@@ -360,7 +27,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     /// @notice For ERC20 fromToken non-toB commission with PERMIT2_SIGNATURE mode, the commission token has been transferred to referrers earlier than here.
     ///         So for this situation, only need to emit event.
     function _doCommissionFromTokenInternal(
-        CommissionInfo memory commissionInfo,
+        IDexRouter.CommissionInfo memory commissionInfo,
         address payer,
         uint256 fromTokenCommissionAmount
     ) private {
@@ -597,7 +264,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
                 totalRate := add(totalRate, rate)
             }
-            if gt(totalRate, commissionRateLimit) {
+            if gt(totalRate, COMMISSION_RATE_LIMIT) {
                 _revertWithReason(
                     0x00000016206572726f7220636f6d6d697373696f6e2072617465000000000000,
                     0x5a
@@ -667,17 +334,17 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         }
     }
 
-    function _doCommissionAndTrimToToken(
-        CommissionInfo memory commissionInfo,
+    function doCommissionAndTrimToToken(
+        IDexRouter.CommissionInfo memory commissionInfo,
         address receiver,
         uint256 balanceBefore,
         address toToken,
-        TrimInfo memory trimInfo
-    ) internal override returns (uint256 totalAmount) {
+        IDexRouter.TrimInfo memory trimInfo
+    ) internal returns (uint256 totalAmount) {
         if (!commissionInfo.isToTokenCommission && !trimInfo.hasTrim) {
             return 0;
         }
-        uint256 balanceAfter = _getBalanceOf(toToken, address(this));
+        uint256 balanceAfter = CommonLib.getBalanceOf(toToken, address(this));
         assembly ("memory-safe") {
             // https://github.com/Vectorized/solady/blob/701406e8126cfed931645727b274df303fbcd94d/src/utils/FixedPointMathLib.sol#L595
             function _mulDiv(x, y, d) -> z {
@@ -798,7 +465,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
                     totalRate := add(totalRate, rate)
                 }
-                if gt(totalRate, commissionRateLimit) {
+                if gt(totalRate, COMMISSION_RATE_LIMIT) {
                     _revertWithReason(
                         0x00000016206572726f7220636f6d6d697373696f6e2072617465000000000000,
                         0x5a
@@ -917,12 +584,12 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         }
     }
 
-    function _validateCommissionInfo(
-        CommissionInfo memory commissionInfo,
+    function validateCommissionInfo(
+        IDexRouter.CommissionInfo memory commissionInfo,
         address fromToken,
         address toToken,
         uint256 mode
-    ) internal pure override {
+    ) internal pure {
         assembly ("memory-safe") {
             function _revertWithReason(m, len) {
                 mstore(

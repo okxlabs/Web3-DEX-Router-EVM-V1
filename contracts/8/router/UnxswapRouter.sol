@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
-import "./interfaces/IUni.sol";
+import "../libraries/Constants.sol";
+import "../libraries/EventLib.sol";
+import "../libraries/UniswapTokenInfoHelper.sol";
+import "../libraries/CommonLib.sol";
+import "../libraries/ExtraDataLib.sol";
+import "../libraries/CommissionLib.sol";
+import "../interfaces/IDexRouter.sol";
+import "../interfaces/IERC20.sol";
 
-import "./libraries/UniversalERC20.sol";
-import "./libraries/CommonUtils.sol";
-
-contract UnxswapRouter is CommonUtils {
+library UnxswapRouter {
     uint256 private constant _IS_TOKEN0_TAX =
         0x1000000000000000000000000000000000000000000000000000000000000000;
     uint256 private constant _IS_TOKEN1_TAX =
@@ -30,13 +34,203 @@ contract UnxswapRouter is CommonUtils {
     uint256 private constant _DENOMINATOR = 1_000_000_000;
     uint256 private constant _NUMERATOR_OFFSET = 160;
 
-    //-------------------------------
-    //------- Internal Functions ----
-    //-------------------------------
+    // ================================================================================
+    // ============================== Public Functions ================================
+    // ================================================================================
+    /// @notice Executes a token swap using the Unxswap protocol, sending the output directly to a specified receiver.
+    ///         The srcToken can be 0xEeee or address(0) for temporary use, the address(0) usage will removed in the future.
+    /// @param srcToken The source token to be swapped.
+    /// @param amount The amount of the source token to be swapped.
+    /// @param minReturn The minimum amount of destination tokens expected from the swap, ensuring the trade does not proceed under unfavorable conditions.
+    /// @param receiver The address where the swapped tokens will be sent.
+    /// @param pools An array of pool identifiers to specify the swap route, optimizing for best rates.
+    /// @return returnAmount The total amount of destination tokens received from the swap.
+    /// @dev This function facilitates direct swaps using Unxswap, allowing users to specify custom swap routes and ensuring that the output is sent to a predetermined address. It is designed for scenarios where the user wants to directly receive the tokens in their wallet or another contract.
+    function unxswapTo(
+        uint256 srcToken,
+        uint256 amount,
+        uint256 minReturn,
+        address receiver,
+        bytes32[] calldata pools
+    ) public returns (uint256 returnAmount) {
+        EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+
+        // validate token info
+        (address fromToken, address toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
+        address srcTokenAddr = CommonLib.bytes32ToAddress(srcToken);
+        require(
+            (srcTokenAddr == fromToken) || (srcTokenAddr == address(0) && fromToken == _ETH),
+            "unxswap: token mismatch"
+        );
+        
+        return
+            _unxswapTo(
+                fromToken,
+                toToken,
+                amount,
+                minReturn,
+                msg.sender,
+                receiver,
+                pools
+            );
+    }
+
+    /// @notice Executes a Unxswap token swap to a specified receiver using structured base request parameters. For unxswap, if fromToken or toToken is ETH, the address can be 0xEeee or address(0) for temporary use, the address(0) usage will removed in the future.
+    /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
+    /// @param receiver The address that will receive the swapped tokens.
+    /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
+    /// @param pools An array of pool identifiers defining the Unxswap route, with encoded swap direction and WETH unwrap flags.
+    /// @return returnAmount The total amount of destination tokens received from the swap.
+    /// @dev This function validates token compatibility with the provided pool route and ensures proper swap execution.
+    /// It supports both ETH and ERC20 token swaps, with automatic WETH wrapping/unwrapping as needed.
+    /// The function verifies that toToken matches the expected output token from the last pool in the route.
+    function unxswapToWithBaseRequest(
+        uint256 orderId,
+        address receiver,
+        IDexRouter.BaseRequest calldata baseRequest,
+        bytes32[] calldata pools
+    )
+        public
+        returns (uint256 returnAmount)
+    {
+        CommonLib.validateDeadline(baseRequest.deadLine);
+        EventLib.emitSwapOrderId(orderId);
+
+        (address fromToken, address toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
+
+        // validate fromToken and toToken from baseRequest
+        address fromTokenAddr = CommonLib.bytes32ToAddress(baseRequest.fromToken);
+        require((fromTokenAddr == fromToken) || (fromTokenAddr == address(0) && fromToken == _ETH), "unxswap: fromToken mismatch");
+        require((baseRequest.toToken == toToken) || (baseRequest.toToken == address(0) && toToken == _ETH), "unxswap: toToken mismatch");
+
+        return
+            _unxswapTo(
+                fromToken,
+                toToken,
+                baseRequest.fromTokenAmount,
+                baseRequest.minReturnAmount,
+                msg.sender,
+                receiver,
+                pools
+            );
+    }
+
+
+    // ================================================================================
+    // ============================== Private Functions ===============================
+    // ================================================================================
+    /// @notice If srcToken is ETH, srcToken needs to be 0xEeee for commission validation and _unxswapInternal.
+    function _unxswapTo(
+        address srcToken,
+        address toToken,
+        uint256 amount,
+        uint256 minReturn,
+        address payer,
+        address receiver,
+        bytes32[] calldata pools
+    ) internal returns (uint256 returnAmount) {
+        receiver = receiver == address(0) ? msg.sender : receiver;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+
+        uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
+
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
+        returnAmount = CommonLib.getBalanceOf(toToken, receiver);
+
+        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+            payer: payer,
+            refundTo: msg.sender,
+            receiver: receiver,
+            toToken: toToken
+        });
+        
+        // Handle Permit2Signature mode and fromToken commission
+        uint256 fromTokenCommissionAmount;
+        {
+            uint256 fromTokenWithMode = uint256(uint160(srcToken)) | mode;
+            //待定，直接取池子地址还是address(0),取决于分佣地址数？
+            address onlyOneAssetTo = address(uint160(uint256(pools[0]) & _ADDRESS_MASK));
+            
+            // (swapParams.payer, amount, fromTokenCommissionAmount) = 
+            //     _handlePermit2SignatureModeWithCommission(
+            //         fromTokenWithMode,
+            //         swapParams.payer,
+            //         amount,
+            //         onlyOneAssetTo,
+            //         extraData
+            //     );
+        }
+        
+        _doUnxswap(
+            swapParams,
+            srcToken,
+            amount,
+            minReturn,
+            pools,
+            extraData.commissionInfo,
+            extraData.trimInfo,
+            fromTokenCommissionAmount
+        );
+
+        // check minReturnAmount
+        returnAmount = CommonLib.getBalanceOf(toToken, receiver) - returnAmount;
+        require(
+            returnAmount >= minReturn,
+            "Min return not reached"
+        );
+
+        EventLib.emitOrderRecord(
+            srcToken,
+            toToken,
+            tx.origin,
+            amount,
+            returnAmount
+        );
+
+        return returnAmount;
+    }
+
+    function _doUnxswap(
+        IDexRouter.SwapParams memory swapParams,
+        address srcToken,
+        uint256 amount,
+        uint256 minReturn,
+        bytes32[] calldata pools,
+        IDexRouter.CommissionInfo memory commissionInfo,
+        IDexRouter.TrimInfo memory trimInfo,
+        uint256 fromTokenCommissionAmount
+    ) private {
+        (
+            address middleReceiver,
+            uint256 balanceBefore
+        ) = CommissionLib.doCommissionFromToken(
+                commissionInfo,
+                swapParams,
+                fromTokenCommissionAmount,
+                trimInfo.hasTrim
+            );
+
+        // _unxswapInternal(
+        //     IERC20(srcToken),
+        //     amount,
+        //     minReturn,
+        //     pools,
+        //     swapParams.payer,
+        //     middleReceiver
+        // );
+
+        CommissionLib.doCommissionAndTrimToToken(
+            commissionInfo,
+            swapParams.receiver,
+            balanceBefore,
+            swapParams.toToken,
+            trimInfo
+        );
+    }
+
     /// @notice Performs the internal logic for executing a swap using the Unxswap protocol.
     /// @param srcToken The token to be swapped.
     /// @param amount The amount of the source token to be swapped.
-    /// @param minReturn The minimum amount of tokens that must be received for the swap to be valid, protecting against slippage.
     /// @param pools The array of pool identifiers that define the swap route.
     /// @param payer The address of the entity providing the source tokens for the swap.
     /// @param receiver The address that will receive the tokens after the swap.
@@ -45,15 +239,11 @@ contract UnxswapRouter is CommonUtils {
     function _unxswapInternal(
         IERC20 srcToken,
         uint256 amount,
-        uint256 minReturn,
-        // solhint-disable-next-line no-unused-vars
         bytes32[] calldata pools,
         address payer,
         address receiver
-    ) internal returns (uint256 returnAmount) {
+    ) private returns (uint256 returnAmount) {
         assembly {
-            // solhint-disable-line no-inline-assembly
-
             function revertWithReason(m, len) {
                 mstore(
                     0,

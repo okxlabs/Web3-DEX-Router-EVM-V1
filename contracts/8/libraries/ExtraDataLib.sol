@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./CommonUtils.sol";
+import "./Constants.sol";
+import "../interfaces/IDexRouter.sol";
+import "./EventLib.sol";
 
 /*
  * To decode extra data encoded in calldata and parse to structs
 */
 
-abstract contract ExtraDataLib is CommonUtils {
+library ExtraDataLib {
     /// @dev Update EXTRA_DATA_TYPE_NUM when adding new extra calldata
     uint8 internal constant EXTRA_DATA_TYPE_NUM = 4;
 
     /// @notice Decode extra data and get structs
     /// Same function as _getCommissionAndTrimInfo() in CommissionLib.sol
-    function getDecodedExtraData() internal returns (ExtraData memory extraData) {
+    function getDecodedExtraData() internal returns (IDexRouter.ExtraData memory extraData) {
         // ensure the calldata length is 4 + 32 * N bytes
         uint256 calldataSize;
         assembly {
@@ -22,17 +24,17 @@ abstract contract ExtraDataLib is CommonUtils {
         require((calldataSize - 4) % 32 == 0, "Invalid calldata length");
 
         // get endPoints and lengths of each extra calldata
-        (uint256[] memory endPoints, uint256[] memory lengths) = getExtraDataEndPointAndLength();
+        (uint256[] memory endPoints, uint256[] memory lengths) = _getExtraDataEndPointAndLength();
 
-        ExtraData memory extraData = ExtraData({
-            commissionInfo: parseCommissionInfo(endPoints[0], lengths[0]),
-            trimInfo: parseTrimInfo(endPoints[1], lengths[1]),
-            permit2Info: parsePermit2Info(endPoints[2], lengths[2]),
-            refundTo: parseRefundTo(endPoints[3], lengths[3])
+        extraData = IDexRouter.ExtraData({
+            commissionInfo: _parseCommissionInfo(endPoints[0], lengths[0]),
+            trimInfo: _parseTrimInfo(endPoints[1], lengths[1]),
+            permit2Info: _parsePermit2Info(endPoints[2], lengths[2]),
+            refundTo: _parseRefundTo(endPoints[3], lengths[3])
         });
 
         if (extraData.commissionInfo.isFromTokenCommission || extraData.commissionInfo.isToTokenCommission || extraData.trimInfo.hasTrim) {
-            emit CommissionAndTrimInfo(
+            EventLib.emitCommissionAndTrimInfo(
                 extraData.commissionInfo.toBCommission,
                 extraData.trimInfo.toBTrim,
                 extraData.trimInfo.trimRate,
@@ -43,10 +45,11 @@ abstract contract ExtraDataLib is CommonUtils {
         return extraData;
     }
 
+    // ================================ Private Functions ================================
     /// @notice Get endPoints and lengths of each extra calldata bytes32
-    function getExtraDataEndPointAndLength() internal pure returns (uint256[] memory endPoints, uint256[] memory lengths) {
-        uint256[] memory endPoints = new uint256[](EXTRA_DATA_TYPE_NUM);
-        uint256[] memory lengths = new uint256[](EXTRA_DATA_TYPE_NUM);
+    function _getExtraDataEndPointAndLength() private pure returns (uint256[] memory endPoints, uint256[] memory lengths) {
+        endPoints = new uint256[](EXTRA_DATA_TYPE_NUM);
+        lengths = new uint256[](EXTRA_DATA_TYPE_NUM);
         assembly ("memory-safe") {
             function _revertWithReason(m, len) {
                 mstore(
@@ -142,7 +145,7 @@ abstract contract ExtraDataLib is CommonUtils {
     }
 
     /// @notice Parse commissionInfo
-    function parseCommissionInfo(uint256 endPoint, uint256 length) internal pure returns (CommissionInfo memory commissionInfo) {
+    function _parseCommissionInfo(uint256 endPoint, uint256 length) private pure returns (IDexRouter.CommissionInfo memory commissionInfo) {
         if (length == 0) {
             return commissionInfo;
         }
@@ -231,7 +234,7 @@ abstract contract ExtraDataLib is CommonUtils {
     }
 
     /// @notice Parse trimInfo
-    function parseTrimInfo(uint256 endPoint, uint256 length) internal pure returns (TrimInfo memory trimInfo) {
+    function _parseTrimInfo(uint256 endPoint, uint256 length) private pure returns (IDexRouter.TrimInfo memory trimInfo) {
         if (length == 0) {
             return trimInfo;
         }
@@ -327,7 +330,7 @@ abstract contract ExtraDataLib is CommonUtils {
     }
 
     /// @notice Parse permit2Info
-    function parsePermit2Info(uint256 endPoint, uint256 length) internal pure returns (Permit2Info memory permit2Info) {
+    function _parsePermit2Info(uint256 endPoint, uint256 length) private pure returns (IDexRouter.Permit2Info memory permit2Info) {
         if (length == 0) {
             return permit2Info;
         }
@@ -393,7 +396,7 @@ abstract contract ExtraDataLib is CommonUtils {
     }
 
     /// @notice Parse refundTo
-    function parseRefundTo(uint256 endPoint, uint256 length) internal pure returns (address refundTo) {
+    function _parseRefundTo(uint256 endPoint, uint256 length) private pure returns (address refundTo) {
         if (length == 0) {
             return address(0);
         }

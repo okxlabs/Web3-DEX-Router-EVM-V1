@@ -733,8 +733,8 @@ contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = fromTokenAmount;
         // batches
-        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = adapter;
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -748,7 +748,7 @@ contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
         swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
 
         return abi.encodeWithSelector(
-            UniversalRouter.smartSwapTo.selector,
+            DexRouter.smartSwapTo.selector,
             swapInfo.orderId, arnaud, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
     }
@@ -771,8 +771,8 @@ contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = fromTokenAmount;
         // batches with 2 assetTo (split 50/50)
-        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](2);
         swapInfo.batches[0][0].mixAdapters[0] = adapter;
         swapInfo.batches[0][0].mixAdapters[1] = adapter;
@@ -791,7 +791,7 @@ contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
         swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
 
         return abi.encodeWithSelector(
-            UniversalRouter.smartSwapTo.selector,
+            DexRouter.smartSwapTo.selector,
             swapInfo.orderId, arnaud, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
     }

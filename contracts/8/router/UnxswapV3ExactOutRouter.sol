@@ -56,7 +56,8 @@ library UnxswapV3ExactOutRouter {
         uint256 receiver,
         uint256 amountOut,
         uint256 maxConsume,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
         consumeAmount = _uniswapV3SwapExactOutTo(
@@ -64,7 +65,8 @@ library UnxswapV3ExactOutRouter {
             receiver,
             amountOut,
             maxConsume,
-            pools
+            pools,
+            extraData
         );
     }
 
@@ -96,7 +98,8 @@ library UnxswapV3ExactOutRouter {
         uint256 receiver,
         uint256 amountOut,
         uint256 maxConsume,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) private returns (uint256 consumeAmount) {
         require(address(uint160(receiver)) != address(0), "not addr(0)");
         // Step 1: If the swap starts from ETH, the contract will wrap ETH to WETH in the last pool.
@@ -110,7 +113,7 @@ library UnxswapV3ExactOutRouter {
             amountOut,
             targetTokenBefore,
             middleReceiver
-        ) = ExactOutSwapHelper.beforeSwap(amountOut, middleReceiver, targetTokenBefore);
+        ) = ExactOutSwapHelper.beforeSwap(amountOut, middleReceiver, targetTokenBefore, extraData);
         // Step 3: Determine the source token and to token for the swap.
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
 

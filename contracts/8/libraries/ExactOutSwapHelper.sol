@@ -12,9 +12,9 @@ library ExactOutSwapHelper {
     function beforeSwap(
         uint256 amountOut,
         address middleReceiver,
-        uint256 targetTokenBefore
+        uint256 targetTokenBefore,
+        IDexRouter.ExtraData memory extraData
     ) internal returns (IDexRouter.CommissionInfo memory, uint256, uint256, address) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
         IDexRouter.CommissionInfo memory commissionInfo = extraData.commissionInfo;
         if (
             commissionInfo.isToTokenCommission &&

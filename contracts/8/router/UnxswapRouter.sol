@@ -52,7 +52,8 @@ library UnxswapRouter {
         uint256 amount,
         uint256 minReturn,
         address receiver,
-        bytes32[] calldata pools
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
 
@@ -72,7 +73,8 @@ library UnxswapRouter {
                 minReturn,
                 msg.sender,
                 receiver,
-                pools
+                pools,
+                extraData
             );
     }
 
@@ -89,7 +91,8 @@ library UnxswapRouter {
         uint256 orderId,
         address receiver,
         IDexRouter.BaseRequest calldata baseRequest,
-        bytes32[] calldata pools
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     )
         public
         returns (uint256 returnAmount)
@@ -112,7 +115,8 @@ library UnxswapRouter {
                 baseRequest.minReturnAmount,
                 msg.sender,
                 receiver,
-                pools
+                pools,
+                extraData
             );
     }
 
@@ -128,10 +132,10 @@ library UnxswapRouter {
         uint256 minReturn,
         address payer,
         address receiver,
-        bytes32[] calldata pools
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) internal returns (uint256 returnAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
 
         uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
 

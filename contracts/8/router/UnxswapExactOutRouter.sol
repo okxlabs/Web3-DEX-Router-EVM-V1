@@ -15,6 +15,13 @@ library UnxswapExactOutRouter {
     uint256 private constant _DENOMINATOR = 1_000_000_000;
     uint256 private constant _NUMERATOR_OFFSET = 160;
 
+    struct ExactOutCache {
+        uint256 amountOut;
+        uint256 maxConsume;
+        address payer;
+        address receiver;
+    }
+
     event Swap(
         address indexed srcToken,
         address indexed dstToken,
@@ -38,17 +45,21 @@ library UnxswapExactOutRouter {
         uint256 amount,
         uint256 maxConsume,
         address receiver,
-        bytes32[] calldata pools
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
         return
             _unxswapExactOutTo(
                 srcToken,
-                amount,
-                maxConsume,
-                msg.sender,
-                receiver,
-                pools
+                ExactOutCache({
+                    amountOut: amount,
+                    maxConsume: maxConsume,
+                    payer: msg.sender,
+                    receiver: receiver
+                }),
+                pools,
+                extraData
             );
     }
 
@@ -62,17 +73,21 @@ library UnxswapExactOutRouter {
         uint256 srcToken,
         uint256 amount,
         uint256 maxConsume,
-        bytes32[] calldata pools
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
         return
             _unxswapExactOutTo(
                 srcToken,
-                amount,
-                maxConsume,
-                msg.sender,
-                msg.sender,
-                pools
+                ExactOutCache({
+                    amountOut: amount,
+                    maxConsume: maxConsume,
+                    payer: msg.sender,
+                    receiver: msg.sender
+                }),
+                pools,
+                extraData
             );
     }
 
@@ -83,31 +98,27 @@ library UnxswapExactOutRouter {
     /// @notice Internal function to perform an exact output swap using the Unxswap protocol, handling commission logic for both source and target tokens.
     /// @notice ETH address on this parameter srcToken is 0x0000000000000000000000000000000000000000
     /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
-    /// @param amount The target output amount to receive.
-    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
-    /// @param payer The address paying the source tokens.
-    /// @param receiver The address to receive the output tokens.
+    /// @param cache The cache of the exact out swap.
     /// @param pools The list of pool identifiers to use for the swap path.
+    /// @param extraData The extra data for the exact out swap.
     /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function _unxswapExactOutTo(
         uint256 srcToken,
-        uint256 amount,
-        uint256 maxConsume,
-        address payer,
-        address receiver,
-        bytes32[] calldata pools
+        ExactOutCache memory cache,
+        bytes32[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) private returns (uint256 consumeAmount) {
-        require(receiver != address(0), "not addr(0)");
+        require(cache.receiver != address(0), "not addr(0)");
         // Step 1: Adjust the target output amount to include commission if commission is taken from the output token.
         uint256 targetTokenBefore = 0;
-        address middleReceiver = receiver;
+        address middleReceiver = cache.receiver;
         IDexRouter.CommissionInfo memory commissionInfo;
         (
             commissionInfo,
-            amount,
+            cache.amountOut,
             targetTokenBefore,
             middleReceiver
-        ) = ExactOutSwapHelper.beforeSwap(amount, middleReceiver, targetTokenBefore);
+        ) = ExactOutSwapHelper.beforeSwap(cache.amountOut, middleReceiver, targetTokenBefore, extraData);
 
         // Step 2: Validate and execute the swap.
         // If srcToken is ETH, the user must prepay ETH; any excess will be refunded after the swap.
@@ -123,10 +134,10 @@ library UnxswapExactOutRouter {
         }
         consumeAmount = _unxswapExactOutInternal(
             IERC20(srcTokenAddress),
-            amount,
-            maxConsume,
+            cache.amountOut,
+            cache.maxConsume,
             pools,
-            payer,
+            cache.payer,
             middleReceiver
         );
 
@@ -138,8 +149,8 @@ library UnxswapExactOutRouter {
                 targetTokenBefore: targetTokenBefore,
                 srcToken: srcTokenAddress == address(0) ? _ETH : srcTokenAddress,
                 toToken: toToken,
-                receiver: receiver,
-                payer: payer
+                receiver: cache.receiver,
+                payer: cache.payer
             })
         );
     }

@@ -5,7 +5,6 @@ import "../libraries/Constants.sol";
 import "../libraries/EventLib.sol";
 import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/CommonLib.sol";
-import "../libraries/ExtraDataLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
@@ -49,7 +48,8 @@ library UnxswapV3Router {
         uint256 receiver,
         uint256 amount,
         uint256 minReturn,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
@@ -65,7 +65,8 @@ library UnxswapV3Router {
                 srcToken,
                 amount,
                 minReturn,
-                pools
+                pools,
+                extraData
             );
     }
 
@@ -82,7 +83,8 @@ library UnxswapV3Router {
         uint256 orderId,
         address receiver,
         IDexRouter.BaseRequest calldata baseRequest,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     )
         public
         returns (uint256 returnAmount)
@@ -111,7 +113,8 @@ library UnxswapV3Router {
                 srcToken,
                 baseRequest.fromTokenAmount,
                 baseRequest.minReturnAmount,
-                pools
+                pools,
+                extraData
             );
     }
 
@@ -133,10 +136,9 @@ library UnxswapV3Router {
         address srcToken,
         uint256 amount,
         uint256 minReturn,
-        uint256[] calldata pools
+        uint256[] calldata pools,
+        IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
-
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
 
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, mode);

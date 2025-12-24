@@ -90,8 +90,8 @@ contract MultiCallTrimTest is TrimAndCommissionTestBase {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = oneEther;
         // batches
-        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(UniversalUniV3Adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -105,7 +105,7 @@ contract MultiCallTrimTest is TrimAndCommissionTestBase {
         swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
 
         return abi.encodeWithSelector(
-            UniversalRouter.smartSwapTo.selector,
+            DexRouter.smartSwapTo.selector,
             swapInfo.orderId, arnaud, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         ); 
     }

@@ -26,9 +26,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757));
         permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
         
-        DexRouter dexRouterImpl = new DexRouter();
-        DexRouterLegacy dexRouterLegacyImpl = new DexRouterLegacy();
-        dexRouter = new UniversalRouter(admin, address(dexRouterImpl), address(dexRouterLegacyImpl));
+        dexRouter = new DexRouter(admin);
     
         if (address(dexRouter).balance > 0) {
             vm.deal(address(dexRouter), 0);

@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "../libraries/Constants.sol";
-import "../libraries/ExtraDataLib.sol";
 import "../libraries/EventLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/CommonLib.sol";
@@ -32,7 +31,7 @@ library SmartSwapRouter {
         IDexRouter.BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
         IDexRouter.RouterPath[][] calldata batches,
-        PMMLib.PMMSwapRequest[] calldata // extraData
+        IDexRouter.ExtraData memory extraData
     )
         public
         returns (uint256 returnAmount)
@@ -49,7 +48,8 @@ library SmartSwapRouter {
                 }),
                 baseRequest,
                 batchesAmount,
-                batches
+                batches,
+                extraData
             );
     }
 
@@ -64,7 +64,6 @@ library SmartSwapRouter {
         IDexRouter.BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,
         IDexRouter.RouterPath[][] memory batches,
-        PMMLib.PMMSwapRequest[] memory, // extraData
         address to,
         address refundTo
     )
@@ -123,10 +122,9 @@ library SmartSwapRouter {
         IDexRouter.SwapParams memory swapParams,
         IDexRouter.BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,
-        IDexRouter.RouterPath[][] memory batches
+        IDexRouter.RouterPath[][] memory batches,
+        IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
-        
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);

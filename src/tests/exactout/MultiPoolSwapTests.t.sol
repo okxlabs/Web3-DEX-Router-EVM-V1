@@ -37,8 +37,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.unxswapExactOutTo(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.unxswapExactOutTo(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,
@@ -81,8 +81,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.unxswapExactOutTo{value: amountInMax}(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.unxswapExactOutTo{value: amountInMax}(
                 uint256(uint160(ETH)),
                 amountOut,
                 amountInMax,
@@ -128,8 +128,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.unxswapExactOutTo(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.unxswapExactOutTo(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,
@@ -178,8 +178,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.uniswapV3SwapExactOutTo(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.uniswapV3SwapExactOutTo(
                 uint256(uint160(amy)),
                 amountOut,
                 amountInMax,
@@ -227,8 +227,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.uniswapV3SwapExactOutTo(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.uniswapV3SwapExactOutTo(
                 uint256(uint160(amy)),
                 amountOut,
                 amountInMax,
@@ -272,8 +272,8 @@ contract MultiPoolSwapTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
-            dexRouterExactOut.uniswapV3SwapExactOutTo{value: amountInMax}(
+            console2.log("DexRouter address:", address(dexRouter));
+            dexRouter.uniswapV3SwapExactOutTo{value: amountInMax}(
                 uint256(uint160(amy)),
                 amountOut,
                 amountInMax,

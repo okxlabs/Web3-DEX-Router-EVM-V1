@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "../libraries/Constants.sol";
-import "../libraries/ExtraDataLib.sol";
 import "../libraries/EventLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/CommonLib.sol";
@@ -23,7 +22,7 @@ library SwapWrapRouter {
     /// The rawdata parameter encodes:
     /// - Transfer mode in bits [251:249]: LEGACY(0b000), PERMIT2_ALLOWANCE(0b001), PERMIT2_SIGNATURE(0b011), DIRECT(0b101)
     /// - Direction (reversed flag) in bit 255: false=ETH->WETH, true=WETH->ETH
-    function swapWrap(uint256 orderId, uint256 rawdata) public {
+    function swapWrap(uint256 orderId, uint256 rawdata, IDexRouter.ExtraData memory extraData) public {
         bool reversed;
         uint128 amount;
         uint256 mode;
@@ -32,7 +31,7 @@ library SwapWrapRouter {
             amount := and(rawdata, SWAP_AMOUNT)
             mode := and(rawdata, _TRANSFER_MODE_MASK)
         }
-        _swapWrap(orderId, msg.sender, reversed, amount, mode);
+        _swapWrap(orderId, msg.sender, reversed, amount, mode, extraData);
     }
 
     /// @notice Executes a swap between ETH and WETH using structured base request parameters to a specified receiver.
@@ -44,7 +43,8 @@ library SwapWrapRouter {
     function swapWrapToWithBaseRequest(
         uint256 orderId,
         address receiver,
-        IDexRouter.BaseRequest calldata baseRequest
+        IDexRouter.BaseRequest calldata baseRequest,
+        IDexRouter.ExtraData memory extraData
     )
         public
     {
@@ -60,7 +60,7 @@ library SwapWrapRouter {
             revert("SwapWrap: invalid token pair");
         }
 
-        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK);
+        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK, extraData);
     }
 
     // ================================================================================
@@ -72,7 +72,8 @@ library SwapWrapRouter {
         address receiver,
         bool reversed,
         uint256 amount,
-        uint256 mode
+        uint256 mode,
+        IDexRouter.ExtraData memory extraData
     ) private {
         EventLib.emitSwapOrderId(orderId);
 
@@ -86,8 +87,6 @@ library SwapWrapRouter {
         );
         
         receiver = receiver == address(0) ? msg.sender : receiver;
-
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
 
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;

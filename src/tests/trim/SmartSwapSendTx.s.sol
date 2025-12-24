@@ -5,8 +5,6 @@ import "forge-std/test.sol";
 import "forge-std/console2.sol";
 
 import "@dex/DexRouter.sol";
-import "@dex/DexRouterLegacy.sol";
-import "@dex/UniversalRouter.sol";
 import "../common/CommissionHelper.t.sol";
 import "../common/TrimHelper.t.sol";
 
@@ -17,9 +15,9 @@ contract SendTx is Test, CommissionHelper, TrimHelper {
 
     struct SwapInfo {
         uint256 orderId;
-        UniversalRouter.BaseRequest baseRequest;
+        DexRouter.BaseRequest baseRequest;
         uint256[] batchesAmount;
-        UniversalRouter.RouterPath[][] batches;
+        DexRouter.RouterPath[][] batches;
         PMMLib.PMMSwapRequest[] extraData;
     }
 
@@ -46,8 +44,8 @@ contract SendTx is Test, CommissionHelper, TrimHelper {
         swapInfo.batchesAmount = new uint256[](1);
         swapInfo.batchesAmount[0] = inputAmount;
         // batches
-        swapInfo.batches = new UniversalRouter.RouterPath[][](1);
-        swapInfo.batches[0] = new UniversalRouter.RouterPath[](1);
+        swapInfo.batches = new DexRouter.RouterPath[][](1);
+        swapInfo.batches[0] = new DexRouter.RouterPath[](1);
         swapInfo.batches[0][0].mixAdapters = new address[](1);
         swapInfo.batches[0][0].mixAdapters[0] = address(UniversalUniV3Adapter);
         swapInfo.batches[0][0].assetTo = new address[](1);
@@ -61,7 +59,7 @@ contract SendTx is Test, CommissionHelper, TrimHelper {
         swapInfo.extraData = new PMMLib.PMMSwapRequest[](0);
 
         return abi.encodeWithSelector(
-            UniversalRouter.smartSwapTo.selector,
+            DexRouter.smartSwapTo.selector,
             swapInfo.orderId, deployer, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
     }

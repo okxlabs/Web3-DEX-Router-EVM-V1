@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 import "../libraries/Constants.sol";
 import "../libraries/EventLib.sol";
 import "../libraries/CommonLib.sol";
-import "../libraries/ExtraDataLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
@@ -35,7 +34,8 @@ library DagRouter {
         uint256 orderId,
         address receiver,
         IDexRouter.BaseRequest memory baseRequest,
-        IDexRouter.RouterPath[] calldata paths
+        IDexRouter.RouterPath[] calldata paths,
+        IDexRouter.ExtraData memory extraData
     )
         public
         returns (uint256 returnAmount)
@@ -46,8 +46,6 @@ library DagRouter {
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
-        
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);

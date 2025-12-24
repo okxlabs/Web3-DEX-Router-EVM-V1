@@ -6,6 +6,7 @@ import "../libraries/ExactOutSwapHelper.sol";
 import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/EventLib.sol";
 import "../interfaces/IDexRouter.sol";
+import "../interfaces/IWETH.sol";
 
 library UnxswapExactOutRouter {
     uint256 private constant _NUMERATOR_MASK =
@@ -272,7 +273,7 @@ library UnxswapExactOutRouter {
         if(isWeth) {
             toToken = address(0);
             IWETH(_WETH).withdraw(amountOut);
-            (bool success,) = receiver.call{value: amountOut}("");
+            (bool success,) = receiver.call{value: amountOut, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
             require(success, "ETH transfer failed");
         } else {
             toToken = isReversed ? IUni(pair).token0() : IUni(pair).token1();

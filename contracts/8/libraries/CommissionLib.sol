@@ -63,7 +63,7 @@ library CommissionLib {
             }
             function _sendETH(to, amount) {
                 if gt(amount, 0) {
-                    let success := call(gas(), to, amount, 0, 0, 0, 0)
+                    let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
                             0x0000001c20636f6d6d697373696f6e2077697468206574686572206572726f72,
@@ -229,11 +229,12 @@ library CommissionLib {
             }
             function _transferTokenWithMode(token, mode, _payer, to, amount) {
                 if gt(amount, 0) {
-                    switch eq(_payer, address())
-                    case 1{
+                    // _payer has been set to address(this), means the token has been transferred to address(this).
+                    if eq(_payer, address()) {
                         _sendToken(token, to, amount)
                     }
-                    default {
+                    // _payer != address(this) && _payer != address(0), means the token has not been transferred yet.
+                    if iszero(or(eq(_payer, address()), eq(_payer, 0))) {
                         switch mode
                         case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
                             _transferTokenDirect(token, _payer, to, amount)
@@ -292,7 +293,6 @@ library CommissionLib {
                 }
             }
             if iszero(eq(token, _ETH)) {
-                let noNeedTransfer := and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, NO_TO_B_MODE)) // transferMode == _MODE_PERMIT2_SIGNATURE && ToC mode, the token has been transferred to referrers and no need to transfer again.
                 if and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, TO_B_MODE)) { // transferMode == _MODE_PERMIT2_SIGNATURE && ToB mode, the token has been claimed to address(this)
                     // require(payer == address(), "invalid payer");
                     if iszero(eq(payer, address())) {
@@ -302,7 +302,7 @@ library CommissionLib {
                         ) // "invalid payer"
                     }
                 }
-                // ToB mode && transferMode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed to address(this) first
+                // ToB mode && transferMode != _MODE_PERMIT2_SIGNATURE, the token needs to be claimed from payer to address(this) first
                 if and(eq(toBCommission, TO_B_MODE), iszero(eq(mode, _MODE_PERMIT2_SIGNATURE))) {
                     _transferTokenWithMode(token, mode, payer, address(), fromTokenCommissionAmount)
                     payer := address()
@@ -325,9 +325,8 @@ library CommissionLib {
                         )
                         sendAmount := add(sendAmount, amount)
                     }
-                    if iszero(noNeedTransfer) {
-                        _transferTokenWithMode(token, mode, payer, referrer, amount)
-                    }
+
+                    _transferTokenWithMode(token, mode, payer, referrer, amount)
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }
@@ -377,7 +376,7 @@ library CommissionLib {
             }
             function _sendETH(to, amount) {
                 if gt(amount, 0) {
-                    let success := call(gas(), to, amount, 0, 0, 0, 0)
+                    let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
                             0x000000122073656e64206574686572206661696c656400000000000000000000,
@@ -590,78 +589,28 @@ library CommissionLib {
         address toToken,
         uint256 mode
     ) internal pure {
-        assembly ("memory-safe") {
-            function _revertWithReason(m, len) {
-                mstore(
-                    0,
-                    0x08c379a000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(
-                    0x20,
-                    0x0000002000000000000000000000000000000000000000000000000000000000
-                )
-                mstore(0x40, m)
-                revert(0, len)
-            }
-
-            // if (mode == _MODE_NO_TRANSFER && commissionInfo.isFromTokenCommission) {
-            //     revert("From commission not support");
-            // }
-            let isFromTokenCommission := mload(add(commissionInfo, 0x00)) // commissionInfo.isFromTokenCommission
-            if and(eq(mode, _MODE_NO_TRANSFER), isFromTokenCommission) {
-                _revertWithReason(
-                    0x0000001c2046726f6d20636f6d6d697373696f6e206e6f7420737570706f7274,
-                    0x60
-                ) // "From commission not support"
-            }
-
-            // if (mode == _MODE_BY_INVEST && (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission)) {
-            //     revert("Commission not support");
-            // }
-            let isToTokenCommission := mload(add(commissionInfo, 0x20)) // commissionInfo.isToTokenCommission
-            if and(eq(mode, _MODE_BY_INVEST), or(isFromTokenCommission, isToTokenCommission)) {
-                _revertWithReason(
-                    0x0000001720436f6d6d697373696f6e206e6f7420737570706f72740000000000,
-                    0x5b
-                ) // "Commission not support"
-            }
-
-            // if(fromToken == toToken) {
-            //     revert("Invalid tokens");
-            // }
-            if eq(fromToken, toToken) {
-                _revertWithReason(
-                    0x0000000f20496e76616c696420746f6b656e7300000000000000000000000000,
-                    0x53
-                ) // "Invalid tokens"
-            }
-
-            // if (commissionInfo.isFromTokenCommission && commissionInfo.isToTokenCommission) {
-            //     revert("Invalid commission direction");
-            // }
-            if and(isToTokenCommission, isFromTokenCommission) {
-                _revertWithReason(
-                    0x0000001c496e76616c696420636f6d6d697373696f6e20646972656374696f6e,
-                    0x60
-                ) // "Invalid commission direction"
-            }
-
-            // require(
-            //     (commissionInfo.isFromTokenCommission && commissionInfo.token == fromToken)
-            //         || (commissionInfo.isToTokenCommission && commissionInfo.token == toToken)
-            //         || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
-            //     "Invalid commission info"
-            // );
-            let token := and(mload(add(commissionInfo, 0x40)), _ADDRESS_MASK) // commissionInfo.token
-            let flag := and(isFromTokenCommission, eq(token, fromToken))
-            flag := or(flag, and(isToTokenCommission, eq(token, toToken)))
-            flag := or(flag, and(iszero(isFromTokenCommission), iszero(isToTokenCommission)))
-            if iszero(flag) {
-                _revertWithReason(
-                    0x0000001820496e76616c696420636f6d6d697373696f6e20696e666f00000000,
-                    0x5c
-                ) // "Invalid commission info"
-            }
+        if (mode == _MODE_NO_TRANSFER && commissionInfo.isFromTokenCommission) {
+            revert("From commission not support for NO_TRANSFER mode");
         }
+
+        if (mode == _MODE_BY_INVEST && (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission)) {
+            revert("Commission not support for BY_INVEST mode");
+        }
+
+        if (fromToken == toToken) {
+            revert("Invalid tokens");
+        }
+
+        if (commissionInfo.isFromTokenCommission && commissionInfo.isToTokenCommission) {
+            revert("Invalid commission direction");
+        }
+
+        address token = CommonLib.bytes32ToAddress(commissionInfo.tokenWithMode);
+        require(
+            (commissionInfo.isFromTokenCommission && token == fromToken)
+                || (commissionInfo.isToTokenCommission && token == toToken)
+                || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
+            "Invalid commission info"
+        );
     }
 }

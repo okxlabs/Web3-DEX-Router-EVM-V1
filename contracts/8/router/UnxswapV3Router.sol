@@ -136,19 +136,19 @@ library UnxswapV3Router {
         uint256[] calldata pools
     ) private returns (uint256 returnAmount) {
         IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
-        // add permit2
-        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, _MODE_LEGACY);
-        // TODO add mode to commissionInfo.tokenWithMode
 
+        uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
+
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, mode);
         returnAmount = CommonLib.getBalanceOf(swapParams.toToken, swapParams.receiver);
-       
+
         uint256 fromTokenCommissionAmount;
         (
             swapParams.payer,
             amount,
             fromTokenCommissionAmount
         ) = TransferLib.handlePermit2SignatureModeWithCommission(
-            pools[0],
+            uint256(uint160(srcToken)) | mode,
             swapParams.payer,
             amount,
             address(0),
@@ -159,9 +159,7 @@ library UnxswapV3Router {
             swapParams,
             amount,
             pools,
-            extraData.commissionInfo,
-            extraData.trimInfo,
-            extraData.permit2Info,
+            extraData,
             fromTokenCommissionAmount
         );
 
@@ -171,6 +169,11 @@ library UnxswapV3Router {
             returnAmount >= minReturn,
             "Min return not reached"
         );
+
+        // Refund unused fromToken
+        if (srcToken == _ETH) {
+            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+        }
 
         EventLib.emitOrderRecord(
             srcToken,
@@ -185,9 +188,7 @@ library UnxswapV3Router {
         IDexRouter.SwapParams memory swapParams,
         uint256 amount,
         uint256[] calldata pools,
-        IDexRouter.CommissionInfo memory commissionInfo,
-        IDexRouter.TrimInfo memory trimInfo,
-        IDexRouter.Permit2Info memory permit2Info,
+        IDexRouter.ExtraData memory extraData,
         uint256 fromTokenCommissionAmount
     ) private {
         
@@ -195,18 +196,12 @@ library UnxswapV3Router {
             address middleReceiver,
             uint256 balanceBefore
         ) = CommissionLib.doCommissionFromToken(
-                commissionInfo,
+                extraData.commissionInfo,
                 swapParams,
                 fromTokenCommissionAmount,
-                trimInfo.hasTrim
+                extraData.trimInfo.hasTrim
             );
 
-        // In permit2sig mode: regardless of B-side or C-side, with or without commission, swapParams.payer is address(this)
-        // In legacy, permit2allowance, direct modes: 
-        //                  Without commission + C/B-side: swapParams.payer is user address
-        //                  With commission + C-side: swapParams.payer is user address
-        //                  With commission + B-side: swapParams.payer is address(this)
-        // In byinvest mode: swapParams.payer is address(this)
         _uniswapV3Swap(
             swapParams.payer,
             payable(middleReceiver),
@@ -215,11 +210,11 @@ library UnxswapV3Router {
         );
 
         CommissionLib.doCommissionAndTrimToToken(
-            commissionInfo,
+            extraData.commissionInfo,
             swapParams.receiver,
             balanceBefore,
             swapParams.toToken,
-            trimInfo
+            extraData.trimInfo
         );
     }
 
@@ -272,16 +267,17 @@ library UnxswapV3Router {
                     mstore(add(paramPtr, 0x40), _amount)
                     mstore(add(paramPtr, 0x60), _MIN_SQRT_RATIO)
                     mstore(add(paramPtr, 0x80), 0xa0)
-                    mstore(add(paramPtr, 0xa0), 96)
-                    mstore(add(paramPtr, 0xc0), _payer)
-                    mstore(add(paramPtr, 0xe0), _refundTo)
-                    mstore(add(paramPtr, 0x100), _transferMode)
+                    mstore(add(paramPtr, 0xa0), 128)                    // data.length = 128 (0x80)
+                    mstore(add(paramPtr, 0xc0), V3_EXACT_IN_CALLBACK_FLAG)  // data[0] = flag
+                    mstore(add(paramPtr, 0xe0), _payer)                 // data[1] = payer
+                    mstore(add(paramPtr, 0x100), _refundTo)             // data[2] = refundTo
+                    mstore(add(paramPtr, 0x120), _transferMode)         // data[3] = transferMode
                     let success := call(
                         gas(),
                         poolAddr,
                         0,
                         freePtr,
-                        0x124,
+                        0x144,
                         0,
                         0
                     )
@@ -298,16 +294,17 @@ library UnxswapV3Router {
                     mstore(add(paramPtr, 0x40), _amount)
                     mstore(add(paramPtr, 0x60), _MAX_SQRT_RATIO)
                     mstore(add(paramPtr, 0x80), 0xa0)
-                    mstore(add(paramPtr, 0xa0), 96)
-                    mstore(add(paramPtr, 0xc0), _payer)
-                    mstore(add(paramPtr, 0xe0), _refundTo)
-                    mstore(add(paramPtr, 0x100), _transferMode)
+                    mstore(add(paramPtr, 0xa0), 128)                    // data.length = 128 (0x80)
+                    mstore(add(paramPtr, 0xc0), V3_EXACT_IN_CALLBACK_FLAG)  // data[0] = flag
+                    mstore(add(paramPtr, 0xe0), _payer)                 // data[1] = payer
+                    mstore(add(paramPtr, 0x100), _refundTo)             // data[2] = refundTo
+                    mstore(add(paramPtr, 0x120), _transferMode)         // data[3] = transferMode
                     let success := call(
                         gas(),
                         poolAddr,
                         0,
                         freePtr,
-                        0x124,
+                        0x144,
                         0,
                         0
                     )
@@ -358,7 +355,7 @@ library UnxswapV3Router {
                     ) // withdraw weth failed
                 }
                 // send ETH to receiver
-                success := call(gas(), _receiver, _amount, 0, 0, 0, 0)
+                success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, _receiver, _amount, 0, 0, 0, 0)
                 if iszero(success) {
                     _revertWithReason(
                         0x0000001173656e64206574686572206661696c65640000000000000000000000,
@@ -496,7 +493,7 @@ library UnxswapV3Router {
                 }
                 let amount := mload(0)
                 if gt(amount, 0) {
-                    let refundTo := calldataload(164)
+                    let refundTo := calldataload(196) // offset adjusted for flag: 164 + 32 = 196
                     mstore(add(4, emptyPtr), refundTo)
                     mstore(add(36, emptyPtr), amount)
                     validateERC20Transfer(
@@ -591,32 +588,30 @@ library UnxswapV3Router {
             }
 
             function _claimToken(token, _payer, to, amount) {
-                if gt(amount, 0) {
-                    let freePtr := mload(0x40)
-                    mstore(0x40, add(freePtr, 0x84))
-                    mstore(
-                        freePtr,
-                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
-                    ) // claimTokens
-                    mstore(add(freePtr, 0x04), token)
-                    mstore(add(freePtr, 0x24), _payer)
-                    mstore(add(freePtr, 0x44), to)
-                    mstore(add(freePtr, 0x64), amount)
-                    let success := call(
-                        gas(),
-                        _APPROVE_PROXY,
-                        0,
-                        freePtr,
-                        0x84,
-                        0,
-                        0
-                    )
-                    if eq(success, 0) {
-                        _revertWithReason(
-                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                            0x57
-                        ) // "claim tokens failed"
-                    }
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84))
+                mstore(
+                    freePtr,
+                    0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                ) // claimTokens
+                mstore(add(freePtr, 0x04), token)
+                mstore(add(freePtr, 0x24), _payer)
+                mstore(add(freePtr, 0x44), to)
+                mstore(add(freePtr, 0x64), amount)
+                let success := call(
+                    gas(),
+                    _APPROVE_PROXY,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
+                        0x57
+                    ) // "claim tokens failed"
                 }
             }
             
@@ -687,8 +682,13 @@ library UnxswapV3Router {
                 revert(0, 4)
             }
 
-            let payer := calldataload(132) // 4+32+32+32+32 = 132
-            let transferMode := calldataload(196) // 132 + 64 = 196
+            // Calldata layout after adding flag:
+            // offset 132: data[0] = flag (32 bytes) - skipped by DexRouter
+            // offset 164: data[1] = payer (32 bytes)
+            // offset 196: data[2] = refundTo (32 bytes)
+            // offset 228: data[3] = transferMode (32 bytes)
+            let payer := calldataload(164)        // 132 + 32 = 164 (skip flag)
+            let transferMode := calldataload(228) // 164 + 64 = 228
             mstore(emptyPtr, _SELECTORS)
             switch eq(payer, address())
             case 1 {

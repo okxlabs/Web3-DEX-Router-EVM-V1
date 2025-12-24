@@ -120,6 +120,12 @@ uint256 constant REFUND_TO_ADDRESS_FLAG =
     0xac3a7da8b1c60000000000000000000000000000000000000000000000000000; // bytes6(keccak256("RefundTo"))
 
 // =============================================================================
+// ==================== UniswapV3 Callback Flags ===============================
+// =============================================================================
+bytes32 constant V3_EXACT_IN_CALLBACK_FLAG = 0x97d5390607e40000000000000000000000000000000000000000000000000000; // bytes6(keccak256("V3ExactInCallback"))
+bytes32 constant V3_EXACT_OUT_CALLBACK_FLAG = 0xae25331d0e6e0000000000000000000000000000000000000000000000000000; // bytes6(keccak256("V3ExactOutCallback"))
+
+// =============================================================================
 // ============================= Universal Values ==============================
 // =============================================================================
 uint256 constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
@@ -131,6 +137,7 @@ uint256 constant TO_B_MODE = 2; // value for toB commission and toB trim when re
 uint256 constant WAD = 1 * 10 ** 18;
 uint256 constant TRIM_RATE_LIMIT = 100;
 uint256 constant TRIM_DENOMINATOR = 1000;
+uint256 constant NATIVE_TOKEN_TRANSFER_GAS_LIMIT = 100000;
 
 // =============================================================================
 // ==================== Network-Specific Addresses =============================
@@ -138,5 +145,4 @@ uint256 constant TRIM_DENOMINATOR = 1000;
 // NOTE: These addresses need to be changed before deployment to different networks
 address constant _WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 address constant _APPROVE_PROXY = 0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58;
-address constant _WNATIVE_RELAY = 0x5703B683c7F928b721CA95Da988d73a3299d4757;
 address constant _PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;

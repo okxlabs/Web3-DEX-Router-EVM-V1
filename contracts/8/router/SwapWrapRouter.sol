@@ -133,7 +133,8 @@ library SwapWrapRouter {
             if (middleReceiver != address(this)) {
                 // Invariant: `middleReceiver != address(this)` implies no toToken commission and no trim
                 (bool success, ) = payable(middleReceiver).call{
-                    value: amount
+                    value: amount,
+                    gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT
                 }("");
                 require(success, "transfer native token failed");
             }
@@ -154,17 +155,10 @@ library SwapWrapRouter {
         );
 
         // Refund unused fromToken
-        uint256 refundAmount = reversed 
-            ? CommonLib.getBalanceOf(_WETH, address(this)) 
-            : address(this).balance;
-        
-        if (refundAmount > 0) {
-            if (reversed) {
-                SafeERC20.safeTransfer(IERC20(_WETH), swapParams.refundTo, refundAmount);
-            } else {
-                (bool success, ) = payable(swapParams.refundTo).call{value: refundAmount}("");
-                require(success, "SwapWrap: refund failed");
-            }
+        if (reversed) {
+            TransferLib.refundToken(_WETH, swapParams.refundTo);
+        } else {
+            TransferLib.refundToken(_ETH, swapParams.refundTo);
         }
 
         EventLib.emitOrderRecord(

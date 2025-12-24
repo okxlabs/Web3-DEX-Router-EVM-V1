@@ -8,6 +8,7 @@ import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/TempStorage.sol";
 import "../libraries/SafeCast.sol";
 import "../interfaces/IDexRouter.sol";
+import "../interfaces/IWETH.sol";
 import "../interfaces/uniV3/IUniswapV3Factory.sol";
 
 library UnxswapV3ExactOutRouter {
@@ -204,15 +205,16 @@ library UnxswapV3ExactOutRouter {
         int256 amountSpecified = -SafeCast.toInt256(amountOut);
 
         // Prepare callback data for the swap callback.
+        // The first 32 bytes is V3_EXACT_OUT_CALLBACK_FLAG to identify this callback in DexRouter.
         bytes memory callbackData;
         if (pools.length > 1) {
             uint256[] memory remainingPools = new uint256[](pools.length - 1);
             for (uint i = 0; i < pools.length - 1; i++) {
                 remainingPools[i] = pools[i];
             }
-            callbackData = abi.encode(payer, remainingPools);
+            callbackData = abi.encodePacked(V3_EXACT_OUT_CALLBACK_FLAG, abi.encode(payer, remainingPools));
         } else {
-            callbackData = abi.encode(payer, new uint256[](0));
+            callbackData = abi.encodePacked(V3_EXACT_OUT_CALLBACK_FLAG, abi.encode(payer, new uint256[](0)));
         }
         
         // Execute the swap on the current pool.
@@ -246,7 +248,8 @@ library UnxswapV3ExactOutRouter {
             : (token1, uint256(amount1Delta));
         
         // Decode the callback data to get the payer and the remaining pools.
-        (address payer, uint256[] memory remainingPools) = abi.decode(data, (address, uint256[]));
+        // Skip the first 32 bytes which is V3_EXACT_OUT_CALLBACK_FLAG.
+        (address payer, uint256[] memory remainingPools) = abi.decode(data[32:], (address, uint256[]));
         bool isLastSwap = remainingPools.length == 0;
         
         if (isLastSwap) {

@@ -7,6 +7,7 @@ import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/CommonLib.sol";
 import "../libraries/ExtraDataLib.sol";
 import "../libraries/CommissionLib.sol";
+import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IERC20.sol";
 
@@ -147,30 +148,31 @@ library UnxswapRouter {
         // Handle Permit2Signature mode and fromToken commission
         uint256 fromTokenCommissionAmount;
         {
-            uint256 fromTokenWithMode = uint256(uint160(srcToken)) | mode;
-            //待定，直接取池子地址还是address(0),取决于分佣地址数？
-            address onlyOneAssetTo = address(uint160(uint256(pools[0]) & _ADDRESS_MASK));
+            address onlyOneAssetTo = CommonLib.bytes32ToAddress(uint256(pools[0]));
             
-            // (swapParams.payer, amount, fromTokenCommissionAmount) = 
-            //     _handlePermit2SignatureModeWithCommission(
-            //         fromTokenWithMode,
-            //         swapParams.payer,
-            //         amount,
-            //         onlyOneAssetTo,
-            //         extraData
-            //     );
+            (swapParams.payer, amount, fromTokenCommissionAmount) = 
+                TransferLib.handlePermit2SignatureModeWithCommission(
+                    uint256(uint160(srcToken)) | mode,
+                    swapParams.payer,
+                    amount,
+                    onlyOneAssetTo,
+                    extraData
+                );
         }
         
         _doUnxswap(
             swapParams,
             srcToken,
             amount,
-            minReturn,
             pools,
-            extraData.commissionInfo,
-            extraData.trimInfo,
+            extraData,
             fromTokenCommissionAmount
         );
+
+        // Refund unused fromToken
+        if (srcToken == _ETH) {
+            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+        }
 
         // check minReturnAmount
         returnAmount = CommonLib.getBalanceOf(toToken, receiver) - returnAmount;
@@ -194,37 +196,34 @@ library UnxswapRouter {
         IDexRouter.SwapParams memory swapParams,
         address srcToken,
         uint256 amount,
-        uint256 minReturn,
         bytes32[] calldata pools,
-        IDexRouter.CommissionInfo memory commissionInfo,
-        IDexRouter.TrimInfo memory trimInfo,
+        IDexRouter.ExtraData memory extraData,
         uint256 fromTokenCommissionAmount
     ) private {
         (
             address middleReceiver,
             uint256 balanceBefore
         ) = CommissionLib.doCommissionFromToken(
-                commissionInfo,
+                extraData.commissionInfo,
                 swapParams,
                 fromTokenCommissionAmount,
-                trimInfo.hasTrim
+                extraData.trimInfo.hasTrim
             );
 
-        // _unxswapInternal(
-        //     IERC20(srcToken),
-        //     amount,
-        //     minReturn,
-        //     pools,
-        //     swapParams.payer,
-        //     middleReceiver
-        // );
+        _unxswapInternal(
+            IERC20(srcToken),
+            amount,
+            pools,
+            swapParams.payer,
+            middleReceiver
+        );
 
         CommissionLib.doCommissionAndTrimToToken(
-            commissionInfo,
+            extraData.commissionInfo,
             swapParams.receiver,
             balanceBefore,
             swapParams.toToken,
-            trimInfo
+            extraData.trimInfo
         );
     }
 
@@ -416,33 +415,64 @@ library UnxswapRouter {
             }
 
             // ========== Transfer Helper Functions ==========
-            function _claimToken(token, _payer, to, amt) {
-                if gt(amt, 0) {
-                    let freePtr := mload(0x40)
-                    mstore(0x40, add(freePtr, 0x84))
-                    mstore(
-                        freePtr,
-                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
-                    ) // claimTokens
-                    mstore(add(freePtr, 0x04), token)
-                    mstore(add(freePtr, 0x24), _payer)
-                    mstore(add(freePtr, 0x44), to)
-                    mstore(add(freePtr, 0x64), amt)
-                    let success := call(
-                        gas(),
-                        _APPROVE_PROXY,
-                        0,
-                        freePtr,
-                        0x84,
-                        0,
-                        0
+            function _sendToken(token, to, amt) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x44))
+                mstore(
+                    freePtr,
+                    0xa9059cbb00000000000000000000000000000000000000000000000000000000
+                ) // transfer
+                mstore(add(freePtr, 0x04), to)
+                mstore(add(freePtr, 0x24), amt)
+                let success := call(
+                    gas(),
+                    token,
+                    0,
+                    freePtr,
+                    0x44,
+                    0,
+                    0x20
+                )
+                if and(
+                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
+                    success
+                ) {
+                    success := iszero(
+                        or(iszero(extcodesize(token)), returndatasize())
                     )
-                    if eq(success, 0) {
-                        revertWithReason(
-                            0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                            0x57
-                        ) // "claim tokens failed"
-                    }
+                }
+                if eq(success, 0) {
+                    revertWithReason(
+                        0x0000001c207472616e7366657220746f6b656e2072656665726572206661696c,
+                        0x60
+                    ) // "transfer token referer fail"
+                }
+            }
+            function _claimToken(token, _payer, to, amt) {
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84))
+                mstore(
+                    freePtr,
+                    0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                ) // claimTokens
+                mstore(add(freePtr, 0x04), token)
+                mstore(add(freePtr, 0x24), _payer)
+                mstore(add(freePtr, 0x44), to)
+                mstore(add(freePtr, 0x64), amt)
+                let success := call(
+                    gas(),
+                    _APPROVE_PROXY,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    revertWithReason(
+                        0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
+                        0x57
+                    ) // "claim tokens failed"
                 }
             }
             function _transferTokenDirect(token, from, to, amt) {
@@ -498,23 +528,32 @@ library UnxswapRouter {
                     ) // "transfer token referer fail"
                 }
             }
-            function _transferTokenWithMode(token, mode, _payer, to, amt) {
+            function _transferTokenWithMode(token, _payer, rawPair, amt) {
                 if gt(amt, 0) {
-                    switch mode
-                    case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
-                        _transferTokenDirect(token, _payer, to, amt)
+                    let mode := and(rawPair, _TRANSFER_MODE_MASK)
+
+                    // _payer has been set to address(this), means the token has been transferred to address(this).
+                    if eq(_payer, address()) {
+                        _sendToken(token, and(rawPair, _ADDRESS_MASK), amt)
                     }
-                    case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
-                        _transferTokenPermit2Allowance(token, _payer, to, amt)
-                    }
-                    case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
-                        _claimToken(token, _payer, to, amt)
-                    }
-                    default {
-                        revertWithReason(
-                            0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
-                            0x59
-                        ) // "invalid transfer mode"
+                    // _payer != address(this) && _payer != address(0), means the token has not been transferred yet.
+                    if iszero(or(eq(_payer, address()), eq(_payer, 0))) {
+                        switch mode
+                        case 0x0A00000000000000000000000000000000000000000000000000000000000000 { // _MODE_DIRECT
+                            _transferTokenDirect(token, _payer, and(rawPair, _ADDRESS_MASK), amt)
+                        }
+                        case 0x0200000000000000000000000000000000000000000000000000000000000000 { // _MODE_PERMIT2_ALLOWANCE
+                            _transferTokenPermit2Allowance(token, _payer, and(rawPair, _ADDRESS_MASK), amt)
+                        }
+                        case 0x0000000000000000000000000000000000000000000000000000000000000000 { // _MODE_LEGACY
+                            _claimToken(token, _payer, and(rawPair, _ADDRESS_MASK), amt)
+                        }
+                        default {
+                            revertWithReason(
+                                0x00000015696e76616c6964207472616e73666572206d6f646500000000000000,
+                                0x59
+                            ) // "invalid transfer mode"
+                        }
                     }
                 }
             }
@@ -536,9 +575,6 @@ library UnxswapRouter {
             }
             let emptyPtr := mload(0x40)
             let rawPair := calldataload(poolsOffset)
-            
-            // Extract transfer mode from pools[0]
-            let mode := and(rawPair, _TRANSFER_MODE_MASK)
             
             switch eq(_ETH, srcToken)
             case 1 {
@@ -578,11 +614,9 @@ library UnxswapRouter {
                     ) // "invalid msg.value"
                 }
 
-                // PERMIT2_SIGNATURE mode: token already transferred via permitTransferFrom, skip
-                // Other modes: use _transferTokenWithMode
-                if iszero(eq(mode, 0x0600000000000000000000000000000000000000000000000000000000000000)) {
-                    _transferTokenWithMode(srcToken, mode, payer, and(rawPair, _ADDRESS_MASK), amount)
-                }
+                // For PERMIT2_SIGNATURE mode: token already transferred via permitTransferFrom, no need to transfer
+                // Other modes: transfer token to the address specified in the rawPair
+                _transferTokenWithMode(srcToken, payer, rawPair, amount)
             }
 
             returnAmount := amount
@@ -760,7 +794,7 @@ library UnxswapRouter {
                 }
                 
                 // Send ETH to receiver
-                if iszero(call(gas(), receiver, returnAmount, 0, 0, 0, 0)) {
+                if iszero(call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, receiver, returnAmount, 0, 0, 0, 0)) {
                     revertWithReason(
                         0x000000137472616e7366657220455448206661696c6564000000000000000000,
                         0x57

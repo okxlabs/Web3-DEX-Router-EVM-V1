@@ -41,7 +41,7 @@ library DagRouter {
         returns (uint256 returnAmount)
     {
         CommonLib.validateDeadline(baseRequest.deadLine);
-        require(paths.length > 0, "paths must be > 0");
+        require(paths.length > 0 && paths[0].assetTo.length > 0, "paths must be > 0");
         EventLib.emitSwapOrderId(orderId);
 
         receiver = receiver == address(0) ? msg.sender : receiver;
@@ -50,7 +50,8 @@ library DagRouter {
         
         uint256 mode = paths[0].fromToken & _TRANSFER_MODE_MASK;
         
-        CommissionLib.validateCommissionInfo(extraData.commissionInfo, CommonLib.bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, receiver);
@@ -70,7 +71,7 @@ library DagRouter {
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
             ) = TransferLib.handlePermit2SignatureModeWithCommission(
-                paths[0].fromToken,
+                uint256(uint160(fromToken)) | mode,
                 swapParams.payer,
                 baseRequest.fromTokenAmount,
                 onlyOneAssetTo,
@@ -114,6 +115,11 @@ library DagRouter {
             "Min return not reached"
         );
 
+        // Refund unused fromToken
+        if (fromToken == _ETH) {
+            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+        }
+
         EventLib.emitOrderRecord(
             CommonLib.bytes32ToAddress(baseRequest.fromToken),
             baseRequest.toToken,
@@ -154,7 +160,7 @@ library DagRouter {
         _exeDagSwap(swapParams.payer, swapParams.receiver, swapParams.refundTo, baseRequest.fromTokenAmount, baseRequest.toToken == _ETH, paths);
 
         // 3. transfer tokens to receiver
-        CommonLib.transferTokenToUser(baseRequest.toToken, swapParams.receiver);
+        TransferLib.transferTokenToUser(baseRequest.toToken, swapParams.receiver);
     }
 
     /// @notice The core logic to execute the DAG swap. For the first node, the payer should use passed value.
@@ -207,7 +213,6 @@ library DagRouter {
         uint256 accAmount;
         address fromToken = CommonLib.bytes32ToAddress(path.fromToken);
 
-        require(path.mixAdapters.length > 0, "edge length must be > 0");
         require(
             path.mixAdapters.length == path.rawData.length &&
             path.mixAdapters.length == path.extraData.length &&

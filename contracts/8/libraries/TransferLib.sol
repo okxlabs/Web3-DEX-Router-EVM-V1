@@ -2,8 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "./Constants.sol";
+import "./CommonLib.sol";
 import "./SafeERC20.sol";
 import "../interfaces/IDexRouter.sol";
+import "../interfaces/IWETH.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IPermit2.sol";
 import "../interfaces/IApproveProxy.sol";
@@ -31,6 +33,11 @@ library TransferLib {
         uint256 totalRate = 0;
         uint256 fromTokenCommissionAmount = 0;
 
+        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance, and commission is not allowed.
+        if (mode == _MODE_BY_INVEST) {
+            return (address(this), inputAmount, 0);
+        }
+
         if (extraData.commissionInfo.isFromTokenCommission) {
             assembly ("memory-safe") {
                 let commissionInfo := mload(add(extraData, 0x00))
@@ -43,13 +50,11 @@ library TransferLib {
             fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
         }
 
-        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance, and commission is not allowed.
-        // For other modes, return the original payer, inputAmount, and calculated fromTokenCommissionAmount.
-        if (mode == _MODE_BY_INVEST) {
-            return (address(this), inputAmount, 0);
-        } else if (mode != _MODE_PERMIT2_SIGNATURE) {
+        // For other modes (not _MODE_PERMIT2_SIGNATURE), return the original payer, inputAmount, and calculated fromTokenCommissionAmount.
+        if (mode != _MODE_PERMIT2_SIGNATURE) {
             return (payer, inputAmount, fromTokenCommissionAmount);
         }
+        require(token != _ETH, "token cannot be ETH for PERMIT2_SIGNATURE mode");
 
         // For _MODE_PERMIT2_SIGNATURE mode, token needs to be claimed to address `to` by calling permitTransferFrom. And the address `to` needs to be set according to the situation.
         // For following 2 situations, the address `to` should be set to address(this):
@@ -181,6 +186,7 @@ library TransferLib {
         if (mode == _MODE_NO_TRANSFER) {
             return;
         } else if (mode == _MODE_BY_INVEST) {
+            require(payer == address(this), "payer must be address(this)");
             SafeERC20.safeTransfer(IERC20(token), to, amount);
         } else { // For other modes, payer needs to be checked. If the payer is address(this), the transfer logic is same.
             if (payer == address(this)) {
@@ -196,6 +202,52 @@ library TransferLib {
                 } else {
                     IApproveProxy(_APPROVE_PROXY).claimTokens(token, payer, to, amount);
                 }
+            }
+        }
+    }
+
+    /// @notice Transfers the specified token to the user.
+    /// @param token The address of the token to be transferred.
+    /// @param to The address of the receiver.
+    /// @dev Handles the withdrawal of tokens to the user, converting WETH to ETH if necessary.
+    function transferTokenToUser(address token, address to) internal {
+        if (token == _ETH) {
+            uint256 wethBal = CommonLib.getBalanceOf(address(uint160(_WETH)), address(this));
+            if (wethBal > 0) {
+                IWETH(address(uint160(_WETH))).withdraw(wethBal);
+            }
+            if (to != address(this)) {
+                uint256 ethBal = address(this).balance;
+                if (ethBal > 0) {
+                    (bool success, ) = payable(to).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
+                    require(success, "transfer native token failed");
+                }
+            }
+        } else {
+            if (to != address(this)) {
+                uint256 bal = CommonLib.getBalanceOf(token, address(this));
+                if (bal > 0) {
+                    SafeERC20.safeTransfer(IERC20(token), to, bal);
+                }
+            }
+        }
+    }
+
+    /// @notice Refunds the specified token to the refundTo address.
+    /// @param token The address of the token to be refunded.
+    /// @param refundTo The address of the receiver.
+    /// @dev Handles the refund of tokens to the refundTo address.
+    function refundToken(address token, address refundTo) internal {
+        if (token == _ETH) {
+            uint256 ethBal = address(this).balance;
+            if (ethBal > 0) {
+                (bool success, ) = payable(refundTo).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
+                require(success, "refund native token failed");
+            }
+        } else {
+            uint256 bal = CommonLib.getBalanceOf(token, address(this));
+            if (bal > 0) {
+                SafeERC20.safeTransfer(IERC20(token), refundTo, bal);
             }
         }
     }

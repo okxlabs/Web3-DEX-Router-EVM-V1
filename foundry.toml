@@ -5,7 +5,7 @@ out = "artifacts"
 
 libs = ["node_modules", "lib"]
 optimizer = true
-optimizer_runs = 1
+optimizer_runs = 200
 # via_ir = true
 remappings = [
     "@ensdomains/=node_modules/@ensdomains/",
@@ -17,6 +17,10 @@ remappings = [
 
 evm_version = "cancun"
 fs_permissions = [{access = "read-write", path = "./"}]
+
+[lint]
+# disable all lint checks, avoid too many note warnings when building
+ignore = ["**/*"]
 
 # Sourcify verification settings for Monad
 metadata = true

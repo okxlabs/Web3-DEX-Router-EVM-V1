@@ -5,9 +5,6 @@ import "./Constants.sol";
 import "./SafeERC20.sol";
 import "../interfaces/IAdapter.sol";
 import "../interfaces/IApproveProxy.sol";
-import "../interfaces/IWNativeRelayer.sol";
-import "../interfaces/IWETH.sol";
-import "../interfaces/IERC20.sol";
 
 library CommonLib {
 
@@ -93,37 +90,6 @@ library CommonLib {
             );
             if (!s) {
                 _revert(res);
-            }
-        }
-    }
-
-    /// @notice Transfers the specified token to the user.
-    /// @param token The address of the token to be transferred.
-    /// @param to The address of the receiver.
-    /// @dev Handles the withdrawal of tokens to the user, converting WETH to ETH if necessary.
-    function transferTokenToUser(address token, address to) internal {
-        if (token == _ETH) {
-            uint256 wethBal = getBalanceOf(address(uint160(_WETH)), address(this));
-            if (wethBal > 0) {
-                IWETH(address(uint160(_WETH))).transfer(
-                    _WNATIVE_RELAY,
-                    wethBal
-                );
-                IWNativeRelayer(_WNATIVE_RELAY).withdraw(wethBal);
-            }
-            if (to != address(this)) {
-                uint256 ethBal = address(this).balance;
-                if (ethBal > 0) {
-                    (bool success, ) = payable(to).call{value: ethBal}("");
-                    require(success, "transfer native token failed");
-                }
-            }
-        } else {
-            if (to != address(this)) {
-                uint256 bal = getBalanceOf(token, address(this));
-                if (bal > 0) {
-                    SafeERC20.safeTransfer(IERC20(token), to, bal);
-                }
             }
         }
     }

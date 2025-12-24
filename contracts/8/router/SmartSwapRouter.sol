@@ -129,7 +129,8 @@ library SmartSwapRouter {
         
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
         
-        CommissionLib.validateCommissionInfo(extraData.commissionInfo, CommonLib.bytes32ToAddress(baseRequest.fromToken), baseRequest.toToken, mode);
+        address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapParams.receiver);
@@ -144,7 +145,7 @@ library SmartSwapRouter {
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
             ) = TransferLib.handlePermit2SignatureModeWithCommission(
-                batches[0][0].fromToken,
+                uint256(uint160(fromToken)) | mode,
                 swapParams.payer,
                 baseRequest.fromTokenAmount,
                 onlyOneAssetTo,
@@ -179,6 +180,14 @@ library SmartSwapRouter {
                 baseRequest.toToken,
                 extraData.trimInfo
             );
+        }
+
+        // Refund unused fromToken
+        if (fromToken == _ETH) {
+            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_WETH, swapParams.refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
+        } else {
+            TransferLib.refundToken(fromToken, swapParams.refundTo);
         }
 
         // check minReturnAmount
@@ -269,7 +278,7 @@ library SmartSwapRouter {
         }
 
         // 5. transfer tokens to user
-        CommonLib.transferTokenToUser(_baseRequest.toToken, receiver);
+        TransferLib.transferTokenToUser(_baseRequest.toToken, receiver);
     }
 
     /// @notice Executes a series of swaps or operations defined by a set of routing paths, potentially across different protocols or pools.

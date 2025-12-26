@@ -293,7 +293,7 @@ library CommissionLib {
                 }
             }
             if iszero(eq(token, _ETH)) {
-                if and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, TO_B_MODE)) { // transferMode == _MODE_PERMIT2_SIGNATURE && ToB mode, the token has been claimed to address(this)
+                if and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, TO_B_MODE)) { // transferMode == _MODE_PERMIT2_SIGNATURE && ToB mode, the token should have been claimed to address(this)
                     // require(payer == address(), "invalid payer");
                     if iszero(eq(payer, address())) {
                         _revertWithReason(
@@ -308,7 +308,12 @@ library CommissionLib {
                     payer := address()
                     fromTokenCommissionAmount := _getBalanceOfToken(token)
                 }
-                // Execute the transfer to referrers
+
+                // For ToC mode && transferMode == _MODE_PERMIT2_SIGNATURE, the commission has already been transferred via Permit2 batch transfer.
+                // In this case, we only need to emit events, not transfer again.
+                let skipTransfer := and(eq(toBCommission, NO_TO_B_MODE), eq(mode, _MODE_PERMIT2_SIGNATURE))
+
+                // Execute the transfer to referrers (or just emit events if skipTransfer is true)
                 let sendAmount := 0
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                     let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
@@ -326,7 +331,10 @@ library CommissionLib {
                         sendAmount := add(sendAmount, amount)
                     }
 
-                    _transferTokenWithMode(token, mode, payer, referrer, amount)
+                    // Only transfer if not in PERMIT2_SIGNATURE + NO_TO_B_MODE case
+                    if iszero(skipTransfer) {
+                        _transferTokenWithMode(token, mode, payer, referrer, amount)
+                    }
                     _emitCommissionFromToken(token, amount, referrer, rate)
                 }
             }

@@ -6,10 +6,11 @@ import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/adapter/DnyFeeAdapter.sol";
 import "@dex/libraries/Constants.sol";
+import "@dex/libraries/EthReceiver.sol";
 import {PMMLib} from "@dex/libraries/PMMLib.sol";
 import {Test, console2} from "forge-std/test.sol";
 
-contract DagByInvestTest is Test {
+contract DagByInvestTest is Test, EthReceiver {
     DexRouter dexRouter;
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f);

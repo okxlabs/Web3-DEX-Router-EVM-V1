@@ -6,6 +6,7 @@ import "@dex/DexRouter.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
+import "@dex/libraries/EthReceiver.sol";
 import "@dex/interfaces/IWETH.sol";
 import "@dex/interfaces/IUniswapV2Factory.sol";
 import "@dex/interfaces/IUniswapV2Router02.sol";
@@ -25,7 +26,7 @@ interface IUniswapV3MintCallback {
     ) external;
 }
 
-contract BaseTestSetup is Test, IUniswapV3MintCallback {
+contract BaseTestSetup is Test, IUniswapV3MintCallback, EthReceiver {
     DexRouter dexRouter;
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f);
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);

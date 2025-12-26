@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./Constants.sol";
 import "./CommonLib.sol";
 import "./SafeERC20.sol";
+import "./CommissionLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/IERC20.sol";
@@ -17,7 +18,7 @@ library TransferLib {
     /// @param payer The address of the payer.
     /// @param inputAmount The inputAmount of the fromToken.
     /// @param onlyOneAssetTo The address of the only one assetTo. If the assetTo is more than one, it should be set to address(0).
-    /// @param extraData The extra data.
+    /// @param extraData The extra data, only commissionInfo and permit2Info are used.
     /// @return The new payer, the new inputAmount, and the fromTokenCommissionAmount. The new payer can be (1) original payer, (2) address(this), or (3) address(0).
     ///         The address(0) means the fromToken has been paid and no need to pay later.
     /// @dev  Since the permitTransferFrom can only be called once in a transaction, this function is designed to handle multiple scenarios and call permitTransferFrom if necessary.
@@ -39,14 +40,7 @@ library TransferLib {
         }
 
         if (extraData.commissionInfo.isFromTokenCommission) {
-            assembly ("memory-safe") {
-                let commissionInfo := mload(add(extraData, 0x00))
-                let referrerNum := mload(add(commissionInfo, 0x80))
-                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-                    let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
-                    totalRate := add(totalRate, rate)
-                }
-            }
+            totalRate = CommissionLib.calculateTotalRate(extraData.commissionInfo);
             fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
         }
 

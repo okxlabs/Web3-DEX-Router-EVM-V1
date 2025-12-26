@@ -710,7 +710,7 @@ contract CommissionTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[targetTokenIndex]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         refererAddress,
                         0,
@@ -856,6 +856,7 @@ contract CommissionTests is BaseTestSetup {
         console2.log("before sourceToken balance:", tokens[1].balanceOf(amy));
         console2.log("before middleToken balance:", tokens[2].balanceOf(amy));
         console2.log("before targetToken balance:", tokens[3].balanceOf(amy));
+        console2.log("referer before sourceToken balance:", tokens[1].balanceOf(refererAddress));
         
         // 直接创建pools数组并填充，不使用任何中间变量
         uint256[] memory pools = new uint256[](2);
@@ -880,7 +881,7 @@ contract CommissionTests is BaseTestSetup {
                         false,  // 不从目标代币收取
                         address(tokens[1]), 
                         200,   // 0.2%的佣金率
-                        address(0x123),
+                        refererAddress,
                         0,
                         address(0),
                         false
@@ -893,7 +894,7 @@ contract CommissionTests is BaseTestSetup {
         console2.log("after sourceToken balance:", tokens[1].balanceOf(amy));
         console2.log("after middleToken balance:", tokens[2].balanceOf(amy));
         console2.log("after targetToken balance:", tokens[3].balanceOf(amy));
-        console2.log("referer commission:", tokens[3].balanceOf(refererAddress));
+        console2.log("referer after sourceToken balance:", tokens[1].balanceOf(refererAddress));
     }
     
     
@@ -1407,7 +1408,7 @@ contract CommissionTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[2]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         address(0x123),
                         0,

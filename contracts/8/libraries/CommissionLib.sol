@@ -8,19 +8,19 @@ import "../interfaces/IDexRouter.sol";
 library CommissionLib {
     function doCommissionFromToken(
         IDexRouter.CommissionInfo memory commissionInfo,
-        IDexRouter.SwapParams memory swapParams,
+        IDexRouter.SwapCache memory swapCache,
         uint256 fromTokenCommissionAmount,
         bool hasTrim
     ) internal returns (address middleReceiver, uint256 balanceBefore) {
         if (commissionInfo.isToTokenCommission || hasTrim) {
             middleReceiver = address(this);
-            balanceBefore = CommonLib.getBalanceOf(swapParams.toToken, address(this));
+            balanceBefore = CommonLib.getBalanceOf(swapCache.toToken, address(this));
         } else {
-            middleReceiver = swapParams.receiver;
+            middleReceiver = swapCache.receiver;
         }
 
         if (commissionInfo.isFromTokenCommission) {
-            _doCommissionFromTokenInternal(commissionInfo, swapParams.payer, fromTokenCommissionAmount);
+            _doCommissionFromTokenInternal(commissionInfo, swapCache.payer, fromTokenCommissionAmount);
         }
     }
 
@@ -612,5 +612,15 @@ library CommissionLib {
                 || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
             "Invalid commission info"
         );
+    }
+
+    function calculateTotalRate(IDexRouter.CommissionInfo memory commissionInfo) internal pure returns (uint256 totalRate) {
+        assembly ("memory-safe") {
+            let referrerNum := mload(add(commissionInfo, 0x80))
+            for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
+                let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
+                totalRate := add(totalRate, rate)
+            }
+        }
     }
 }

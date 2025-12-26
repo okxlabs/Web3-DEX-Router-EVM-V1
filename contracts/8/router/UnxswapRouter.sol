@@ -142,7 +142,7 @@ library UnxswapRouter {
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
         returnAmount = CommonLib.getBalanceOf(toToken, receiver);
 
-        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+        IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: payer,
             refundTo: msg.sender,
             receiver: receiver,
@@ -154,10 +154,10 @@ library UnxswapRouter {
         {
             address onlyOneAssetTo = CommonLib.bytes32ToAddress(uint256(pools[0]));
             
-            (swapParams.payer, amount, fromTokenCommissionAmount) = 
+            (swapCache.payer, amount, fromTokenCommissionAmount) = 
                 TransferLib.handlePermit2SignatureModeWithCommission(
                     uint256(uint160(srcToken)) | mode,
-                    swapParams.payer,
+                    swapCache.payer,
                     amount,
                     onlyOneAssetTo,
                     extraData
@@ -165,7 +165,7 @@ library UnxswapRouter {
         }
         
         _doUnxswap(
-            swapParams,
+            swapCache,
             srcToken,
             amount,
             pools,
@@ -175,7 +175,7 @@ library UnxswapRouter {
 
         // Refund unused fromToken
         if (srcToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
         }
 
         // check minReturnAmount
@@ -197,7 +197,7 @@ library UnxswapRouter {
     }
 
     function _doUnxswap(
-        IDexRouter.SwapParams memory swapParams,
+        IDexRouter.SwapCache memory swapCache,
         address srcToken,
         uint256 amount,
         bytes32[] calldata pools,
@@ -209,7 +209,7 @@ library UnxswapRouter {
             uint256 balanceBefore
         ) = CommissionLib.doCommissionFromToken(
                 extraData.commissionInfo,
-                swapParams,
+                swapCache,
                 fromTokenCommissionAmount,
                 extraData.trimInfo.hasTrim
             );
@@ -218,15 +218,15 @@ library UnxswapRouter {
             IERC20(srcToken),
             amount,
             pools,
-            swapParams.payer,
+            swapCache.payer,
             middleReceiver
         );
 
         CommissionLib.doCommissionAndTrimToToken(
             extraData.commissionInfo,
-            swapParams.receiver,
+            swapCache.receiver,
             balanceBefore,
-            swapParams.toToken,
+            swapCache.toToken,
             extraData.trimInfo
         );
     }

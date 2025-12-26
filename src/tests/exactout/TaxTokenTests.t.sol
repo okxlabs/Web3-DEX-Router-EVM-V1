@@ -47,13 +47,13 @@ contract TaxTokenTests is BaseTestSetup {
         console2.log("before sourceToken balance:", tokens[sourceTokenIndex].balanceOf(amy));
         console2.log("before targetToken balance:", amy.balance);
         
-        bytes32 pool0 = _buildPool(address(tokens[sourceTokenIndex]), address(tokens[targetTokenIndex]), address(pair), true);  
+        bytes32 pool0 = _buildPool(address(tokens[sourceTokenIndex]), address(tokens[targetTokenIndex]), address(pair), false);  
         bytes32[] memory pools = new bytes32[](1);
         pools[0] = pool0;
 
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), amountInMax);
-            dexRouter.unxswapExactOutTo{value: amountInMax}(
+            dexRouter.unxswapExactOutTo{value: 0}(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,

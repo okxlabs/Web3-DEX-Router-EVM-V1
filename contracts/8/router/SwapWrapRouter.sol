@@ -91,7 +91,7 @@ library SwapWrapRouter {
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
-        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+        IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
             receiver: receiver,
@@ -100,12 +100,12 @@ library SwapWrapRouter {
 
         uint256 fromTokenCommissionAmount;
         (
-            swapParams.payer, 
+            swapCache.payer, 
             amount, 
             fromTokenCommissionAmount
         ) = TransferLib.handlePermit2SignatureModeWithCommission(
             reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
-            swapParams.payer,
+            swapCache.payer,
             amount,
             address(0),
             extraData
@@ -116,14 +116,14 @@ library SwapWrapRouter {
             uint256 balanceBefore
         ) = CommissionLib.doCommissionFromToken(
                 extraData.commissionInfo,
-                swapParams,
+                swapCache,
                 fromTokenCommissionAmount,
                 extraData.trimInfo.hasTrim
             );
 
         if (reversed) {
             TransferLib.transferInternal(
-                swapParams.payer,
+                swapCache.payer,
                 address(this),
                 mode | uint256(uint160(_WETH)),
                 amount
@@ -149,20 +149,20 @@ library SwapWrapRouter {
             extraData.commissionInfo,
             receiver,
             balanceBefore,
-            swapParams.toToken,
+            swapCache.toToken,
             extraData.trimInfo
         );
 
         // Refund unused fromToken
         if (reversed) {
-            TransferLib.refundToken(_WETH, swapParams.refundTo);
+            TransferLib.refundToken(_WETH, swapCache.refundTo);
         } else {
-            TransferLib.refundToken(_ETH, swapParams.refundTo);
+            TransferLib.refundToken(_ETH, swapCache.refundTo);
         }
 
         EventLib.emitOrderRecord(
             reversed ? _WETH : _ETH,
-            swapParams.toToken,
+            swapCache.toToken,
             tx.origin,
             amount,
             amount - toTokenCommissionAndTrimAmount

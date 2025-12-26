@@ -710,7 +710,7 @@ contract CommissionToBTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[targetTokenIndex]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         refererAddress,
                         0,
@@ -1407,7 +1407,7 @@ contract CommissionToBTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[2]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         address(0x123),
                         0,

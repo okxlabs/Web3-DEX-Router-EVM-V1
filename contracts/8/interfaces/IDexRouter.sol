@@ -72,7 +72,7 @@ interface IDexRouter {
         address refundTo;
     }
 
-    struct SwapParams {
+    struct SwapCache {
         address payer;
         address refundTo;
         address receiver;
@@ -86,6 +86,14 @@ interface IDexRouter {
         address srcToken;
         address toToken;
         address receiver;
+        address payer;
+        uint256 mode;
+        uint256 fromTokenCommissionAmount;
+    }
+
+    struct ExactOutSwapCache {
+        uint256 amountOut;
+        uint256 maxConsume;
         address payer;
     }
 }

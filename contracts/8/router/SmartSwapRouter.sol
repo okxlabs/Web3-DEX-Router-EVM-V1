@@ -40,7 +40,7 @@ library SmartSwapRouter {
         EventLib.emitSwapOrderId(orderId);
         return
             _smartSwapTo(
-                IDexRouter.SwapParams({
+                IDexRouter.SwapCache({
                     payer: msg.sender,
                     refundTo: msg.sender,
                     receiver: receiver == address(0) ? msg.sender : receiver,
@@ -119,7 +119,7 @@ library SmartSwapRouter {
     // ================================================================================
     /// @notice If fromToken or toToken is ETH, the address needs to be 0xEeee. And for commission validation, ETH needs to be 0xEeee.
     function _smartSwapTo(
-        IDexRouter.SwapParams memory swapParams,
+        IDexRouter.SwapCache memory swapCache,
         IDexRouter.BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,
         IDexRouter.RouterPath[][] memory batches,
@@ -131,7 +131,7 @@ library SmartSwapRouter {
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
-        returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapParams.receiver);
+        returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapCache.receiver);
 
         uint256 fromTokenCommissionAmount;
         {
@@ -139,12 +139,12 @@ library SmartSwapRouter {
                 ? batches[0][0].assetTo[0]
                 : address(0);
             (
-                swapParams.payer,
+                swapCache.payer,
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
             ) = TransferLib.handlePermit2SignatureModeWithCommission(
                 uint256(uint160(fromToken)) | mode,
-                swapParams.payer,
+                swapCache.payer,
                 baseRequest.fromTokenAmount,
                 onlyOneAssetTo,
                 extraData
@@ -157,7 +157,7 @@ library SmartSwapRouter {
                 uint256 balanceBefore
             ) = CommissionLib.doCommissionFromToken(
                     extraData.commissionInfo,
-                    swapParams,
+                    swapCache,
                     fromTokenCommissionAmount,
                     extraData.trimInfo.hasTrim
                 );
@@ -166,14 +166,14 @@ library SmartSwapRouter {
                 baseRequest,
                 batchesAmount,
                 batches,
-                swapParams.payer,
-                swapParams.refundTo,
+                swapCache.payer,
+                swapCache.refundTo,
                 middleReceiver
             );
 
             CommissionLib.doCommissionAndTrimToToken(
                 extraData.commissionInfo,
-                swapParams.receiver,
+                swapCache.receiver,
                 balanceBefore,
                 baseRequest.toToken,
                 extraData.trimInfo
@@ -182,15 +182,15 @@ library SmartSwapRouter {
 
         // Refund unused fromToken
         if (fromToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
-            TransferLib.refundToken(_WETH, swapParams.refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
+            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_WETH, swapCache.refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
         } else {
-            TransferLib.refundToken(fromToken, swapParams.refundTo);
+            TransferLib.refundToken(fromToken, swapCache.refundTo);
         }
 
         // check minReturnAmount
         returnAmount =
-            CommonLib.getBalanceOf(baseRequest.toToken, swapParams.receiver) -
+            CommonLib.getBalanceOf(baseRequest.toToken, swapCache.receiver) -
             returnAmount;
         require(
             returnAmount >= baseRequest.minReturnAmount,

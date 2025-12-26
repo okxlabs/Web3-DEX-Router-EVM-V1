@@ -652,7 +652,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         uint256 routerEthBefore = address(dexRouter).balance;
         
         // Send more ETH than needed
-        // Refund will be sent to msg.sender (alice) via swapParams.refundTo
+        // Refund will be sent to msg.sender (alice) via swapCache.refundTo
         vm.prank(alice);
         dexRouter.swapWrap{value: totalSent}(orderId, rawdata);
         
@@ -745,7 +745,7 @@ contract SwapWrapTest is TrimAndCommissionTestBase {
         uint256 aliceEthBefore = alice.balance;
         
         // Send more ETH than needed, receiver is bob
-        // Refund will be sent to msg.sender (alice) via swapParams.refundTo
+        // Refund will be sent to msg.sender (alice) via swapCache.refundTo
         vm.prank(alice);
         dexRouter.swapWrapToWithBaseRequest{value: totalSent}(orderId, bob, baseRequest);
         

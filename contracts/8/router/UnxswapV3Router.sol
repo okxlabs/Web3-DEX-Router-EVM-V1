@@ -53,7 +53,7 @@ library UnxswapV3Router {
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
-        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+        IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
             receiver: (receiver & _ADDRESS_MASK) == 0 ? msg.sender : CommonLib.bytes32ToAddress(receiver),
@@ -61,7 +61,7 @@ library UnxswapV3Router {
         });
         return
             _uniswapV3SwapTo(
-                swapParams,
+                swapCache,
                 srcToken,
                 amount,
                 minReturn,
@@ -101,7 +101,7 @@ library UnxswapV3Router {
             "uniswapV3: token mismatch"
         );
 
-        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+        IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
             receiver: receiver == address(0) ? msg.sender : receiver,
@@ -109,7 +109,7 @@ library UnxswapV3Router {
         });
         return
             _uniswapV3SwapTo(
-                swapParams,
+                swapCache,
                 srcToken,
                 baseRequest.fromTokenAmount,
                 baseRequest.minReturnAmount,
@@ -132,7 +132,7 @@ library UnxswapV3Router {
     // ================================================================================
     /// @notice If srcToken or toToken is ETH, the address needs to be 0xEeee. And for commission validation, ETH needs to be 0xEeee.
     function _uniswapV3SwapTo(
-        IDexRouter.SwapParams memory swapParams,
+        IDexRouter.SwapCache memory swapCache,
         address srcToken,
         uint256 amount,
         uint256 minReturn,
@@ -141,24 +141,24 @@ library UnxswapV3Router {
     ) private returns (uint256 returnAmount) {
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
 
-        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapParams.toToken, mode);
-        returnAmount = CommonLib.getBalanceOf(swapParams.toToken, swapParams.receiver);
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapCache.toToken, mode);
+        returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
 
         uint256 fromTokenCommissionAmount;
         (
-            swapParams.payer,
+            swapCache.payer,
             amount,
             fromTokenCommissionAmount
         ) = TransferLib.handlePermit2SignatureModeWithCommission(
             uint256(uint160(srcToken)) | mode,
-            swapParams.payer,
+            swapCache.payer,
             amount,
             address(0),
             extraData
         );
 
         _doUniswapV3Swap(
-            swapParams,
+            swapCache,
             amount,
             pools,
             extraData,
@@ -166,7 +166,7 @@ library UnxswapV3Router {
         );
 
         // check minReturnAmount
-        returnAmount = CommonLib.getBalanceOf(swapParams.toToken, swapParams.receiver) - returnAmount;
+        returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver) - returnAmount;
         require(
             returnAmount >= minReturn,
             "Min return not reached"
@@ -174,12 +174,12 @@ library UnxswapV3Router {
 
         // Refund unused fromToken
         if (srcToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
         }
 
         EventLib.emitOrderRecord(
             srcToken,
-            swapParams.toToken,
+            swapCache.toToken,
             tx.origin,
             amount,
             returnAmount
@@ -187,7 +187,7 @@ library UnxswapV3Router {
     }
 
     function _doUniswapV3Swap(
-        IDexRouter.SwapParams memory swapParams,
+        IDexRouter.SwapCache memory swapCache,
         uint256 amount,
         uint256[] calldata pools,
         IDexRouter.ExtraData memory extraData,
@@ -199,13 +199,13 @@ library UnxswapV3Router {
             uint256 balanceBefore
         ) = CommissionLib.doCommissionFromToken(
                 extraData.commissionInfo,
-                swapParams,
+                swapCache,
                 fromTokenCommissionAmount,
                 extraData.trimInfo.hasTrim
             );
 
         _uniswapV3Swap(
-            swapParams.payer,
+            swapCache.payer,
             payable(middleReceiver),
             amount,
             pools
@@ -213,9 +213,9 @@ library UnxswapV3Router {
 
         CommissionLib.doCommissionAndTrimToToken(
             extraData.commissionInfo,
-            swapParams.receiver,
+            swapCache.receiver,
             balanceBefore,
-            swapParams.toToken,
+            swapCache.toToken,
             extraData.trimInfo
         );
     }

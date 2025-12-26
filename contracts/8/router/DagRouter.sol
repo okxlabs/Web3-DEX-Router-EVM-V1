@@ -54,7 +54,7 @@ library DagRouter {
 
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, receiver);
 
-        IDexRouter.SwapParams memory swapParams = IDexRouter.SwapParams({
+        IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
             receiver: receiver,
@@ -65,12 +65,12 @@ library DagRouter {
         {
             address onlyOneAssetTo = paths[0].assetTo.length == 1 ? paths[0].assetTo[0] : address(0);
             (
-                swapParams.payer,
+                swapCache.payer,
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
             ) = TransferLib.handlePermit2SignatureModeWithCommission(
                 uint256(uint160(fromToken)) | mode,
-                swapParams.payer,
+                swapCache.payer,
                 baseRequest.fromTokenAmount,
                 onlyOneAssetTo,
                 extraData
@@ -80,11 +80,11 @@ library DagRouter {
         {
             uint256 balanceBefore;
             (
-                swapParams.receiver,
+                swapCache.receiver,
                 balanceBefore
             ) = CommissionLib.doCommissionFromToken(
                     extraData.commissionInfo,
-                    swapParams,
+                    swapCache,
                     fromTokenCommissionAmount,
                     extraData.trimInfo.hasTrim
                 );
@@ -92,7 +92,7 @@ library DagRouter {
             _dagSwapInternal(
                 baseRequest,
                 paths,
-                swapParams
+                swapCache
             );
 
             CommissionLib.doCommissionAndTrimToToken(
@@ -115,7 +115,7 @@ library DagRouter {
 
         // Refund unused fromToken
         if (fromToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapParams.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
         }
 
         EventLib.emitOrderRecord(
@@ -134,7 +134,7 @@ library DagRouter {
     function _dagSwapInternal(
         IDexRouter.BaseRequest memory baseRequest,
         IDexRouter.RouterPath[] calldata paths,
-        IDexRouter.SwapParams memory swapParams
+        IDexRouter.SwapCache memory swapCache
     ) private {
         // 1. check and process ETH
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
@@ -148,17 +148,17 @@ library DagRouter {
             IWETH(_WETH).deposit{
                 value: baseRequest.fromTokenAmount
             }();
-            swapParams.payer = address(this);
+            swapCache.payer = address(this);
         } else {
             require(firstNodeToken == fromToken, "firstToken mismatch");
             require(msg.value == 0, "value must be 0");
         }
 
         // 2. execute dag swap
-        _exeDagSwap(swapParams.payer, swapParams.receiver, swapParams.refundTo, baseRequest.fromTokenAmount, baseRequest.toToken == _ETH, paths);
+        _exeDagSwap(swapCache.payer, swapCache.receiver, swapCache.refundTo, baseRequest.fromTokenAmount, baseRequest.toToken == _ETH, paths);
 
         // 3. transfer tokens to receiver
-        TransferLib.transferTokenToUser(baseRequest.toToken, swapParams.receiver);
+        TransferLib.transferTokenToUser(baseRequest.toToken, swapCache.receiver);
     }
 
     /// @notice The core logic to execute the DAG swap. For the first node, the payer should use passed value.

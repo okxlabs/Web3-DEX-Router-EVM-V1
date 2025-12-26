@@ -141,6 +141,10 @@ library UnxswapV3Router {
     ) private returns (uint256 returnAmount) {
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
 
+        if (mode == _MODE_BY_INVEST) {
+            swapCache.refundTo = extraData.refundTo;
+        }
+
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapCache.toToken, mode);
         returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
 

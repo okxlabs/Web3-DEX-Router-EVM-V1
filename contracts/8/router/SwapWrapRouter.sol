@@ -83,7 +83,7 @@ library SwapWrapRouter {
             mode == _MODE_DIRECT || 
             mode == _MODE_PERMIT2_ALLOWANCE || 
             mode == _MODE_PERMIT2_SIGNATURE,
-            "SwapWrap: invalid mode"
+            "SwapWrap: invalid transfer mode"
         );
         
         receiver = receiver == address(0) ? msg.sender : receiver;

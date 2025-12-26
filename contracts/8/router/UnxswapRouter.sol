@@ -144,7 +144,7 @@ library UnxswapRouter {
 
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: payer,
-            refundTo: msg.sender,
+            refundTo: mode == _MODE_BY_INVEST ? extraData.refundTo : msg.sender,
             receiver: receiver,
             toToken: toToken
         });

@@ -126,6 +126,10 @@ library SmartSwapRouter {
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
+
+        if (mode == _MODE_BY_INVEST) {
+            swapCache.refundTo = extraData.refundTo;
+        }
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);

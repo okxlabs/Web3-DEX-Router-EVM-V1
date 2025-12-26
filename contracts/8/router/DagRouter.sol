@@ -56,7 +56,7 @@ library DagRouter {
 
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
-            refundTo: msg.sender,
+            refundTo: mode == _MODE_BY_INVEST ? extraData.refundTo : msg.sender,
             receiver: receiver,
             toToken: baseRequest.toToken
         });

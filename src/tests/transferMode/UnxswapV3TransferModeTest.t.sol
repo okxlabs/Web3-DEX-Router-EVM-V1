@@ -19,7 +19,7 @@ import "@dex/interfaces/IPermit2.sol";
  * Total: 4 modes * 2 ERC20-input * 5 comm * 2 trim + 2 * 2 trim (ByInvest noComm) + 1 * 5 comm * 2 trim (ETH) = 94 cases
  */
 
-contract UniswapV3SwapTest is TrimAndCommissionTestBase {
+contract UnxswapV3TransferModeTest is TrimAndCommissionTestBase {
     // fromToken commission requires extra amount (swap amount + commission amount)
     uint256 constant twoEther = 2 * 10 ** 18;
     uint256 constant USDT_AMOUNT = 1000 * 10 ** 6;

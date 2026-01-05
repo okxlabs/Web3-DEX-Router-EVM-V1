@@ -31,7 +31,7 @@ import "@dex/interfaces/IPermit2.sol";
  *     (2) Single batch with 2 assetTos (split routing)
  */
 
-contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
+contract SmartSwapTransferModeTest is TrimAndCommissionTestBase {
     // ==================== ERC20 -> ERC20 (WETH -> USDT) Tests ====================
     
     // --- Legacy Mode ---

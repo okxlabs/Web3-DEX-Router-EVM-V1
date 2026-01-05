@@ -18,7 +18,7 @@ import "@dex/interfaces/IPermit2.sol";
  * Total: 5 modes * 2 ERC20-input types * 5 comm * 2 trim + 1 * 1 ETH-input type * 5 comm * 2 trim = 110 cases
  */
 
-contract UnxswapTest is TrimAndCommissionTestBase {
+contract UnxswapTransferModeTest is TrimAndCommissionTestBase {
     // fromToken commission requires extra amount (swap amount + commission amount)
     uint256 constant twoEther = 2 * 10 ** 18;
     uint256 constant TWO_USDT_AMOUNT = 2000 * 10 ** 6;

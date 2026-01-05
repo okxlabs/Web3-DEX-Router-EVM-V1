@@ -12,7 +12,7 @@ import "forge-std/console.sol";
  * @notice Test swapWrap and swapWrapToWithBaseRequest with different transfer modes
  * @dev Tests ETH <-> WETH swaps with LEGACY, DIRECT, PERMIT2_ALLOWANCE, and PERMIT2_SIGNATURE modes
  */
-contract SwapWrapTest is TrimAndCommissionTestBase {
+contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
     uint256 constant SWAP_AMOUNT = 1 ether;
     uint256 constant REVERSE_MASK = 0x8000000000000000000000000000000000000000000000000000000000000000;
     

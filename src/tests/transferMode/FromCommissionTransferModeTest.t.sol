@@ -5,7 +5,7 @@ import "../common/TrimAndCommissionTestBase.t.sol";
 import "../common/Permit2Helper.t.sol";
 import "@dex/interfaces/IPermit2.sol";
 
-contract FromTokenCommissionTest is TrimAndCommissionTestBase {
+contract FromCommissionTransferModeTest is TrimAndCommissionTestBase {
 
     // ==================== Test fromToken commission with multi transfer modes ===================
     // (1) WETH->USDT, 3fromCommission, no-toBCommission, legacy mode

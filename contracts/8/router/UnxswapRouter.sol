@@ -138,8 +138,9 @@ library UnxswapRouter {
         receiver = receiver == address(0) ? msg.sender : receiver;
 
         uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
-
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
+
         returnAmount = CommonLib.getBalanceOf(toToken, receiver);
 
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({

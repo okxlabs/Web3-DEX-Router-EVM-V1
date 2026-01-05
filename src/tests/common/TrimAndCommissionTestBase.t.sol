@@ -56,11 +56,14 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
     address constant WETH_USDT_UNIV3 = 0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36;
     address constant USDC_WETH_UNIV2 = 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc;
     address constant USDC_WETH_UNIV3 = 0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640;
+    address constant USDC_USDT_UNIV2 = 0x3041CbD36888bECc7bbCBc0045E3B1f144466f5f;
+    address constant USDC_USDT_UNIV3 = 0x3416cF6C708Da44DB2624D63ea0AAef7113527C6;
     address constant WETH_SAFEMOON_UNIV2 = 0xd2e185A9076d33BD76cE548961EE6E9cB700BA17;
 
     // users
     address public admin = vm.rememberKey(1);
-    address public arnaud = vm.rememberKey(11111111111111111111);
+    uint256 public arnaudPrivateKey = 11111111111111111111;
+    address public arnaud = vm.rememberKey(arnaudPrivateKey);
     address public bob = vm.rememberKey(11111111110000000000);
     address public trimAddress = vm.rememberKey(22222222222222222222);
     address public chargeAddress = vm.rememberKey(33333333333333333333);
@@ -433,5 +436,33 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
 
     function _generateRefundToData(address refundTo) internal view returns (bytes memory) {
         return abi.encodePacked(bytes32(REFUND_TO_ADDRESS_FLAG | uint256(uint160(refundTo))));
+    }
+
+
+    function _generatePermit2Info(
+        address token,
+        uint256[] memory amounts
+    ) internal view returns (bytes memory) {
+        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+            token,
+            amounts,
+            1, // nonce
+            2524579200 // deadline 2050-01-01 00:00:00
+        );
+        bytes memory signature = getPermitBatchTransferSignature(
+            permit,
+            arnaudPrivateKey,
+            address(dexRouter),
+            Permit2EthDomainSeperator
+        );
+        bytes memory permit2Info = _buildPermit2InfoUnified(
+            amounts,
+            permit.nonce,
+            permit.deadline,
+            arnaud,
+            signature
+        );
+
+        return permit2Info;
     }
 }

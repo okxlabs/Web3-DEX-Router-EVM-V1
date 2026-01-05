@@ -6,7 +6,6 @@ import "../common/Permit2Helper.t.sol";
 import "@dex/interfaces/IPermit2.sol";
 
 contract FromTokenCommissionTest is TrimAndCommissionTestBase {
-    uint256 public arnaudPrivateKey = 11111111111111111111;
 
     // ==================== Test fromToken commission with multi transfer modes ===================
     // (1) WETH->USDT, 3fromCommission, no-toBCommission, legacy mode
@@ -197,32 +196,5 @@ contract FromTokenCommissionTest is TrimAndCommissionTestBase {
             DexRouter.smartSwapTo.selector,
             swapInfo.orderId, arnaud, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
-    }
-
-    function _generatePermit2Info(
-        address token,
-        uint256[] memory amounts
-    ) internal view returns (bytes memory) {
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
-            token,
-            amounts,
-            2, // nonce
-            2524579200 // deadline 2050-01-01 00:00:00
-        );
-        bytes memory signature = getPermitBatchTransferSignature(
-            permit,
-            arnaudPrivateKey,
-            address(dexRouter),
-            Permit2EthDomainSeperator
-        );
-        bytes memory permit2Info = _buildPermit2InfoUnified(
-            amounts,
-            permit.nonce,
-            permit.deadline,
-            arnaud,
-            signature
-        );
-
-        return permit2Info;
     }
 }

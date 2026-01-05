@@ -32,8 +32,6 @@ import "@dex/interfaces/IPermit2.sol";
  */
 
 contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
-    uint256 public arnaudPrivateKey = 11111111111111111111;
-
     // ==================== ERC20 -> ERC20 (WETH -> USDT) Tests ====================
     
     // --- Legacy Mode ---
@@ -794,33 +792,6 @@ contract SmartSwapPermit2Test is TrimAndCommissionTestBase {
             DexRouter.smartSwapTo.selector,
             swapInfo.orderId, arnaud, swapInfo.baseRequest, swapInfo.batchesAmount, swapInfo.batches, swapInfo.extraData
         );
-    }
-
-    function _generatePermit2Info(
-        address token,
-        uint256[] memory amounts
-    ) internal view returns (bytes memory) {
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
-            token,
-            amounts,
-            1, // nonce
-            2524579200 // deadline 2050-01-01 00:00:00
-        );
-        bytes memory signature = getPermitBatchTransferSignature(
-            permit,
-            arnaudPrivateKey,
-            address(dexRouter),
-            Permit2EthDomainSeperator
-        );
-        bytes memory permit2Info = _buildPermit2InfoUnified(
-            amounts,
-            permit.nonce,
-            permit.deadline,
-            arnaud,
-            signature
-        );
-
-        return permit2Info;
     }
 }
 

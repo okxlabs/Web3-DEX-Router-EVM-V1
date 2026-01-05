@@ -146,6 +146,8 @@ library UnxswapV3Router {
         }
 
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapCache.toToken, mode);
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
+
         returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
 
         uint256 fromTokenCommissionAmount;

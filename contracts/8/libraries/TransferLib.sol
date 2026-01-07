@@ -13,16 +13,16 @@ import "../interfaces/IApproveProxy.sol";
 
 /// @title Library to handle multi transfer modes including Permit2.
 library TransferLib {
-    /// @notice Handle Permit2Signature/ByInvest mode and fromTokenCommission mainly.
+    /// @notice Handle Permit2Signature mode and fromTokenCommission mainly.
     /// @param fromTokenWithMode The fromToken with mode encoded in high bits.
     /// @param payer The address of the payer.
     /// @param inputAmount The inputAmount of the fromToken.
     /// @param onlyOneAssetTo The address of the only one assetTo. If the assetTo is more than one, it should be set to address(0).
     /// @param extraData The extra data, only commissionInfo and permit2Info are used.
-    /// @return The new payer, the new inputAmount, and the fromTokenCommissionAmount. The new payer can be (1) original payer, (2) address(this), or (3) address(0).
+    /// @return The new payer, new inputAmount, and fromTokenCommissionAmount. The new payer can be (1) original payer, (2) address(this), or (3) address(0).
     ///         The address(0) means the fromToken has been paid and no need to pay later.
     /// @dev  Since the permitTransferFrom can only be called once in a transaction, this function is designed to handle multiple scenarios and call permitTransferFrom if necessary.
-    function handlePermit2SignatureModeWithCommission(
+    function handlePermit2SigModeWithCommission(
         uint256 fromTokenWithMode,
         address payer,
         uint256 inputAmount,
@@ -30,11 +30,11 @@ library TransferLib {
         IDexRouter.ExtraData memory extraData
     ) internal returns (address, uint256, uint256) {
         uint256 mode = fromTokenWithMode & _TRANSFER_MODE_MASK;
-        address token = address(uint160(fromTokenWithMode & _ADDRESS_MASK));
+        address token = CommonLib.bytes32ToAddress(fromTokenWithMode);
         uint256 totalRate = 0;
         uint256 fromTokenCommissionAmount = 0;
 
-        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance, and commission is not allowed.
+        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance according to agreement, and commission is not allowed.
         if (mode == _MODE_BY_INVEST) {
             return (address(this), inputAmount, 0);
         }
@@ -44,11 +44,15 @@ library TransferLib {
             fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
         }
 
+        if (token == _ETH) {
+            require(mode == _MODE_LEGACY, "ETH as fromToken is not allowed for non-legacy mode");
+            return (address(this), inputAmount, fromTokenCommissionAmount);
+        }
+
         // For other modes (not _MODE_PERMIT2_SIGNATURE), return the original payer, inputAmount, and calculated fromTokenCommissionAmount.
         if (mode != _MODE_PERMIT2_SIGNATURE) {
             return (payer, inputAmount, fromTokenCommissionAmount);
         }
-        require(token != _ETH, "token cannot be ETH for PERMIT2_SIGNATURE mode");
 
         // For _MODE_PERMIT2_SIGNATURE mode, token needs to be claimed to address `to` by calling permitTransferFrom. And the address `to` needs to be set according to the situation.
         // For following 2 situations, the address `to` should be set to address(this):
@@ -75,10 +79,10 @@ library TransferLib {
 
         if (to == address(this)) {
             // Get balance of token because the token has been claimed to address(this).
-            uint256 balance = IERC20(token).balanceOf(address(this));
+            uint256 balance = CommonLib.getBalanceOf(token, address(this));
 
             // Calculate the inputAmount and fromTokenCommissionAmount according to the mode.
-            if (toBCommission == TO_B_MODE) { // For Permit2Signature mode && ToB mode, the inputAmount and fromTokenCommissionAmount need to be calculated.
+            if (extraData.commissionInfo.isFromTokenCommission && toBCommission == TO_B_MODE) { // For Permit2Signature mode && ToB mode, the inputAmount and fromTokenCommissionAmount need to be calculated.
                 inputAmount = inputAmount * balance / (inputAmount + fromTokenCommissionAmount);
                 fromTokenCommissionAmount = balance - inputAmount;
                 return (address(this), inputAmount, fromTokenCommissionAmount); 
@@ -116,7 +120,7 @@ library TransferLib {
             deadline: extraData.permit2Info.deadline
         });
         IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
-        if (permitLength == 1) { // Generate permit params without ToC mode
+        if (permitLength == 1) { // Generate permit params with permit2 array length = 1
             permitBatchTransferFrom.permitted[0] = IPermit2.TokenPermissions({
                 token: token,
                 amount: extraData.permit2Info.amounts[0]
@@ -125,7 +129,7 @@ library TransferLib {
                 to: to,
                 requestedAmount: inputAmount + fromTokenCommissionAmount
             });
-        } else { // Generate permit params with ToC mode
+        } else { // Generate permit params with permit2 array length > 1 (fromTokenCommission with NoToB mode)
             for (uint256 i = 0; i < permitLength; i++) {
                 permitBatchTransferFrom.permitted[i] = IPermit2.TokenPermissions({
                     token: token,
@@ -174,15 +178,16 @@ library TransferLib {
         uint256 fromTokenWithMode,
         uint256 amount
     ) internal {
+        if (payer == to) {
+            return;
+        }
+
         address token = address(uint160(fromTokenWithMode & _ADDRESS_MASK));
         uint256 mode = fromTokenWithMode & _TRANSFER_MODE_MASK;
 
-        if (mode == _MODE_NO_TRANSFER) {
-            return;
-        } else if (mode == _MODE_BY_INVEST) {
-            require(payer == address(this), "payer must be address(this)");
-            SafeERC20.safeTransfer(IERC20(token), to, amount);
-        } else { // For other modes, payer needs to be checked. If the payer is address(this), the transfer logic is same.
+        // For modes other than _MODE_NO_TRANSFER, payer needs to be checked. If the payer is address(this), the transfer logic is same.
+        // If mode is _MODE_BY_INVEST, the payer passed in must be address(this).
+        if (mode != _MODE_NO_TRANSFER) {
             if (payer == address(this)) {
                 SafeERC20.safeTransfer(IERC20(token), to, amount);
             } else {
@@ -193,11 +198,14 @@ library TransferLib {
                 } else if (mode == _MODE_PERMIT2_SIGNATURE) {
                     /// @notice The permitTransferFrom should not be called here, and if payer is not reset to address(this), the payer must be address(0).
                     require(payer == address(0), "permitTransferFrom must be called before");
-                } else {
+                } else if (mode == _MODE_LEGACY) {
                     IApproveProxy(_APPROVE_PROXY).claimTokens(token, payer, to, amount);
+                } else {
+                    revert("invalid transfer mode");
                 }
             }
         }
+        // For _MODE_NO_TRANSFER mode, do nothing.
     }
 
     /// @notice Transfers the specified token to the user.
@@ -206,9 +214,9 @@ library TransferLib {
     /// @dev Handles the withdrawal of tokens to the user, converting WETH to ETH if necessary.
     function transferTokenToUser(address token, address to) internal {
         if (token == _ETH) {
-            uint256 wethBal = CommonLib.getBalanceOf(address(uint160(_WETH)), address(this));
+            uint256 wethBal = CommonLib.getBalanceOf(_WETH, address(this));
             if (wethBal > 0) {
-                IWETH(address(uint160(_WETH))).withdraw(wethBal);
+                IWETH(_WETH).withdraw(wethBal);
             }
             if (to != address(this)) {
                 uint256 ethBal = address(this).balance;

@@ -29,11 +29,13 @@ library UnxswapExactOutRouter {
     // ============================== Public Functions ================================
     // ================================================================================
     /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling.
+    ///         The srcToken can be 0xEeee or address(0) for ETH.
     /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
     /// @param amount The target output amount to receive.
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param receiver The address to receive the output tokens.
     /// @param pools The list of pool identifiers to use for the swap path.
+    /// @param extraData Additional data encoded in calldata.
     /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function unxswapExactOutTo(
         uint256 srcToken,
@@ -59,10 +61,12 @@ library UnxswapExactOutRouter {
     }
 
     /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling. The receiver is set to msg.sender.
+    ///         The srcToken can be 0xEeee or address(0) for ETH.
     /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
     /// @param amount The target output amount to receive.
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param pools The list of pool identifiers to use for the swap path.
+    /// @param extraData Additional data encoded in calldata.
     /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function unxswapExactOutToByOrderID(
         uint256 srcToken,
@@ -104,6 +108,8 @@ library UnxswapExactOutRouter {
         bytes32[] calldata pools,
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 consumeAmount) {
+        receiver = receiver == address(0) ? msg.sender : receiver;
+
         // Step 1: Adjust the target output amount to include commission if commission is taken from the output token.
         uint256 targetTokenBefore = 0;
         address middleReceiver = receiver;
@@ -121,15 +127,15 @@ library UnxswapExactOutRouter {
             address fromToken;
             (fromToken, toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
             require(
-                (srcTokenAddress == fromToken && fromToken != _ETH) || (srcTokenAddress == address(0) && fromToken == _ETH),
-                "unxswap: token mismatch"
+                srcTokenAddress == fromToken || (srcTokenAddress == address(0) && fromToken == _ETH),
+                "unxswapExactOut: fromToken mismatch"
             );
         }
 
         uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
         require(
             mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
-            "UnxswapExactOut: invalid transfer mode"
+            "unxswapExactOut: invalid transfer mode"
         );
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
@@ -219,15 +225,8 @@ library UnxswapExactOutRouter {
             }
         }
         
-        // Emit the swap event.
-        // TODO To fix stack too deep
-        // emit Swap(
-        //     address(srcToken),
-        //     toToken,
-        //     tx.origin,
-        //     returnAmount,
-        //     swapCache.amountOut
-        // );
+        // Emit the swap event. amounts[pools.length] == swapCache.amountOut, use function to avoid stack too deep.
+        _emitSwap(address(srcToken), toToken, returnAmount, amounts[pools.length]);
 
         return (swapCache.payer, returnAmount, fromTokenCommissionAmount);
     }
@@ -268,7 +267,7 @@ library UnxswapExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) private returns (address, uint256, uint256) {
         uint256 fromTokenCommissionAmount;
-        (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SignatureModeWithCommission(
+        (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SigModeWithCommission(
             token == address(0) ? uint256(uint160(_ETH)) : uint256(uint160(token)) | mode,
             payer,
             amount,
@@ -276,7 +275,7 @@ library UnxswapExactOutRouter {
             extraData
         );
 
-        if(token == address(0)) {
+        if(token == address(0) || token == _ETH) {
             require(msg.value >= amount, "insufficient ETH");
             IWETH(_WETH).deposit{value: amount}();
             require(IERC20(_WETH).transfer(recipient, amount), "WETH transfer failed");
@@ -318,5 +317,14 @@ library UnxswapExactOutRouter {
         }
         
         return (to, toToken);
+    }
+
+    function _emitSwap(
+        address srcToken,
+        address toToken,
+        uint256 returnAmount,
+        uint256 amountOut
+    ) private {
+        emit Swap(srcToken, toToken, tx.origin, returnAmount, amountOut);
     }
 }

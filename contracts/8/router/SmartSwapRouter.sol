@@ -22,6 +22,7 @@ library SmartSwapRouter {
     /// @param baseRequest Contains essential parameters for the swap such as source and destination tokens, amounts, and deadline.
     /// @param batchesAmount Array indicating amounts for each batch in the swap, allowing for split operations.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
     /// @dev This function enables users to perform token swaps with complex routing directly to a specified address,
     /// optimizing for best returns and accommodating specific trading strategies.
@@ -58,6 +59,7 @@ library SmartSwapRouter {
     /// @param batchesAmount Array indicating how much of the source token to swap in each batch, facilitating diversified investments.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
     /// @param to The address where the swapped tokens will be sent, typically an investment contract or pool.
+    /// @param refundTo The address to receive any unused tokens after the swap.
     /// @return returnAmount The total amount of destination tokens received, ready for investment.
     /// @dev This function is designed for scenarios where investments are made in batches or through complex paths to optimize returns. Adjustments are made based on the contract's current token balance to ensure precise allocation.
     function smartSwapByInvestWithRefund(
@@ -97,6 +99,15 @@ library SmartSwapRouter {
             refundTo, // refundTo
             to // receiver
         );
+
+        // Refund unused fromToken
+        if (fromToken == _ETH) {
+            TransferLib.refundToken(_ETH, refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+            TransferLib.refundToken(_WETH, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
+        } else {
+            TransferLib.refundToken(fromToken, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused fromToken will be refunded to refundTo
+        }
+
         // check minReturnAmount
         returnAmount =
             CommonLib.getBalanceOf(baseRequest.toToken, to) -
@@ -126,27 +137,27 @@ library SmartSwapRouter {
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
-
-        if (mode == _MODE_BY_INVEST) {
-            swapCache.refundTo = extraData.refundTo;
-        }
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
+        if (mode == _MODE_BY_INVEST && extraData.refundTo != address(0)) {
+            swapCache.refundTo = extraData.refundTo;
+        }
+
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapCache.receiver);
 
         uint256 fromTokenCommissionAmount;
         {
-            address onlyOneAssetTo = (batches.length == 1 && batches[0].length > 0 && batches[0][0].assetTo.length == 1)
+            address onlyOneAssetTo = (batches.length == 1 && batches[0][0].assetTo.length == 1)
                 ? batches[0][0].assetTo[0]
                 : address(0);
             (
                 swapCache.payer,
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
-            ) = TransferLib.handlePermit2SignatureModeWithCommission(
+            ) = TransferLib.handlePermit2SigModeWithCommission(
                 uint256(uint160(fromToken)) | mode,
                 swapCache.payer,
                 baseRequest.fromTokenAmount,
@@ -189,7 +200,7 @@ library SmartSwapRouter {
             TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
             TransferLib.refundToken(_WETH, swapCache.refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
         } else {
-            TransferLib.refundToken(fromToken, swapCache.refundTo);
+            TransferLib.refundToken(fromToken, swapCache.refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused fromToken will be refunded to refundTo
         }
 
         // check minReturnAmount
@@ -225,20 +236,19 @@ library SmartSwapRouter {
         address receiver
     ) private {
         // 1. transfer from token in
-        IDexRouter.BaseRequest memory _baseRequest = baseRequest;
-
-        address fromToken = CommonLib.bytes32ToAddress(_baseRequest.fromToken);
+        address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
 
         // In order to deal with ETH/WETH transfer rules in a unified manner,
         // we do not need to judge according to fromToken.
         if (fromToken == _ETH) {
             IWETH(_WETH).deposit{
-                value: _baseRequest.fromTokenAmount
+                value: baseRequest.fromTokenAmount
             }();
             require(CommonLib.bytes32ToAddress(batches[0][0].fromToken) == _WETH, "firstToken mismatch");
-            payer = address(this);
+            require(payer == address(this), "payer must be router");
         } else {
             require(CommonLib.bytes32ToAddress(batches[0][0].fromToken) == fromToken, "firstToken mismatch");
+            require(msg.value == 0, "value must be 0");
         }
 
         // 2. check total batch amount
@@ -252,7 +262,7 @@ library SmartSwapRouter {
                 }
             }
             require(
-                totalBatchAmount <= _baseRequest.fromTokenAmount,
+                totalBatchAmount <= baseRequest.fromTokenAmount,
                 "Route: number of batches should be <= fromTokenAmount"
             );
         }
@@ -270,7 +280,7 @@ library SmartSwapRouter {
                 payer,
                 refundTo,
                 receiver,
-                _baseRequest.toToken == _ETH,
+                baseRequest.toToken == _ETH,
                 batchesAmount[i],
                 batches[i]
             );
@@ -280,7 +290,7 @@ library SmartSwapRouter {
         }
 
         // 5. transfer tokens to user
-        TransferLib.transferTokenToUser(_baseRequest.toToken, receiver);
+        TransferLib.transferTokenToUser(baseRequest.toToken, receiver);
     }
 
     /// @notice Executes a series of swaps or operations defined by a set of routing paths, potentially across different protocols or pools.

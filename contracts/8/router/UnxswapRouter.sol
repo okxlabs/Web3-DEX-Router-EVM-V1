@@ -45,6 +45,7 @@ library UnxswapRouter {
     /// @param minReturn The minimum amount of destination tokens expected from the swap, ensuring the trade does not proceed under unfavorable conditions.
     /// @param receiver The address where the swapped tokens will be sent.
     /// @param pools An array of pool identifiers to specify the swap route, optimizing for best rates.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
     /// @dev This function facilitates direct swaps using Unxswap, allowing users to specify custom swap routes and ensuring that the output is sent to a predetermined address. It is designed for scenarios where the user wants to directly receive the tokens in their wallet or another contract.
     function unxswapTo(
@@ -83,6 +84,7 @@ library UnxswapRouter {
     /// @param receiver The address that will receive the swapped tokens.
     /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
     /// @param pools An array of pool identifiers defining the Unxswap route, with encoded swap direction and WETH unwrap flags.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
     /// @dev This function validates token compatibility with the provided pool route and ensures proper swap execution.
     /// It supports both ETH and ERC20 token swaps, with automatic WETH wrapping/unwrapping as needed.
@@ -156,7 +158,7 @@ library UnxswapRouter {
             address onlyOneAssetTo = CommonLib.bytes32ToAddress(uint256(pools[0]));
             
             (swapCache.payer, amount, fromTokenCommissionAmount) = 
-                TransferLib.handlePermit2SignatureModeWithCommission(
+                TransferLib.handlePermit2SigModeWithCommission(
                     uint256(uint160(srcToken)) | mode,
                     swapCache.payer,
                     amount,

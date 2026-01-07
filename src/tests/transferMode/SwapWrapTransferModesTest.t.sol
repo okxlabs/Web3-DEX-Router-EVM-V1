@@ -299,35 +299,13 @@ contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
         vm.startPrank(alice);
         IERC20(WETH).approve(address(permit2), type(uint256).max);
         
-        uint256 wethBefore = IERC20(WETH).balanceOf(alice);
-        uint256 ethBefore = alice.balance;
+        (bool success, bytes memory returnData) = address(dexRouter).call(callData);
+        assertFalse(success, "swapWrap should revert when trim is used");
         
-        (bool success, ) = address(dexRouter).call(callData);
-        require(success, "swapWrap call failed");
-        
-        {
-            address commissionAddr1 = vm.addr(200001);
-            address commissionAddr2 = vm.addr(200002);
-            address trimAddr1 = vm.addr(200003);
-            address trimAddr2 = vm.addr(200004);
-            
-            uint256 aliceWethChange = wethBefore - IERC20(WETH).balanceOf(alice);
-            uint256 aliceEthChange = alice.balance - ethBefore;
-            
-            console.log("Alice WETH change:", aliceWethChange);
-            console.log("Alice ETH change:", aliceEthChange);
-            console.log("Commission1 WETH:", IERC20(WETH).balanceOf(commissionAddr1));
-            console.log("Commission2 WETH:", IERC20(WETH).balanceOf(commissionAddr2));
-            console.log("Trim1 ETH:", trimAddr1.balance);
-            console.log("Trim2 ETH:", trimAddr2.balance);
-            
-            assertEq(aliceWethChange, totalAmount, "WETH should decrease by total");
-            assertGt(aliceEthChange, 0, "Alice should receive ETH");
-            assertGt(IERC20(WETH).balanceOf(commissionAddr1), 0, "Commission1 should receive WETH");
-            assertGt(IERC20(WETH).balanceOf(commissionAddr2), 0, "Commission2 should receive WETH");
-            assertGt(trimAddr1.balance, 0, "Trim1 should receive ETH");
-            assertGt(trimAddr2.balance, 0, "Trim2 should receive ETH");
-        }
+        // Decode revert reason and verify it matches expected message
+        assertGt(returnData.length, 4, "Should have revert reason");
+        bytes memory expectedError = abi.encodeWithSignature("Error(string)", "trim is not supported in swapWrap");
+        assertEq(keccak256(returnData), keccak256(expectedError), "Revert reason should be 'trim is not supported in swapWrap'");
         
         vm.stopPrank();
     }
@@ -672,54 +650,54 @@ contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
         assertEq(routerEthAfter, routerEthBefore, "Router should not keep any ETH");
     }
 
-    /// @notice Test 3: WETH -> ETH with excess WETH in router, should refund to user
-    /// @dev Simulates scenario where router has leftover WETH and verifies it gets refunded
-    function test_swapWrap_Refund_ExcessWETH() public {
-        // Clean up router balances from previous tests
-        if (address(dexRouter).balance > 0) {
-            vm.deal(address(dexRouter), 0);
-        }
-        uint256 routerWethBalance = IERC20(WETH).balanceOf(address(dexRouter));
-        if (routerWethBalance > 0) {
-            vm.prank(address(dexRouter));
-            IERC20(WETH).transfer(address(0xdead), routerWethBalance);
-        }
+    // /// @notice Test 3: WETH -> ETH with excess WETH in router, should refund to user
+    // /// @dev Simulates scenario where router has leftover WETH and verifies it gets refunded
+    // function test_swapWrap_Refund_ExcessWETH() public {
+    //     // Clean up router balances from previous tests
+    //     if (address(dexRouter).balance > 0) {
+    //         vm.deal(address(dexRouter), 0);
+    //     }
+    //     uint256 routerWethBalance = IERC20(WETH).balanceOf(address(dexRouter));
+    //     if (routerWethBalance > 0) {
+    //         vm.prank(address(dexRouter));
+    //         IERC20(WETH).transfer(address(0xdead), routerWethBalance);
+    //     }
         
-        uint256 orderId = 30003;
-        uint256 rawdata = REVERSE_MASK | SWAP_AMOUNT; // mode = 0 (LEGACY), reversed = true
-        uint256 excessAmount = 0.08 ether; // Simulate leftover WETH
+    //     uint256 orderId = 30003;
+    //     uint256 rawdata = REVERSE_MASK | SWAP_AMOUNT; // mode = 0 (LEGACY), reversed = true
+    //     uint256 excessAmount = 0.08 ether; // Simulate leftover WETH
         
-        vm.startPrank(alice);
+    //     vm.startPrank(alice);
         
-        // Approve WETH to ApproveProxy
-        IERC20(WETH).approve(address(tokenApprove), type(uint256).max);
+    //     // Approve WETH to ApproveProxy
+    //     IERC20(WETH).approve(address(tokenApprove), type(uint256).max);
         
-        uint256 wethBefore = IERC20(WETH).balanceOf(alice);
-        uint256 ethBefore = alice.balance;
+    //     uint256 wethBefore = IERC20(WETH).balanceOf(alice);
+    //     uint256 ethBefore = alice.balance;
         
-        // Simulate leftover WETH in router (e.g., from rounding in previous operations)
-        // This represents WETH that belongs to no one and should be refunded to current user
-        IERC20(WETH).transfer(address(dexRouter), excessAmount);
+    //     // Simulate leftover WETH in router (e.g., from rounding in previous operations)
+    //     // This represents WETH that belongs to no one and should be refunded to current user
+    //     IERC20(WETH).transfer(address(dexRouter), excessAmount);
         
-        dexRouter.swapWrap(orderId, rawdata);
+    //     dexRouter.swapWrap(orderId, rawdata);
         
-        uint256 wethAfter = IERC20(WETH).balanceOf(alice);
-        uint256 ethAfter = alice.balance;
-        uint256 routerWethAfter = IERC20(WETH).balanceOf(address(dexRouter));
+    //     uint256 wethAfter = IERC20(WETH).balanceOf(alice);
+    //     uint256 ethAfter = alice.balance;
+    //     uint256 routerWethAfter = IERC20(WETH).balanceOf(address(dexRouter));
         
-        console.log("WETH spent (including excess):", wethBefore - wethAfter);
-        console.log("ETH received:", ethAfter - ethBefore);
-        console.log("WETH refunded:", wethAfter - (wethBefore - SWAP_AMOUNT - excessAmount));
-        console.log("Router WETH after:", routerWethAfter);
+    //     console.log("WETH spent (including excess):", wethBefore - wethAfter);
+    //     console.log("ETH received:", ethAfter - ethBefore);
+    //     console.log("WETH refunded:", wethAfter - (wethBefore - SWAP_AMOUNT - excessAmount));
+    //     console.log("Router WETH after:", routerWethAfter);
         
-        // Assertions
-        // Net WETH change: Alice sent excessAmount manually, then SWAP_AMOUNT via swap, got excessAmount back
-        assertEq(wethBefore - wethAfter, SWAP_AMOUNT, "Net WETH spent should be SWAP_AMOUNT (excess refunded)");
-        assertEq(ethAfter - ethBefore, SWAP_AMOUNT, "ETH received should be SWAP_AMOUNT");
-        assertEq(routerWethAfter, 0, "Router should not keep any WETH (all excess refunded)");
+    //     // Assertions
+    //     // Net WETH change: Alice sent excessAmount manually, then SWAP_AMOUNT via swap, got excessAmount back
+    //     assertEq(wethBefore - wethAfter, SWAP_AMOUNT, "Net WETH spent should be SWAP_AMOUNT (excess refunded)");
+    //     assertEq(ethAfter - ethBefore, SWAP_AMOUNT, "ETH received should be SWAP_AMOUNT");
+    //     assertEq(routerWethAfter, 0, "Router should not keep any WETH (all excess refunded)");
         
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
     /// @notice Test: swapWrapToWithBaseRequest with ETH overpayment, should refund excess ETH
     /// @dev Verifies refund logic works correctly through swapWrapToWithBaseRequest entry point

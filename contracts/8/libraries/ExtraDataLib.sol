@@ -21,7 +21,7 @@ library ExtraDataLib {
         assembly {
             calldataSize := calldatasize()
         }
-        require((calldataSize - 4) % 32 == 0, "Invalid calldata length");
+        require((calldataSize - 4) % 32 == 0, "Calldata length must be 4+32*N bytes");
 
         // get endPoints and lengths of each extra calldata
         (uint256[] memory endPoints, uint256[] memory lengths) = _getExtraDataEndPointAndLength();

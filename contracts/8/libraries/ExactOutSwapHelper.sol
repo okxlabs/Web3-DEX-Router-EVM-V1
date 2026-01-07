@@ -9,20 +9,22 @@ import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
 
 library ExactOutSwapHelper {
-    // Adjusts the target output amount to include commission if commission is taken from the output token.
+    // Ensure no trim, and adjusts the target output amount to include commission if commission is taken from the output token.
     function beforeSwap(
         uint256 amountOut,
         address middleReceiver,
         uint256 targetTokenBefore,
         IDexRouter.ExtraData memory extraData
     ) internal returns (uint256, uint256, address) {
+        // Ensure no trim.
+        require(!extraData.trimInfo.hasTrim, "trim is not supported in exact out swap");
+
         IDexRouter.CommissionInfo memory commissionInfo = extraData.commissionInfo;
         uint256 totalRate = CommissionLib.calculateTotalRate(commissionInfo);
         if (
             commissionInfo.isToTokenCommission &&
             totalRate > 0
         ) {
-            // DENOMINATOR is defined in the CommissionLib.sol
             amountOut = (amountOut * DENOMINATOR) / (DENOMINATOR - totalRate);
             targetTokenBefore = CommonLib.getBalanceOf(
                 /// @notice commissionInfo.token ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
@@ -34,10 +36,10 @@ library ExactOutSwapHelper {
         return (amountOut, targetTokenBefore, middleReceiver);
     }
 
-    // Handles commission.
+    // Only handle commission.
     function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal {
-        // validate commission info
-        CommissionLib.validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, _MODE_LEGACY); // @notice For commission validation, ETH needs to be 0xEeee.
+        // Validate commission info
+        CommissionLib.validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, _MODE_LEGACY); /// @notice For commission validation, ETH needs to be 0xEeee.
 
         // Handle commission from the source token if applicable.
         if (

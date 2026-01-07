@@ -11,15 +11,6 @@ import "../interfaces/IERC20.sol";
 import "../interfaces/IWETH.sol";
 
 library DagRouter {
-    /// @notice Core DAG algorithm data structure
-    /// @dev Maintains the state of the DAG during execution
-    struct SwapState {
-        /// @notice the number of nodes need to be processed
-        uint256 nodeNum;
-        /// @notice the refundTo address of the DAG
-        address refundTo;
-    }
-
     // ================================================================================
     // ============================== Public Functions ================================
     // ================================================================================
@@ -28,6 +19,7 @@ library DagRouter {
     /// @param receiver The address that will receive the swapped tokens.
     /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
     /// @param paths An array of RouterPath structs defining the DAG swap route.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
     /// @dev This function validates token compatibility with the provided pool route and ensures proper swap execution.
     function dagSwapTo(
@@ -56,19 +48,19 @@ library DagRouter {
 
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
-            refundTo: mode == _MODE_BY_INVEST ? extraData.refundTo : msg.sender,
+            refundTo: (mode == _MODE_BY_INVEST && extraData.refundTo != address(0)) ? extraData.refundTo : msg.sender,
             receiver: receiver,
             toToken: baseRequest.toToken
         });
 
         uint256 fromTokenCommissionAmount;
         {
-            address onlyOneAssetTo = paths[0].assetTo.length == 1 ? paths[0].assetTo[0] : address(0);
+            address onlyOneAssetTo = paths[0].assetTo.length == 1 ? paths[0].assetTo[0] : address(0); // Output edge of node0 is only one
             (
                 swapCache.payer,
                 baseRequest.fromTokenAmount,
                 fromTokenCommissionAmount
-            ) = TransferLib.handlePermit2SignatureModeWithCommission(
+            ) = TransferLib.handlePermit2SigModeWithCommission(
                 uint256(uint160(fromToken)) | mode,
                 swapCache.payer,
                 baseRequest.fromTokenAmount,
@@ -113,7 +105,7 @@ library DagRouter {
             "Min return not reached"
         );
 
-        // Refund unused fromToken
+        // Refund unused fromToken. If fromToken is not ETH, no need to refund cause all `fromTokenAmount` will be used.
         if (fromToken == _ETH) {
             TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
         }
@@ -144,18 +136,18 @@ library DagRouter {
         // In order to deal with ETH/WETH transfer rules in a unified manner,
         // we do not need to judge according to fromToken.
         if (fromToken == _ETH) {
-            require(firstNodeToken == _WETH, "firstToken mismatch");
             IWETH(_WETH).deposit{
                 value: baseRequest.fromTokenAmount
             }();
-            swapCache.payer = address(this);
+            require(firstNodeToken == _WETH, "firstToken mismatch");
+            require(swapCache.payer == address(this), "payer must be router");
         } else {
             require(firstNodeToken == fromToken, "firstToken mismatch");
             require(msg.value == 0, "value must be 0");
         }
 
         // 2. execute dag swap
-        _exeDagSwap(swapCache.payer, swapCache.receiver, swapCache.refundTo, baseRequest.fromTokenAmount, baseRequest.toToken == _ETH, paths);
+        _exeDagSwap(swapCache, baseRequest.fromTokenAmount, baseRequest.toToken == _ETH, paths);
 
         // 3. transfer tokens to receiver
         TransferLib.transferTokenToUser(baseRequest.toToken, swapCache.receiver);
@@ -164,23 +156,20 @@ library DagRouter {
     /// @notice The core logic to execute the DAG swap. For the first node, the payer should use passed value.
     /// For the non-first node, the payer should always be address(this) cause the to address of the middle swap is address(this).
     function _exeDagSwap(
-        address payer,
-        address receiver,
-        address refundTo,
+        IDexRouter.SwapCache memory swapCache,
         uint256 firstNodeBalance,
         bool isToNative,
         IDexRouter.RouterPath[] calldata paths
     ) private {
         uint256 nodeNum = paths.length;
-        SwapState memory swapState = _initSwapState(nodeNum, refundTo);
 
         // execute nodes
         for (uint256 i = 0; i < nodeNum;) {
             if (i != 0) { // reset payer for non-first node
-                payer = address(this);
+                swapCache.payer = address(this);
             }
 
-            _exeNode(payer, receiver, firstNodeBalance, i, isToNative, paths[i], swapState);
+            _exeNode(swapCache, firstNodeBalance, i, isToNative, paths[i], nodeNum);
 
             unchecked {
                 ++i;
@@ -188,24 +177,14 @@ library DagRouter {
         }
     }
 
-    /// @notice Initialize the swap state for the DAG execution
-    function _initSwapState(
-        uint256 _nodeNum,
-        address _refundTo
-    ) private pure returns (SwapState memory state) {
-        state.nodeNum = _nodeNum;
-        state.refundTo = _refundTo;
-    }
-
     /// @notice The core logic to execute the each node
     function _exeNode(
-        address payer,
-        address receiver,
+        IDexRouter.SwapCache memory swapCache,
         uint256 nodeBalance,
         uint256 nodeIndex,
         bool isToNative,
         IDexRouter.RouterPath calldata path,
-        SwapState memory swapState
+        uint256 nodeNum
     ) private {
         uint256 totalWeight;
         uint256 accAmount;
@@ -240,7 +219,7 @@ library DagRouter {
                 }
 
                 require(inputIndex == nodeIndex, "node inputIndex inconsistent");
-                require(inputIndex < outputIndex && outputIndex <= swapState.nodeNum, "node index out of range");
+                require(inputIndex < outputIndex && outputIndex <= nodeNum, "node index out of range");
 
                 totalWeight += weight;
                 if (i == path.mixAdapters.length - 1) {
@@ -262,7 +241,7 @@ library DagRouter {
                 }
                 if (_fromTokenAmount > 0) {
                     TransferLib.transferInternal(
-                        payer,
+                        swapCache.payer,
                         path.assetTo[i],
                         path.fromToken,
                         _fromTokenAmount
@@ -273,15 +252,16 @@ library DagRouter {
             // 3. execute single swap
             {
                 address to = address(this);
-                if (outputIndex == swapState.nodeNum && !isToNative) {
-                    to = receiver;
+                if (outputIndex == nodeNum && !isToNative) {
+                    to = swapCache.receiver;
                 }
+                address refundTo_ = swapCache.refundTo; // avoid stack too deep
                 _exeEdge(
                     path.rawData[i],
                     path.mixAdapters[i],
                     path.extraData[i],
                     to,
-                    swapState.refundTo
+                    refundTo_
                 );
             }
 

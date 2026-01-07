@@ -6,6 +6,7 @@ import "./CommonLib.sol";
 import "../interfaces/IDexRouter.sol";
 
 library CommissionLib {
+    /// @notice swapCache.refundTo is not used in this function.
     function doCommissionFromToken(
         IDexRouter.CommissionInfo memory commissionInfo,
         IDexRouter.SwapCache memory swapCache,
@@ -293,7 +294,7 @@ library CommissionLib {
                 }
             }
             if iszero(eq(token, _ETH)) {
-                if and(eq(mode, _MODE_PERMIT2_SIGNATURE), eq(toBCommission, TO_B_MODE)) { // transferMode == _MODE_PERMIT2_SIGNATURE && ToB mode, the token should have been claimed to address(this)
+                if and(eq(toBCommission, TO_B_MODE), eq(mode, _MODE_PERMIT2_SIGNATURE)) { // ToB mode && transferMode == _MODE_PERMIT2_SIGNATURE, the token should have been claimed to address(this)
                     // require(payer == address(), "invalid payer");
                     if iszero(eq(payer, address())) {
                         _revertWithReason(
@@ -331,7 +332,7 @@ library CommissionLib {
                         sendAmount := add(sendAmount, amount)
                     }
 
-                    // Only transfer if not in PERMIT2_SIGNATURE + NO_TO_B_MODE case
+                    // Only transfer if not in PERMIT2_SIGNATURE && ToC mode case
                     if iszero(skipTransfer) {
                         _transferTokenWithMode(token, mode, payer, referrer, amount)
                     }

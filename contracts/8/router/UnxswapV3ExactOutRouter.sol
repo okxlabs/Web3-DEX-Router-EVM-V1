@@ -47,10 +47,11 @@ library UnxswapV3ExactOutRouter {
     // ============================== Public Functions ================================
     // ================================================================================
     /// @notice Executes an exact output swap using the Uniswap V3 protocol, including commission handling.
-    /// @param receiver The address to receive the output tokens (encoded as uint256).
+    /// @param receiver The address to receive the output tokens (encoded as uint256 with order ID mask).
     /// @param amountOut The exact amount of output tokens to receive.
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param pools The list of pool identifiers to use for the swap path.
+    /// @param extraData Additional data encoded in calldata.
     /// @return consumeAmount The actual amount of source tokens consumed.
     function uniswapV3SwapExactOutTo(
         uint256 receiver,
@@ -66,7 +67,7 @@ library UnxswapV3ExactOutRouter {
                 maxConsume: maxConsume,
                 payer: msg.sender
             }),
-            receiver,
+            CommonLib.bytes32ToAddress(receiver),
             pools,
             extraData
         );
@@ -90,22 +91,22 @@ library UnxswapV3ExactOutRouter {
     // ================================================================================
     /// @notice Internal function to perform an exact output swap using the Uniswap V3 protocol, handling commission logic for both source and target tokens.
     /// @param swapCache The cache of the exact out swap.
-    /// @param receiver The address to receive the output tokens (encoded as uint256).
+    /// @param receiver The address to receive the output tokens.
     /// @param pools The list of pool identifiers to use for the swap path.
     /// @param extraData The extra data for the exact out swap.
     /// @return consumeAmount The actual amount of source tokens consumed.
     function _uniswapV3SwapExactOutTo(
         IDexRouter.ExactOutSwapCache memory swapCache,
-        uint256 receiver,
+        address receiver,
         uint256[] calldata pools,
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 consumeAmount) {
-        require(address(uint160(receiver)) != address(0), "not addr(0)");
+        receiver = receiver == address(0) ? msg.sender : receiver;
         // Step 1: If the swap starts from ETH, the contract will wrap ETH to WETH in the last pool.
         TempStorage.setEthAmount(msg.value);
         // Step 2: Adjust the target output amount to include commission if commission is taken from the output token.
         uint256 targetTokenBefore = 0;
-        address middleReceiver = address(uint160(receiver));
+        address middleReceiver = receiver;
         (
             swapCache.amountOut,
             targetTokenBefore,
@@ -117,7 +118,7 @@ library UnxswapV3ExactOutRouter {
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
         require(
             mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
-            "UnxswapV3ExactOut: invalid transfer mode"
+            "unxswapV3ExactOut: invalid transfer mode"
         );
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
@@ -143,7 +144,7 @@ library UnxswapV3ExactOutRouter {
                 targetTokenBefore: targetTokenBefore,
                 srcToken: srcToken,
                 toToken: toToken,
-                receiver: address(uint160(receiver)),
+                receiver: receiver,
                 payer: swapCache.payer,
                 mode: mode,
                 fromTokenCommissionAmount: fromTokenCommissionAmount
@@ -319,10 +320,10 @@ library UnxswapV3ExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) private {
         uint256 ethAmount = TempStorage.getEthAmount();
-        uint256 tempAmount = TempStorage.getAmountConsumed(); // Flag to check if it is the first swap
-        if (tempAmount == 0) { // Means it is the first swap
+        uint256 tempAmount = TempStorage.getAmountConsumed(); // Used as a flag here to check if it is the last swap
+        if (tempAmount == 0) { // Means it is the last swap
             uint256 fromTokenCommissionAmount = 0;
-            (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SignatureModeWithCommission(
+            (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SigModeWithCommission(
                 ethAmount > 0 ? uint256(uint160(_ETH)) : uint256(uint160(token)) | mode,
                 payer,
                 amount,

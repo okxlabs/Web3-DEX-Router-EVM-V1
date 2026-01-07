@@ -18,10 +18,10 @@ library SwapWrapRouter {
     /// @notice Executes a simple swap between ETH and WETH using encoded parameters.
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
     /// @param rawdata Encoded data containing swap direction, transfer mode and amount information using bit masks.
+    /// @param extraData Additional data encoded in calldata.
     /// @dev This function supports bidirectional swaps between ETH and WETH with minimal gas overhead.
     /// The rawdata parameter encodes:
-    /// - Transfer mode in bits [251:249]: LEGACY(0b000), PERMIT2_ALLOWANCE(0b001), PERMIT2_SIGNATURE(0b011), DIRECT(0b101)
-    /// - Direction (reversed flag) in bit 255: false=ETH->WETH, true=WETH->ETH
+    /// - Transfer mode in bits [251:249], direction (reversed flag) in bit 255: false=ETH->WETH, true=WETH->ETH
     function swapWrap(uint256 orderId, uint256 rawdata, IDexRouter.ExtraData memory extraData) public {
         bool reversed;
         uint128 amount;
@@ -38,6 +38,7 @@ library SwapWrapRouter {
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.
     /// @param receiver The address that will receive the swapped tokens.
     /// @param baseRequest Struct containing essential swap parameters including source token (with mode in high bits [251:249]), destination token, amount, minimum return, and deadline.
+    /// @param extraData Additional data encoded in calldata.
     /// @dev This function validates that the token pair is either ETH->WETH or WETH->ETH and executes the swap accordingly.
     /// It extracts the amount and mode from the baseRequest and determines the swap direction based on the token addresses.
     function swapWrapToWithBaseRequest(
@@ -60,7 +61,7 @@ library SwapWrapRouter {
             revert("SwapWrap: invalid token pair");
         }
 
-        _swapWrap(orderId, receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK, extraData);
+        _swapWrap(orderId, receiver == address(0) ? msg.sender : receiver, reversed, baseRequest.fromTokenAmount, baseRequest.fromToken & _TRANSFER_MODE_MASK, extraData);
     }
 
     // ================================================================================
@@ -85,9 +86,8 @@ library SwapWrapRouter {
             mode == _MODE_PERMIT2_SIGNATURE,
             "SwapWrap: invalid transfer mode"
         );
-        
-        receiver = receiver == address(0) ? msg.sender : receiver;
 
+        require(!extraData.trimInfo.hasTrim, "trim is not supported in swapWrap");
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
@@ -103,7 +103,7 @@ library SwapWrapRouter {
             swapCache.payer, 
             amount, 
             fromTokenCommissionAmount
-        ) = TransferLib.handlePermit2SignatureModeWithCommission(
+        ) = TransferLib.handlePermit2SigModeWithCommission(
             reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
             swapCache.payer,
             amount,
@@ -118,7 +118,7 @@ library SwapWrapRouter {
                 extraData.commissionInfo,
                 swapCache,
                 fromTokenCommissionAmount,
-                extraData.trimInfo.hasTrim
+                false // extraData.trimInfo.hasTrim
             );
 
         if (reversed) {
@@ -154,9 +154,7 @@ library SwapWrapRouter {
         );
 
         // Refund unused fromToken
-        if (reversed) {
-            TransferLib.refundToken(_WETH, swapCache.refundTo);
-        } else {
+        if (!reversed) {
             TransferLib.refundToken(_ETH, swapCache.refundTo);
         }
 

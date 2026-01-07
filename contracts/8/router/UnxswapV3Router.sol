@@ -38,10 +38,11 @@ library UnxswapV3Router {
     // ============================== Public Functions ================================
     // ================================================================================
     /// @notice Executes a swap using the Uniswap V3 protocol.
-    /// @param receiver The address that will receive the swap funds.
+    /// @param receiver The address that will receive the swap funds (encoded as uint256 with order ID mask).
     /// @param amount The amount of the source token to be swapped.
     /// @param minReturn The minimum acceptable amount of tokens to receive from the swap, guarding against excessive slippage.
     /// @param pools An array of pool identifiers used to define the swap route within Uniswap V3.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The amount of tokens received after the completion of the swap.
     /// @dev This function wraps and unwraps ETH as required, ensuring the transaction only accepts non-zero `msg.value` for ETH swaps. It invokes `_uniswapV3Swap` to execute the actual swap and handles commission post-swap.
     function uniswapV3SwapTo(
@@ -75,6 +76,7 @@ library UnxswapV3Router {
     /// @param receiver The address that will receive the swapped tokens.
     /// @param baseRequest Struct containing essential swap parameters including source token, destination token, amount, minimum return, and deadline.
     /// @param pools An array of pool identifiers defining the Uniswap V3 swap route, with encoded swap direction and unwrap flags.
+    /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
     /// @dev This function validates token compatibility with the provided pool route and ensures proper swap execution.
     /// It supports both ETH and ERC20 token swaps, with automatic WETH wrapping/unwrapping as needed.
@@ -118,6 +120,10 @@ library UnxswapV3Router {
             );
     }
 
+    /// @notice Callback function invoked by Uniswap V3 pools during a swap.
+    /// @param amount0Delta The change in token0 balance (positive means the contract must pay token0).
+    /// @param amount1Delta The change in token1 balance (positive means the contract must pay token1).
+    /// @dev This function is called by the Uniswap V3 pool after executing a swap. It handles the payment of tokens to the pool.
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
@@ -155,7 +161,7 @@ library UnxswapV3Router {
             swapCache.payer,
             amount,
             fromTokenCommissionAmount
-        ) = TransferLib.handlePermit2SignatureModeWithCommission(
+        ) = TransferLib.handlePermit2SigModeWithCommission(
             uint256(uint160(srcToken)) | mode,
             swapCache.payer,
             amount,

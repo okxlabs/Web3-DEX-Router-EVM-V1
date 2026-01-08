@@ -118,7 +118,7 @@ library UnxswapV3ExactOutRouter {
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
         require(
             mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
-            "unxswapV3ExactOut: invalid transfer mode"
+            "invalid transfer mode"
         );
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 

@@ -79,13 +79,7 @@ library SwapWrapRouter {
         EventLib.emitSwapOrderId(orderId);
 
         require(amount > 0, "amount must be > 0");
-        require(
-            mode == _MODE_LEGACY || 
-            mode == _MODE_DIRECT || 
-            mode == _MODE_PERMIT2_ALLOWANCE || 
-            mode == _MODE_PERMIT2_SIGNATURE,
-            "SwapWrap: invalid transfer mode"
-        );
+        require(mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE, "invalid transfer mode");
 
         require(!extraData.trimInfo.hasTrim, "trim is not supported in swapWrap");
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, reversed ? _WETH : _ETH, reversed ? _ETH : _WETH, mode);
@@ -138,7 +132,7 @@ library SwapWrapRouter {
                 require(success, "transfer native token failed");
             }
         } else {
-            require(msg.value >= amount + fromTokenCommissionAmount, "SwapWrap: value not enough");
+            require(msg.value >= amount + fromTokenCommissionAmount, "value not enough");
             IWETH(_WETH).deposit{value: amount}();
             if (middleReceiver != address(this)) {
                 SafeERC20.safeTransfer(IERC20(_WETH), middleReceiver, amount);

@@ -137,6 +137,10 @@ library SmartSwapRouter {
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
         uint256 mode = batches[0][0].fromToken & _TRANSFER_MODE_MASK;
+        require(
+            mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE || mode == _MODE_BY_INVEST || mode == _MODE_NO_TRANSFER,
+            "invalid transfer mode"
+        );
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);

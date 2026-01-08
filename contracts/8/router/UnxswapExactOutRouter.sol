@@ -128,14 +128,14 @@ library UnxswapExactOutRouter {
             (fromToken, toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
             require(
                 srcTokenAddress == fromToken || (srcTokenAddress == address(0) && fromToken == _ETH),
-                "unxswapExactOut: fromToken mismatch"
+                "fromToken mismatch"
             );
         }
 
         uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
         require(
             mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
-            "unxswapExactOut: invalid transfer mode"
+            "invalid transfer mode"
         );
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 

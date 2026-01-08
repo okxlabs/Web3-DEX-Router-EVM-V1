@@ -47,7 +47,8 @@ library UnxswapRouter {
     /// @param pools An array of pool identifiers to specify the swap route, optimizing for best rates.
     /// @param extraData Additional data encoded in calldata.
     /// @return returnAmount The total amount of destination tokens received from the swap.
-    /// @dev This function facilitates direct swaps using Unxswap, allowing users to specify custom swap routes and ensuring that the output is sent to a predetermined address. It is designed for scenarios where the user wants to directly receive the tokens in their wallet or another contract.
+    /// @dev This function facilitates direct swaps using Unxswap, allowing users to specify custom swap routes and ensuring that the output is sent to a predetermined address.
+    ///      It is designed for scenarios where the user wants to directly receive the tokens in their wallet or another contract.
     function unxswapTo(
         uint256 srcToken,
         uint256 amount,
@@ -140,6 +141,10 @@ library UnxswapRouter {
         receiver = receiver == address(0) ? msg.sender : receiver;
 
         uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
+        require(
+            mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE || mode == _MODE_BY_INVEST,
+            "invalid transfer mode"
+        );
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
@@ -147,7 +152,7 @@ library UnxswapRouter {
 
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: payer,
-            refundTo: mode == _MODE_BY_INVEST ? extraData.refundTo : msg.sender,
+            refundTo: (mode == _MODE_BY_INVEST && extraData.refundTo != address(0)) ? extraData.refundTo : msg.sender,
             receiver: receiver,
             toToken: toToken
         });
@@ -477,8 +482,8 @@ library UnxswapRouter {
                 )
                 if eq(success, 0) {
                     revertWithReason(
-                        0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                        0x57
+                        0x0000001420636c61696d20746f6b656e73206661696c65640000000000000000,
+                        0x58
                     ) // "claim tokens failed"
                 }
             }
@@ -503,9 +508,9 @@ library UnxswapRouter {
                 )
                 if eq(success, 0) {
                     revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x0000001b207472616e7366657220746f6b656e20646972656374206661696c00,
                         0x5f
-                    ) // "transfer token referer fail"
+                    ) // "transfer token direct fail"
                 }
             }
             function _transferTokenPermit2Allowance(token, from, to, amt) {
@@ -530,9 +535,9 @@ library UnxswapRouter {
                 )
                 if eq(success, 0) {
                     revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                        0x5f
-                    ) // "transfer token referer fail"
+                        0x0000001c7065726d69743220616c6c6f77616e6365207472616e73206661696c,
+                        0x60
+                    ) // "permit2 allowance trans fail"
                 }
             }
             function _transferTokenWithMode(token, _payer, rawPair, amt) {

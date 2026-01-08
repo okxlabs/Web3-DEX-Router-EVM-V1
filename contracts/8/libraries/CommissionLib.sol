@@ -74,32 +74,30 @@ library CommissionLib {
                 }
             }
             function _claimToken(token, _payer, to, amount) {
-                if gt(amount, 0) {
-                    let freePtr := mload(0x40)
-                    mstore(0x40, add(freePtr, 0x84))
-                    mstore(
-                        freePtr,
-                        0x0a5ea46600000000000000000000000000000000000000000000000000000000
-                    ) // claimTokens
-                    mstore(add(freePtr, 0x04), token)
-                    mstore(add(freePtr, 0x24), _payer)
-                    mstore(add(freePtr, 0x44), to)
-                    mstore(add(freePtr, 0x64), amount)
-                    let success := call(
-                        gas(),
-                        _APPROVE_PROXY,
-                        0,
-                        freePtr,
-                        0x84,
-                        0,
-                        0
-                    )
-                    if eq(success, 0) {
-                        _revertWithReason(
-                            0x0000001420636c61696d20746f6b656e73206661696c65640000000000000000,
-                            0x58
-                        ) // "claim tokens failed"
-                    }
+                let freePtr := mload(0x40)
+                mstore(0x40, add(freePtr, 0x84))
+                mstore(
+                    freePtr,
+                    0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                ) // claimTokens
+                mstore(add(freePtr, 0x04), token)
+                mstore(add(freePtr, 0x24), _payer)
+                mstore(add(freePtr, 0x44), to)
+                mstore(add(freePtr, 0x64), amount)
+                let success := call(
+                    gas(),
+                    _APPROVE_PROXY,
+                    0,
+                    freePtr,
+                    0x84,
+                    0,
+                    0
+                )
+                if eq(success, 0) {
+                    _revertWithReason(
+                        0x0000001420636c61696d20746f6b656e73206661696c65640000000000000000,
+                        0x58
+                    ) // "claim tokens failed"
                 }
             }
             function _sendToken(token, to, amount) {
@@ -196,9 +194,9 @@ library CommissionLib {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001c207472616e7366657220746f6b656e2072656665726572206661696c,
-                        0x60
-                    ) // "transfer token referer fail"
+                        0x0000001b207472616e7366657220746f6b656e20646972656374206661696c00,
+                        0x5f
+                    ) // "transfer token direct fail"
                 }
             }
             function _transferTokenPermit2Allowance(token, from, to, amount) {
@@ -223,9 +221,9 @@ library CommissionLib {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001c207472616e7366657220746f6b656e2072656665726572206661696c,
+                        0x0000001c7065726d69743220616c6c6f77616e6365207472616e73206661696c,
                         0x60
-                    ) // "transfer token referer fail"
+                    ) // "permit2 allowance trans fail"
                 }
             }
             function _transferTokenWithMode(token, mode, _payer, to, amount) {

@@ -53,11 +53,12 @@ library UnxswapV3Router {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
+
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
-            receiver: (receiver & _ADDRESS_MASK) == 0 ? msg.sender : CommonLib.bytes32ToAddress(receiver),
+            receiver: CommonLib.bytes32ToAddress(receiver),
             toToken: toToken
         });
         return
@@ -92,7 +93,6 @@ library UnxswapV3Router {
         returns (uint256 returnAmount)
     {
         CommonLib.validateDeadline(baseRequest.deadLine);
-
         EventLib.emitSwapOrderId(orderId);
 
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
@@ -106,7 +106,7 @@ library UnxswapV3Router {
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
             payer: msg.sender,
             refundTo: msg.sender,
-            receiver: receiver == address(0) ? msg.sender : receiver,
+            receiver: receiver,
             toToken: toToken
         });
         return
@@ -145,9 +145,15 @@ library UnxswapV3Router {
         uint256[] calldata pools,
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 returnAmount) {
-        uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
+        swapCache.receiver = swapCache.receiver == address(0) ? msg.sender : swapCache.receiver;
 
-        if (mode == _MODE_BY_INVEST) {
+        uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
+        require(
+            mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE || mode == _MODE_BY_INVEST,
+            "invalid transfer mode"
+        );
+
+        if (mode == _MODE_BY_INVEST && extraData.refundTo != address(0)) {
             swapCache.refundTo = extraData.refundTo;
         }
 
@@ -238,7 +244,8 @@ library UnxswapV3Router {
     /// @param amount The amount of the source token to be swapped.
     /// @param pools An array of pool identifiers defining the swap route within Uniswap V3.
     /// @return returnAmount The amount of tokens received from the swap.
-    /// @dev This internal function encapsulates the core logic for executing swaps on Uniswap V3. It is intended to be used by other functions in the contract that prepare and pass the necessary parameters. The function handles the swapping process, ensuring that the minimum return is met and managing the transfer of tokens.
+    /// @dev This internal function encapsulates the core logic for executing swaps on Uniswap V3. It is intended to be used by other functions in the contract that prepare and pass the necessary parameters.
+    ///      The function handles the swapping process, ensuring that the minimum return is met and managing the transfer of tokens.
     function _uniswapV3Swap(
         address payer,
         address payable receiver,
@@ -567,9 +574,9 @@ library UnxswapV3Router {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
+                        0x0000001b207472616e7366657220746f6b656e20646972656374206661696c00,
                         0x5f
-                    ) // "transfer token referer fail"
+                    ) // "transfer token direct fail"
                 }
             }
 
@@ -595,9 +602,9 @@ library UnxswapV3Router {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x0000001b7472616e7366657220746f6b656e2072656665726572206661696c00,
-                        0x5f
-                    ) // "transfer token referer fail"
+                        0x0000001c7065726d69743220616c6c6f77616e6365207472616e73206661696c,
+                        0x60
+                    ) // "permit2 allowance trans fail"
                 }
             }
 
@@ -623,8 +630,8 @@ library UnxswapV3Router {
                 )
                 if eq(success, 0) {
                     _revertWithReason(
-                        0x00000013636c61696d20746f6b656e73206661696c6564000000000000000000,
-                        0x57
+                        0x0000001420636c61696d20746f6b656e73206661696c65640000000000000000,
+                        0x58
                     ) // "claim tokens failed"
                 }
             }

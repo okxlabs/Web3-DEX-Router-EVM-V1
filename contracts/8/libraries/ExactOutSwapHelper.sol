@@ -63,7 +63,7 @@ library ExactOutSwapHelper {
         
         // Refund any excess ETH to the payer if the source token is ETH.
         if (afterSwapParams.srcToken == _ETH) {
-            TransferLib.refundToken(_ETH, afterSwapParams.payer);
+            TransferLib.refundToken(_ETH, msg.sender);
         }
 
         // Handle commission from the output token if applicable.

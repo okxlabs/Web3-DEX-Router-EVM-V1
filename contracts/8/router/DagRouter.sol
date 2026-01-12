@@ -35,6 +35,7 @@ library DagRouter {
         CommonLib.validateDeadline(baseRequest.deadLine);
         require(paths.length > 0 && paths[0].assetTo.length > 0, "paths must be > 0");
         EventLib.emitSwapOrderId(orderId);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         receiver = receiver == address(0) ? msg.sender : receiver;
 

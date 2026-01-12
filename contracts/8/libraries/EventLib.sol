@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "../interfaces/IDexRouter.sol";
+
 /// @title EventLib
 /// @notice The single source of truth for all DexRouter event definitions in this repository.
 /// @dev This library centralizes DexRouter events to ensure consistency across all contracts and libraries.
@@ -73,12 +75,14 @@ library EventLib {
         emit SwapOrderId(id);
     }
 
-    function emitCommissionAndTrimInfo(
-        uint256 toBCommission,
-        uint256 toBTrim,
-        uint256 trimRate,
-        uint256 chargeRate
-    ) internal {
-        emit CommissionAndTrimInfo(toBCommission, toBTrim, trimRate, chargeRate);
+    function emitCommissionAndTrimInfoIfNeeded(IDexRouter.ExtraData memory extraData) internal {
+        if (extraData.commissionInfo.isFromTokenCommission || extraData.commissionInfo.isToTokenCommission || extraData.trimInfo.hasTrim) {
+            emit CommissionAndTrimInfo(
+                extraData.commissionInfo.toBCommission,
+                extraData.trimInfo.toBTrim,
+                extraData.trimInfo.trimRate,
+                extraData.trimInfo.chargeRate
+            );
+        }
     }
 }

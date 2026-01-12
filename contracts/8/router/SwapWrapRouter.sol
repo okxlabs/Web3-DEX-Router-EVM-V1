@@ -77,6 +77,7 @@ library SwapWrapRouter {
         IDexRouter.ExtraData memory extraData
     ) private {
         EventLib.emitSwapOrderId(orderId);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         require(amount > 0, "amount must be > 0");
         require(mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE, "invalid transfer mode");

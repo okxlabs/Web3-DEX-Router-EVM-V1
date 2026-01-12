@@ -46,6 +46,7 @@ library UnxswapExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
         return
             _unxswapExactOutTo(
                 srcToken,
@@ -76,6 +77,7 @@ library UnxswapExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
         return
             _unxswapExactOutTo(
                 srcToken,

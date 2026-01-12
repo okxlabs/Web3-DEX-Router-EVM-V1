@@ -39,6 +39,7 @@ library SmartSwapRouter {
     {
         CommonLib.validateDeadline(baseRequest.deadLine);
         EventLib.emitSwapOrderId(orderId);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
         return
             _smartSwapTo(
                 IDexRouter.SwapCache({
@@ -101,12 +102,7 @@ library SmartSwapRouter {
         );
 
         // Refund unused fromToken
-        if (fromToken == _ETH) {
-            TransferLib.refundToken(_ETH, refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
-            TransferLib.refundToken(_WETH, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused WETH will be refunded to refundTo
-        } else {
-            TransferLib.refundToken(fromToken, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused fromToken will be refunded to refundTo
-        }
+        TransferLib.refundToken(fromToken, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused fromToken will be refunded to refundTo
 
         // check minReturnAmount
         returnAmount =

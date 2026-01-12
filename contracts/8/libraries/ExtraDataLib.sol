@@ -29,8 +29,9 @@ library ExtraDataLib {
     /// @dev Update EXTRA_DATA_TYPE_NUM when adding new extra calldata
     uint8 internal constant EXTRA_DATA_TYPE_NUM = 4;
 
-    /// @notice Decode extra data and get structs
-    function getDecodedExtraData() internal returns (IDexRouter.ExtraData memory extraData) {
+    /// @notice Decode extra data and get structs with swapData boundary check
+    /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters)
+    function getDecodedExtraData(uint256 swapDataLength) internal returns (IDexRouter.ExtraData memory extraData) {
         // ensure the calldata length is 4 + 32 * N bytes
         uint256 calldataSize;
         assembly {
@@ -41,21 +42,15 @@ library ExtraDataLib {
         // get endPoints and lengths of each extra calldata
         (uint256[] memory endPoints, uint256[] memory lengths) = _getExtraDataEndPointAndLength();
 
+        // Validate extraData boundaries with swapData check
+        _validateExtraDataBoundaries(endPoints, lengths, swapDataLength, calldataSize);
+
         extraData = IDexRouter.ExtraData({
             commissionInfo: _parseCommissionInfo(endPoints[0], lengths[0]),
             trimInfo: _parseTrimInfo(endPoints[1], lengths[1]),
             permit2Info: _parsePermit2Info(endPoints[2], lengths[2]),
             refundTo: _parseRefundTo(endPoints[3], lengths[3])
         });
-
-        if (extraData.commissionInfo.isFromTokenCommission || extraData.commissionInfo.isToTokenCommission || extraData.trimInfo.hasTrim) {
-            EventLib.emitCommissionAndTrimInfo(
-                extraData.commissionInfo.toBCommission,
-                extraData.trimInfo.toBTrim,
-                extraData.trimInfo.trimRate,
-                extraData.trimInfo.chargeRate
-            );
-        }
 
         return extraData;
     }
@@ -157,6 +152,29 @@ library ExtraDataLib {
         }
 
         return (endPoints, lengths);
+    }
+
+    /// @notice Validate extraData boundaries to ensure no overlap with swapData and between regions
+    /// @param endPoints Array of end points for each extraData region
+    /// @param lengths Array of lengths (in 32-byte units) for each extraData region
+    /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters)
+    /// @param calldataSize The size of calldata
+    function _validateExtraDataBoundaries(
+        uint256[] memory endPoints, 
+        uint256[] memory lengths,
+        uint256 swapDataLength,
+        uint256 calldataSize
+    ) private pure {
+        // Check 1: First region (commissionInfo) endPoint must equal calldataSize
+        require(endPoints[0] == calldataSize, "First endPoint must equal calldataSize");
+
+        // Check 2: Each extraData region must be consecutive (no overlaps or gaps)
+        for (uint256 i = 0; i < EXTRA_DATA_TYPE_NUM - 1; i++) {
+            require(endPoints[i + 1] == endPoints[i] - lengths[i] * 32, "ExtraData regions not consecutive");
+        }
+
+        // Check 3: Last region's startPoint must be >= swapDataLength (no overlap with swapData)
+        require(endPoints[EXTRA_DATA_TYPE_NUM - 1] - lengths[EXTRA_DATA_TYPE_NUM - 1] * 32 >= swapDataLength, "ExtraData overlaps with swapData");
     }
 
     /// @notice Parse commissionInfo

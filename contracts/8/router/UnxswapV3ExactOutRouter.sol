@@ -61,6 +61,8 @@ library UnxswapV3ExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 consumeAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
+
         consumeAmount = _uniswapV3SwapExactOutTo(
             IDexRouter.ExactOutSwapCache({
                 amountOut: amountOut,

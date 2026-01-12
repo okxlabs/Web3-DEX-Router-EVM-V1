@@ -53,6 +53,7 @@ library UnxswapV3Router {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((receiver & _ORDER_ID_MASK) >> 160);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
         IDexRouter.SwapCache memory swapCache = IDexRouter.SwapCache({
@@ -94,6 +95,7 @@ library UnxswapV3Router {
     {
         CommonLib.validateDeadline(baseRequest.deadLine);
         EventLib.emitSwapOrderId(orderId);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
 

@@ -30,13 +30,14 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
     /// @param baseRequest Contains essential parameters for the swap such as source and destination tokens, amounts, and deadline.
     /// @param batchesAmount Array indicating amounts for each batch in the swap, allowing for split operations.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
+    /// @param pmmRequests PMM swap requests (currently used only for calldata length calculation, not for swap logic).
     /// @return returnAmount The total amount of destination tokens received from the swap.
     function smartSwapByOrderId(
         uint256 orderId,
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
         RouterPath[][] calldata batches,
-        PMMLib.PMMSwapRequest[] calldata
+        PMMLib.PMMSwapRequest[] calldata pmmRequests
     )
         external
         payable
@@ -44,7 +45,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         whenNotPaused
         returns (uint256 returnAmount)
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, baseRequest, batchesAmount, batches, pmmRequests).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return SmartSwapRouter.smartSwapTo(orderId, msg.sender, baseRequest, batchesAmount, batches, extraData);
     }
 
@@ -54,6 +56,7 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
     /// @param baseRequest Contains essential parameters for the swap such as source and destination tokens, amounts, and deadline.
     /// @param batchesAmount Array indicating amounts for each batch in the swap, allowing for split operations.
     /// @param batches Detailed routing information for executing the swap across different paths or protocols.
+    /// @param pmmRequests PMM swap requests (currently used only for calldata length calculation, not for swap logic).
     /// @return returnAmount The total amount of destination tokens received from the swap.
     function smartSwapTo(
         uint256 orderId,
@@ -61,7 +64,7 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         BaseRequest calldata baseRequest,
         uint256[] calldata batchesAmount,
         RouterPath[][] calldata batches,
-        PMMLib.PMMSwapRequest[] calldata
+        PMMLib.PMMSwapRequest[] calldata pmmRequests
     )
         external
         payable
@@ -69,7 +72,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         whenNotPaused
         returns (uint256 returnAmount)
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, receiver, baseRequest, batchesAmount, batches, pmmRequests).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return SmartSwapRouter.smartSwapTo(orderId, receiver, baseRequest, batchesAmount, batches, extraData);
     }
 
@@ -108,7 +112,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         BaseRequest calldata baseRequest,
         RouterPath[] calldata paths
     ) external payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, baseRequest, paths).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return DagRouter.dagSwapTo(orderId, msg.sender, baseRequest, paths, extraData);
     }
 
@@ -130,7 +135,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         whenNotPaused
         returns (uint256 returnAmount)
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, receiver, baseRequest, paths).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return DagRouter.dagSwapTo(orderId, receiver, baseRequest, paths, extraData);
     }
 
@@ -147,7 +153,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         uint256 minReturn,
         uint256[] calldata pools
     ) external payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(receiver, amount, minReturn, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapV3Router.uniswapV3SwapTo(receiver, amount, minReturn, pools, extraData);
     }
 
@@ -169,7 +176,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         whenNotPaused
         returns (uint256 returnAmount)
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, receiver, baseRequest, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapV3Router.uniswapV3SwapToWithBaseRequest(orderId, receiver, baseRequest, pools, extraData);
     }
 
@@ -187,7 +195,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         uint256 minReturn,
         bytes32[] calldata pools
     ) external payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, minReturn, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapRouter.unxswapTo(srcToken, amount, minReturn, msg.sender, pools, extraData);
     }
 
@@ -206,7 +215,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         address receiver,
         bytes32[] calldata pools
     ) public payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, minReturn, receiver, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapRouter.unxswapTo(srcToken, amount, minReturn, receiver, pools, extraData);
     }
 
@@ -228,7 +238,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         whenNotPaused
         returns (uint256 returnAmount)
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, receiver, baseRequest, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapRouter.unxswapToWithBaseRequest(orderId, receiver, baseRequest, pools, extraData);
     }
 
@@ -240,7 +251,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
     /// The rawdata parameter encodes:
     /// - Transfer mode in bits [251:249], direction (reversed flag) in bit 255: false=ETH->WETH, true=WETH->ETH
     function swapWrap(uint256 orderId, uint256 rawdata) external payable nonReentrant whenNotPaused {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, rawdata).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return SwapWrapRouter.swapWrap(orderId, rawdata, extraData);
     }
 
@@ -260,7 +272,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         nonReentrant
         whenNotPaused
     {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(orderId, receiver, baseRequest).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return SwapWrapRouter.swapWrapToWithBaseRequest(orderId, receiver, baseRequest, extraData);
     }
 
@@ -280,7 +293,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         address receiver,
         bytes32[] calldata pools
     ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, maxConsume, receiver, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapExactOutRouter.unxswapExactOutTo(srcToken, amount, maxConsume, receiver, pools, extraData);
     }
     
@@ -297,7 +311,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         uint256 maxConsume,
         bytes32[] calldata pools
     ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, maxConsume, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapExactOutRouter.unxswapExactOutToByOrderID(srcToken, amount, maxConsume, pools, extraData);
     }
 
@@ -314,7 +329,8 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         uint256 maxConsume,
         uint256[] calldata pools
     ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData();
+        uint256 swapDataLength = 4 + abi.encode(receiver, amountOut, maxConsume, pools).length;
+        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapV3ExactOutRouter.uniswapV3SwapExactOutTo(receiver, amountOut, maxConsume, pools, extraData);
     }
 

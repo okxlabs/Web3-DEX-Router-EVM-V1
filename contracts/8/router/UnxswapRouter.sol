@@ -58,6 +58,7 @@ library UnxswapRouter {
         IDexRouter.ExtraData memory extraData
     ) public returns (uint256 returnAmount) {
         EventLib.emitSwapOrderId((srcToken & _ORDER_ID_MASK) >> 160);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         // validate token info
         (address fromToken, address toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
@@ -102,6 +103,7 @@ library UnxswapRouter {
     {
         CommonLib.validateDeadline(baseRequest.deadLine);
         EventLib.emitSwapOrderId(orderId);
+        EventLib.emitCommissionAndTrimInfoIfNeeded(extraData);
 
         (address fromToken, address toToken) = UniswapTokenInfoHelper.getUnxswapTokenInfo(msg.value > 0, pools);
 

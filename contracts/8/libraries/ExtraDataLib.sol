@@ -7,6 +7,22 @@ import "./EventLib.sol";
 
 /*
  * To decode extra data encoded in calldata and parse to structs
+ *
+ * The extra data is appended after swapData in calldata, and parsed from the end (right to left).
+ * All extra data fields are optional and can be omitted if not needed.
+ *
+ * Calldata Layout (from left to right):
+ * ┌────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┐
+ * │   swapData     │   (memo)         │   refundTo       │   permit2Info    │   trimInfo       │  commissionInfo  │
+ * │   N bytes      │   optional       │   0 or 32 bytes  │   0 or M bytes   │   0/64/96 bytes  │   0 or K bytes   │
+ * └────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┘
+ *                                      ←─────────────────────── Extra Data (parsed right to left) ───────────────→
+ *
+ * Parsing Order (from right to left):
+ * 1. commissionInfo  - Commission/referrer fee configuration (0, 64, 96, or more bytes depending on referrer count)
+ * 2. trimInfo        - Trim/surplus handling configuration (0, 64, or 96 bytes)
+ * 3. permit2Info     - Permit2 signature data for token approval (0 or variable bytes)
+ * 4. refundTo        - Address to receive leftover tokens only for ByInvest mode (0 or 32 bytes)
 */
 
 library ExtraDataLib {
@@ -14,7 +30,6 @@ library ExtraDataLib {
     uint8 internal constant EXTRA_DATA_TYPE_NUM = 4;
 
     /// @notice Decode extra data and get structs
-    /// Same function as _getCommissionAndTrimInfo() in CommissionLib.sol
     function getDecodedExtraData() internal returns (IDexRouter.ExtraData memory extraData) {
         // ensure the calldata length is 4 + 32 * N bytes
         uint256 calldataSize;

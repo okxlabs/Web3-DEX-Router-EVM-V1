@@ -151,11 +151,18 @@ contract FlapAdapter is IAdapter {
         
         if (params.inputToken == NATIVE_TOKEN) {
             // Native token input - send value with the call
-            require(address(this).balance >= params.inputAmount, "FlapAdapter: Insufficient native balance");
-            IPortal(FLAP_PORTAL).swapExactInput{value: params.inputAmount}(params);
+            uint256 nativeBalance = address(this).balance;
+            require(nativeBalance > 0, "FlapAdapter: Insufficient native balance");
+            // Use actual balance for the swap
+            params.inputAmount = nativeBalance;
+            IPortal(FLAP_PORTAL).swapExactInput{value: nativeBalance}(params);
         } else {
-            // ERC20 token input - approve and swap
-            IERC20(params.inputToken).safeApprove(FLAP_PORTAL, params.inputAmount);
+            // ERC20 token input - use actual balance instead of params amount
+            uint256 tokenBalance = IERC20(params.inputToken).balanceOf(address(this));
+            require(tokenBalance > 0, "FlapAdapter: Insufficient token balance");
+            // Use actual balance for the swap
+            params.inputAmount = tokenBalance;
+            IERC20(params.inputToken).safeApprove(FLAP_PORTAL, tokenBalance);
             IPortal(FLAP_PORTAL).swapExactInput(params);
         }
     }

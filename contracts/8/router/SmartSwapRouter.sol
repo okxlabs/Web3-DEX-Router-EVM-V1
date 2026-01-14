@@ -307,7 +307,7 @@ library SmartSwapRouter {
                 if (i == path.mixAdapters.length - 1) {
                     require(
                         totalWeight == 10_000,
-                        "totalWeight can be 10000"
+                        "totalWeight must be 10000"
                     );
                 }
 

@@ -20,7 +20,7 @@ contract VenusAdapter is IAdapter {
         vNative = _vNative;
     }
 
-    function sellBase(
+    function sellQuote(
         address to,
         address pool,
         bytes memory
@@ -50,7 +50,7 @@ contract VenusAdapter is IAdapter {
         refund(pool);
     }
 
-    function sellQuote(
+    function sellBase(
         address to,
         address pool,
         bytes memory

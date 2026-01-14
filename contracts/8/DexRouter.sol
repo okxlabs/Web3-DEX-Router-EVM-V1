@@ -77,30 +77,6 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         return SmartSwapRouter.smartSwapTo(orderId, receiver, baseRequest, batchesAmount, batches, extraData);
     }
 
-    /// @notice Executes a swap tailored for investment purposes, adjusting swap amounts based on the contract's balance.
-    /// @param baseRequest Struct containing essential swap parameters like source and destination tokens, amounts, and deadline.
-    /// @param batchesAmount Array indicating how much of the source token to swap in each batch, facilitating diversified investments.
-    /// @param batches Detailed routing information for executing the swap across different paths or protocols.
-    /// @param to The address where the swapped tokens will be sent, typically an investment contract or pool.
-    /// @param refundTo The address to receive any unused tokens after the swap.
-    /// @return returnAmount The total amount of destination tokens received, ready for investment.
-    function smartSwapByInvestWithRefund(
-        BaseRequest memory baseRequest,
-        uint256[] memory batchesAmount,
-        RouterPath[][] memory batches,
-        PMMLib.PMMSwapRequest[] memory,
-        address to,
-        address refundTo
-    )
-        public
-        payable
-        nonReentrant
-        whenNotPaused
-        returns (uint256 returnAmount)
-    {
-        return SmartSwapRouter.smartSwapByInvestWithRefund(baseRequest, batchesAmount, batches, to, refundTo);
-    }
-
     /// ================================ dagSwap related ================================
     /// @notice Executes a DAG swap to a specified receiver using structured base request parameters.
     /// @param orderId Unique identifier for the swap order, facilitating tracking and reference.

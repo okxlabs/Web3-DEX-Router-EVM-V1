@@ -55,72 +55,6 @@ library SmartSwapRouter {
             );
     }
 
-    /// @notice Executes a swap tailored for investment purposes, adjusting swap amounts based on the contract's balance.
-    /// @param baseRequest Struct containing essential swap parameters like source and destination tokens, amounts, and deadline.
-    /// @param batchesAmount Array indicating how much of the source token to swap in each batch, facilitating diversified investments.
-    /// @param batches Detailed routing information for executing the swap across different paths or protocols.
-    /// @param to The address where the swapped tokens will be sent, typically an investment contract or pool.
-    /// @param refundTo The address to receive any unused tokens after the swap.
-    /// @return returnAmount The total amount of destination tokens received, ready for investment.
-    /// @dev This function is designed for scenarios where investments are made in batches or through complex paths to optimize returns. Adjustments are made based on the contract's current token balance to ensure precise allocation.
-    function smartSwapByInvestWithRefund(
-        IDexRouter.BaseRequest memory baseRequest,
-        uint256[] memory batchesAmount,
-        IDexRouter.RouterPath[][] memory batches,
-        address to,
-        address refundTo
-    )
-        public
-        returns (uint256 returnAmount)
-    {
-        CommonLib.validateDeadline(baseRequest.deadLine);
-
-        address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
-        require(fromToken != _ETH, "Invalid source token");
-        require(refundTo != address(0), "refundTo is address(0)");
-        require(to != address(0), "to is address(0)");
-        require(baseRequest.fromTokenAmount > 0, "fromTokenAmount is 0");
-        uint256 amount = CommonLib.getBalanceOf(fromToken, address(this));
-        for (uint256 i = 0; i < batchesAmount.length; ) {
-            batchesAmount[i] =
-                (batchesAmount[i] * amount) /
-                baseRequest.fromTokenAmount;
-            unchecked {
-                ++i;
-            }
-        }
-        baseRequest.fromTokenAmount = amount;
-
-        returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, to);
-        _smartSwapInternal(
-            baseRequest,
-            batchesAmount,
-            batches,
-            address(this), // payer
-            refundTo, // refundTo
-            to // receiver
-        );
-
-        // Refund unused fromToken
-        TransferLib.refundToken(fromToken, refundTo); // In case of fromTokenAmount > sum of batchesAmount, the unused fromToken will be refunded to refundTo
-
-        // check minReturnAmount
-        returnAmount =
-            CommonLib.getBalanceOf(baseRequest.toToken, to) -
-            returnAmount;
-        require(
-            returnAmount >= baseRequest.minReturnAmount,
-            "Min return not reached"
-        );
-        EventLib.emitOrderRecord(
-            fromToken,
-            baseRequest.toToken,
-            tx.origin,
-            baseRequest.fromTokenAmount,
-            returnAmount
-        );
-    }
-
     // ================================================================================
     // ============================== Private Functions ===============================
     // ================================================================================
@@ -372,8 +306,8 @@ library SmartSwapRouter {
                 totalWeight += weight;
                 if (i == path.mixAdapters.length - 1) {
                     require(
-                        totalWeight <= 10_000,
-                        "totalWeight can not exceed 10000 limit"
+                        totalWeight == 10_000,
+                        "totalWeight can be 10000"
                     );
                 }
 

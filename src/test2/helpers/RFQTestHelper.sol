@@ -2,7 +2,8 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 
 library ECDSA {
     function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 res) {
@@ -134,7 +135,7 @@ contract TestHelper is Test {
     }
 
     function getPermit2Signature(
-        IPermit2.PermitTransferFrom memory permit,
+        ISignatureTransfer.PermitTransferFrom memory permit,
         address pmmProtocolAddress,
         uint256 privateKey,
         bytes32 domainSeparator

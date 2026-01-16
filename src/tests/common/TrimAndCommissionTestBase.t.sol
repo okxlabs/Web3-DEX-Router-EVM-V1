@@ -8,7 +8,8 @@ import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
 import "@dex/libraries/SafeERC20.sol";
 import "@dex/adapter/UniAdapter.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 import "./CommissionHelper.t.sol";
 import "./TrimHelper.t.sol";
 import "./Permit2Helper.t.sol";
@@ -443,7 +444,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
         address token,
         uint256[] memory amounts
     ) internal view returns (bytes memory) {
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+        ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
             token,
             amounts,
             1, // nonce

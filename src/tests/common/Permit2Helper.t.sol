@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 
 contract Permit2Helper is Test {
     uint256 internal constant PERMIT2_INFO_SIG65_FLAG =
@@ -44,7 +45,7 @@ contract Permit2Helper is Test {
 
     /// =============================== For permitTransferFrom without array ===============================
     function getPermitTransferSignature(
-        IPermit2.PermitTransferFrom memory permit,
+        ISignatureTransfer.PermitTransferFrom memory permit,
         uint256 privateKey,
         address spender,
         bytes32 permit2DomainSeparator
@@ -71,9 +72,9 @@ contract Permit2Helper is Test {
         uint256 maxAmount,
         uint256 nonce,
         uint256 deadline
-    ) internal pure returns (IPermit2.PermitTransferFrom memory permit) {
-        permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({
+    ) internal pure returns (ISignatureTransfer.PermitTransferFrom memory permit) {
+        permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({
                 token: token,
                 amount: maxAmount
             }),
@@ -85,8 +86,8 @@ contract Permit2Helper is Test {
     function getPermitTransferDetails(
         address to,
         uint256 amount
-    ) internal pure returns (IPermit2.SignatureTransferDetails memory transferDetails) {
-        transferDetails = IPermit2.SignatureTransferDetails({
+    ) internal pure returns (ISignatureTransfer.SignatureTransferDetails memory transferDetails) {
+        transferDetails = ISignatureTransfer.SignatureTransferDetails({
             to: to,
             requestedAmount: amount
         });
@@ -150,7 +151,7 @@ contract Permit2Helper is Test {
     }
 
     function getPermitBatchTransferSignature(
-        IPermit2.PermitBatchTransferFrom memory permit,
+        ISignatureTransfer.PermitBatchTransferFrom memory permit,
         uint256 privateKey,
         address spender,
         bytes32 permit2DomainSeparator
@@ -184,14 +185,14 @@ contract Permit2Helper is Test {
         uint256[] memory maxAmounts,
         uint256 nonce,
         uint256 deadline
-    ) internal pure returns (IPermit2.PermitBatchTransferFrom memory permit) {
-        permit = IPermit2.PermitBatchTransferFrom({
-            permitted: new IPermit2.TokenPermissions[](maxAmounts.length),
+    ) internal pure returns (ISignatureTransfer.PermitBatchTransferFrom memory permit) {
+        permit = ISignatureTransfer.PermitBatchTransferFrom({
+            permitted: new ISignatureTransfer.TokenPermissions[](maxAmounts.length),
             nonce: nonce,
             deadline: deadline
         });
         for (uint256 i = 0; i < maxAmounts.length; i++) {
-            permit.permitted[i] = IPermit2.TokenPermissions({
+            permit.permitted[i] = ISignatureTransfer.TokenPermissions({
                 token: token,
                 amount: maxAmounts[i]
             });
@@ -202,11 +203,11 @@ contract Permit2Helper is Test {
     function getPermitBatchTransferDetails(
         address[] memory tos,
         uint256[] memory amounts
-    ) internal pure returns (IPermit2.SignatureTransferDetails[] memory transferDetails) {
+    ) internal pure returns (ISignatureTransfer.SignatureTransferDetails[] memory transferDetails) {
         require(tos.length == amounts.length, "tos and amounts length mismatch");
-        transferDetails = new IPermit2.SignatureTransferDetails[](tos.length);
+        transferDetails = new ISignatureTransfer.SignatureTransferDetails[](tos.length);
         for (uint256 i = 0; i < tos.length; i++) {
-            transferDetails[i] = IPermit2.SignatureTransferDetails({
+            transferDetails[i] = ISignatureTransfer.SignatureTransferDetails({
                 to: tos[i],
                 requestedAmount: amounts[i]
             });

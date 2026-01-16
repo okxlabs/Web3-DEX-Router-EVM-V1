@@ -2,14 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "../common/TrimAndCommissionTestBase.t.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
 
 /// @notice PoC: 攻击者 bob 使用 arnaud 的 permit2 签名，将 swap 输出接收地址替换为 bob
 /// @dev 攻击场景：签名者(arnaud) != 交易发送者(bob)，bob 篡改 receiver 地址
 contract Permit2AttackPoc is TrimAndCommissionTestBase {
 
     /// @notice 测试：bob 使用 arnaud 的签名发起交易，将 receiver 改为 bob
-    function test_permit2Attack_replaceReceiver() public {
+    /// @dev 预期：交易应该 revert，因为 permit2Info.owner != msg.sender
+    function test_permit2Attack_replaceReceiver_shouldRevert() public {
         // 1. 设置: arnaud 持有 WETH 并授权给 Permit2
         deal(WETH, arnaud, oneEther);
         vm.prank(arnaud);
@@ -18,6 +19,70 @@ contract Permit2AttackPoc is TrimAndCommissionTestBase {
         console2.log("======== Before Attack ========");
         console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
         console2.log("bob USDC balance: %d", IERC20(USDC).balanceOf(bob));
+
+        // 2. 生成 DAG swap 参数: WETH -> USDT -> USDC
+        DexRouter.BaseRequest memory baseRequest = _generateBaseRequest(WETH, USDC, oneEther);
+        DexRouter.RouterPath[] memory paths = _buildTwoHopDagPaths(
+            WETH,
+            USDT,
+            WETH_USDT_UNIV3,
+            USDC_USDT_UNIV3,
+            false,
+            true,
+            _MODE_PERMIT2_SIGNATURE
+        );
+
+        // 3. 使用 arnaud 的私钥生成 permit2 签名
+        //    注意：permit2Info.owner = arnaud
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = oneEther;
+        bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
+
+        // 4. 构造恶意交易数据：receiver = bob（而非签名者 arnaud）
+        bytes memory swapData = abi.encodeWithSelector(
+            DexRouter.dagSwapTo.selector,
+            0,          // orderId
+            bob,        // ⚠️ 攻击点：receiver 改为 bob，而非签名者 arnaud
+            baseRequest,
+            paths
+        );
+        bytes memory data = bytes.concat(swapData, permit2Info);
+
+        // 5. bob 作为攻击者发送交易，预期 revert
+        //    因为 permit2Info.owner (arnaud) != msg.sender (bob)
+        vm.prank(bob);
+        (bool success, bytes memory returnData) = address(dexRouter).call(data);
+        
+        // 6. 验证攻击被阻止
+        assertFalse(success, "Attack should have been blocked, but it succeeded");
+        
+        // 验证 revert 原因是 "permit2Info owner mismatch"
+        // 解码 revert 原因
+        if (returnData.length >= 68) {
+            // 跳过 Error(string) selector (4 bytes) + offset (32 bytes) + length (32 bytes)
+            assembly {
+                returnData := add(returnData, 4)
+            }
+            string memory reason = abi.decode(returnData, (string));
+            assertEq(reason, "permit2Info owner mismatch", "Wrong revert reason");
+        }
+
+        console2.log("======== Attack Blocked ========");
+        console2.log("arnaud WETH balance: %d (unchanged)", IERC20(WETH).balanceOf(arnaud));
+        console2.log("bob USDC balance: %d (still 0)", IERC20(USDC).balanceOf(bob));
+        console2.log("Attack successfully prevented!");
+    }
+
+    /// @notice 测试：arnaud 自己发起交易，应该成功
+    /// @dev 预期：交易成功，因为 permit2Info.owner == msg.sender == arnaud
+    function test_permit2_legitimateSwap_shouldSucceed() public {
+        // 1. 设置: arnaud 持有 WETH 并授权给 Permit2
+        deal(WETH, arnaud, oneEther);
+        vm.prank(arnaud);
+        SafeERC20.safeApprove(IERC20(WETH), address(permit2), oneEther);
+
+        console2.log("======== Before Swap ========");
+        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
         console2.log("arnaud USDC balance: %d", IERC20(USDC).balanceOf(arnaud));
 
         // 2. 生成 DAG swap 参数: WETH -> USDT -> USDC
@@ -33,42 +98,35 @@ contract Permit2AttackPoc is TrimAndCommissionTestBase {
         );
 
         // 3. 使用 arnaud 的私钥生成 permit2 签名
-        //    注意：签名时，spender = dexRouter，不包含 receiver 地址
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = oneEther;
         bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
 
-        // 4. 构造恶意交易数据：receiver = bob（而非签名者 arnaud）
+        // 4. 构造正常交易数据：receiver = arnaud（签名者自己）
         bytes memory swapData = abi.encodeWithSelector(
             DexRouter.dagSwapTo.selector,
             0,          // orderId
-            bob,        // ⚠️ 攻击点：receiver 改为 bob，而非签名者 arnaud
+            arnaud,     // receiver = arnaud (签名者自己)
             baseRequest,
             paths
         );
         bytes memory data = bytes.concat(swapData, permit2Info);
 
-        // 5. bob 作为攻击者发送交易
-        vm.prank(bob);
+        // 5. arnaud 自己发送交易，应该成功
+        //    因为 permit2Info.owner (arnaud) == msg.sender (arnaud)
+        vm.prank(arnaud);
         (bool success, ) = address(dexRouter).call(data);
-        require(success, "swap failed");
-
-        console2.log("======== After Attack ========");
-        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
-        console2.log("bob USDC balance: %d", IERC20(USDC).balanceOf(bob));
-        console2.log("arnaud USDC balance: %d", IERC20(USDC).balanceOf(arnaud));
-
-        // 6. 验证攻击结果
-        // 如果攻击成功：bob 应该收到 USDC，arnaud 收到 0
-        // 如果合约有防护：交易应该 revert 或 arnaud 收到 USDC
-        uint256 bobUsdcBalance = IERC20(USDC).balanceOf(bob);
-        uint256 arnaudUsdcBalance = IERC20(USDC).balanceOf(arnaud);
         
-        if (bobUsdcBalance > 0 && arnaudUsdcBalance == 0) {
-            console2.log("!!! ATTACK SUCCEEDED !!! Bob stole arnaud's swap output");
-        } else if (arnaudUsdcBalance > 0) {
-            console2.log("Attack failed - arnaud received the output correctly");
-        }
+        // 6. 验证交易成功
+        assertTrue(success, "Legitimate swap should succeed");
+
+        console2.log("======== After Swap ========");
+        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
+        console2.log("arnaud USDC balance: %d", IERC20(USDC).balanceOf(arnaud));
+        
+        // 验证 arnaud 收到了 USDC
+        assertGt(IERC20(USDC).balanceOf(arnaud), 0, "arnaud should receive USDC");
+        assertEq(IERC20(WETH).balanceOf(arnaud), 0, "arnaud WETH should be spent");
     }
 
     // ============================== internal functions ==============================

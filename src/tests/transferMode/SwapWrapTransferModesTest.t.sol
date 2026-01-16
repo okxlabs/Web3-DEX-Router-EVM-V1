@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import "../common/TrimAndCommissionTestBase.t.sol";
 import "../common/Permit2Helper.t.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 import "@dex/interfaces/IDexRouter.sol";
 import "forge-std/console.sol";
 
@@ -163,7 +164,7 @@ contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
         uint256[] memory maxAmounts = new uint256[](1);
         maxAmounts[0] = SWAP_AMOUNT;
         
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+        ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
             WETH,
             maxAmounts,
             nonce,
@@ -241,7 +242,7 @@ contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
             uint256[] memory maxAmounts = new uint256[](1);
             maxAmounts[0] = totalAmount;  // Total amount including commission
             
-            IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+            ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
                 WETH, 
                 maxAmounts, 
                 0, 
@@ -540,7 +541,7 @@ contract SwapWrapTransferModesTest is TrimAndCommissionTestBase {
         uint256[] memory maxAmounts = new uint256[](1);
         maxAmounts[0] = SWAP_AMOUNT;
         
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+        ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
             WETH,
             maxAmounts,
             nonce,

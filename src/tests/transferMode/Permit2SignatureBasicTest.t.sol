@@ -2,7 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "../common/Permit2Helper.t.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 import "@dex/interfaces/IERC20.sol";
 
 // Contract for testing permit2 transfer from
@@ -10,7 +11,7 @@ contract Permit2TokenTransfer {
     address public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     struct Permit2Info {
-        IPermit2.PermitTransferFrom permit;
+        ISignatureTransfer.PermitTransferFrom permit;
         address owner;
         bytes signature;
     }
@@ -20,7 +21,7 @@ contract Permit2TokenTransfer {
         address to,
         uint256 amount
     ) public {
-        IPermit2.SignatureTransferDetails memory transferDetails = IPermit2.SignatureTransferDetails({
+        ISignatureTransfer.SignatureTransferDetails memory transferDetails = ISignatureTransfer.SignatureTransferDetails({
             to: to,
             requestedAmount: amount
         });
@@ -28,8 +29,8 @@ contract Permit2TokenTransfer {
     }
 
     function permit2BatchTransferFrom(
-        IPermit2.PermitBatchTransferFrom memory permit,
-        IPermit2.SignatureTransferDetails[] memory transferDetails,
+        ISignatureTransfer.PermitBatchTransferFrom memory permit,
+        ISignatureTransfer.SignatureTransferDetails[] memory transferDetails,
         address owner,
         bytes memory signature
     ) public {
@@ -60,7 +61,7 @@ contract Permit2SignatureBasicTest is Permit2Helper {
 
         vm.startPrank(arnaud);
         IERC20(WETH).approve(permit2Transfer.PERMIT2(), type(uint256).max);
-        IPermit2.PermitTransferFrom memory permit = getPermitTransferFrom(
+        ISignatureTransfer.PermitTransferFrom memory permit = getPermitTransferFrom(
             WETH,
             10 * 10 ** 18,
             0,
@@ -96,22 +97,22 @@ contract Permit2SignatureBasicTest is Permit2Helper {
         maxAmounts[0] = 10 * 10 ** 18;
         maxAmounts[1] = 20 * 10 ** 18;
         maxAmounts[2] = 30 * 10 ** 18;
-        IPermit2.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+        ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
             WETH,
             maxAmounts,
             0,
             2524579200 // 2050-01-01 00:00:00
         );
-        IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](3);
-        transferDetails[0] = IPermit2.SignatureTransferDetails({
+        ISignatureTransfer.SignatureTransferDetails[] memory transferDetails = new ISignatureTransfer.SignatureTransferDetails[](3);
+        transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
             to: bob,
             requestedAmount: 10 * 10 ** 18
         });
-        transferDetails[1] = IPermit2.SignatureTransferDetails({
+        transferDetails[1] = ISignatureTransfer.SignatureTransferDetails({
             to: charles,
             requestedAmount: 20 * 10 ** 18
         });
-        transferDetails[2] = IPermit2.SignatureTransferDetails({
+        transferDetails[2] = ISignatureTransfer.SignatureTransferDetails({
             to: david,
             requestedAmount: 30 * 10 ** 18
         });

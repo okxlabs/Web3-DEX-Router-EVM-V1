@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../common/TrimAndCommissionTestBase.t.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
 
 /*
  * SmartSwap Permit2 & Commission Test Matrix:

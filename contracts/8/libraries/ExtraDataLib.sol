@@ -31,7 +31,7 @@ library ExtraDataLib {
 
     /// @notice Decode extra data and get structs with swapData boundary check
     /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters)
-    function getDecodedExtraData(uint256 swapDataLength) internal returns (IDexRouter.ExtraData memory extraData) {
+    function getDecodedExtraData(uint256 swapDataLength) internal view returns (IDexRouter.ExtraData memory extraData) {
         // ensure the calldata length is 4 + 32 * N bytes
         uint256 calldataSize;
         assembly {
@@ -363,7 +363,7 @@ library ExtraDataLib {
     }
 
     /// @notice Parse permit2Info
-    function _parsePermit2Info(uint256 endPoint, uint256 length) private pure returns (IDexRouter.Permit2Info memory permit2Info) {
+    function _parsePermit2Info(uint256 endPoint, uint256 length) private view returns (IDexRouter.Permit2Info memory permit2Info) {
         if (length == 0) {
             return permit2Info;
         }
@@ -424,6 +424,9 @@ library ExtraDataLib {
         } else if (permit2InfoFlag == PERMIT2_INFO_SIG64_FLAG) {
             permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]));
         }
+
+        /// owner is constrained to msg.sender for now, but it still need to be encoded in the permit2Info calldata for future compatibility.
+        require(permit2Info.owner == msg.sender, "permit2Info owner mismatch");
 
         return permit2Info;
     }

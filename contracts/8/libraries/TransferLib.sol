@@ -8,7 +8,8 @@ import "./CommissionLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/IERC20.sol";
-import "../interfaces/IPermit2.sol";
+import "../interfaces/permit2/IPermit2.sol";
+import "../interfaces/permit2/ISignatureTransfer.sol";
 import "../interfaces/IApproveProxy.sol";
 
 /// @title Library to handle multi transfer modes including Permit2.
@@ -103,6 +104,8 @@ library TransferLib {
         uint256 totalRate,
         IDexRouter.ExtraData memory extraData
     ) private {
+        require(inputAmount + fromTokenCommissionAmount <= type(uint160).max, "amount too large");
+
         IDexRouter.CommissionInfo memory commissionInfo = extraData.commissionInfo;
         // Get permitTransferFrom parameters
         uint256 permitLength;
@@ -114,30 +117,30 @@ library TransferLib {
         require(permitLength == extraData.permit2Info.amounts.length, "permit2Info amount length mismatch");
 
         // Execute permitTransferFrom
-        IPermit2.PermitBatchTransferFrom memory permitBatchTransferFrom = IPermit2.PermitBatchTransferFrom({
-            permitted: new IPermit2.TokenPermissions[](permitLength),
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchTransferFrom = ISignatureTransfer.PermitBatchTransferFrom({
+            permitted: new ISignatureTransfer.TokenPermissions[](permitLength),
             nonce: extraData.permit2Info.nonce,
             deadline: extraData.permit2Info.deadline
         });
-        IPermit2.SignatureTransferDetails[] memory transferDetails = new IPermit2.SignatureTransferDetails[](permitLength);
+        ISignatureTransfer.SignatureTransferDetails[] memory transferDetails = new ISignatureTransfer.SignatureTransferDetails[](permitLength);
         if (permitLength == 1) { // Generate permit params with permit2 array length = 1
-            permitBatchTransferFrom.permitted[0] = IPermit2.TokenPermissions({
+            permitBatchTransferFrom.permitted[0] = ISignatureTransfer.TokenPermissions({
                 token: token,
                 amount: extraData.permit2Info.amounts[0]
             });
-            transferDetails[0] = IPermit2.SignatureTransferDetails({
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
                 to: to,
                 requestedAmount: inputAmount + fromTokenCommissionAmount
             });
         } else { // Generate permit params with permit2 array length > 1 (fromTokenCommission with NoToB mode)
             for (uint256 i = 0; i < permitLength; i++) {
-                permitBatchTransferFrom.permitted[i] = IPermit2.TokenPermissions({
+                permitBatchTransferFrom.permitted[i] = ISignatureTransfer.TokenPermissions({
                     token: token,
                     amount: extraData.permit2Info.amounts[i]
                 });
             }
             // transferDetails[0] is swap part, and the rest are commission parts.
-            transferDetails[0] = IPermit2.SignatureTransferDetails({
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
                 to: to,
                 requestedAmount: inputAmount
             });
@@ -156,7 +159,7 @@ library TransferLib {
                     commissionAmount = fromTokenCommissionAmount * commissionRate / totalRate;
                     accumulatedAmount += commissionAmount;
                 }
-                transferDetails[i + 1] = IPermit2.SignatureTransferDetails({
+                transferDetails[i + 1] = ISignatureTransfer.SignatureTransferDetails({
                     to: referrerAddress,
                     requestedAmount: commissionAmount
                 });
@@ -194,6 +197,7 @@ library TransferLib {
                 if (mode == _MODE_DIRECT) {
                     SafeERC20.safeTransferFrom(IERC20(token), payer, to, amount);
                 } else if (mode == _MODE_PERMIT2_ALLOWANCE) {
+                    require(amount <= type(uint160).max, "amount too large");
                     IPermit2(_PERMIT2).transferFrom(payer, to, uint160(amount), token);
                 } else if (mode == _MODE_PERMIT2_SIGNATURE) {
                     /// @notice The permitTransferFrom should not be called here, and if payer is not reset to address(this), the payer must be address(0).

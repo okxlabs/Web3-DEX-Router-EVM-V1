@@ -583,6 +583,14 @@ library UnxswapV3Router {
             }
 
             function _transferTokenPermit2Allowance(token, from, to, amount) {
+                // Check if amount exceeds uint160 max
+                if shr(160, amount) {
+                    _revertWithReason(
+                        0x0000001120616d6f756e7420746f6f206c617267650000000000000000000000,
+                        0x55
+                    ) // "amount too large"
+                }
+
                 let freePtr := mload(0x40)
                 mstore(0x40, add(freePtr, 0x84)) // calldata size == 0x84
                 mstore(
@@ -591,7 +599,7 @@ library UnxswapV3Router {
                 ) // transferFrom(address,address,uint160,address)
                 mstore(add(freePtr, 0x04), from)
                 mstore(add(freePtr, 0x24), to)
-                mstore(add(freePtr, 0x44), shr(96, shl(96, amount)))
+                mstore(add(freePtr, 0x44), amount)
                 mstore(add(freePtr, 0x64), token)
                 let success := call(
                     gas(),

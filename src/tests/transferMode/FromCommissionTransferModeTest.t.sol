@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../common/TrimAndCommissionTestBase.t.sol";
 import "../common/Permit2Helper.t.sol";
-import "@dex/interfaces/IPermit2.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
 
 contract FromCommissionTransferModeTest is TrimAndCommissionTestBase {
 

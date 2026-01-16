@@ -3,6 +3,7 @@ module.exports = {
     wNativeRelayer: "0xF4858d71e5d7D27e3F7270390Cd57545DcA35aa9",
     tokenApprove: "0xfFb8322DEEeADF0d61589211493Fb2Dc668D3CC0",
     tokenApproveProxy: "0xBb686278C6EB5B0a9Cc4406F8Db5A79BfaF53a99",
+    permit2: "",
     dexRouter: "0xDcB7028E5EAA1d7bB82B7152Cb0e7adC12e7457c",
     xbridge: "0x2E1461aEd9400444F5d98a805bb0c1E1f657c341",
     marketMakerProxyAdmin: "",

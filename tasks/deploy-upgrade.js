@@ -26,7 +26,7 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 1: Git operations - Save current state
       console.log("\nStep 1: Saving current state...");
-      await execPromise('git add contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+      await execPromise('git add contracts/8/libraries/Constants.sol contracts/8/router/UnxswapV3Router.sol contracts/8/router/UnxswapV3ExactOutRouter.sol');
 
       // Step 2: Run ureplace.js
       console.log("\nStep 2: Running ureplace.js...");
@@ -81,7 +81,7 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 6: Restore original files
       console.log("\nStep 6: Restoring original files...");
-      await execPromise('git checkout -- contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+      await execPromise('git checkout -- contracts/8/libraries/Constants.sol contracts/8/router/UnxswapV3Router.sol contracts/8/router/UnxswapV3ExactOutRouter.sol');
 
       console.log("\nDeployment and upgrade process completed successfully!");
     } catch (error) {
@@ -112,7 +112,7 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 1: Git operations - Save current state
       console.log("\nStep 1: Saving current state...");
-      await execPromise('git add contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+      await execPromise('git add contracts/8/libraries/Constants.sol contracts/8/router/UnxswapV3Router.sol contracts/8/router/UnxswapV3ExactOutRouter.sol');
 
       // Step 2: Run ureplace.js
       console.log("\nStep 2: Running ureplace.js...");
@@ -167,7 +167,7 @@ task("deploy-upgrade", "Deploys and upgrades the DEX contract")
 
       // Step 6: Restore original files
       console.log("\nStep 6: Restoring original files...");
-      await execPromise('git checkout -- contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol');
+      await execPromise('git checkout -- contracts/8/libraries/Constants.sol contracts/8/router/UnxswapV3Router.sol contracts/8/router/UnxswapV3ExactOutRouter.sol');
 
       console.log("\nDeployment and upgrade process completed successfully!");
     } catch (error) {

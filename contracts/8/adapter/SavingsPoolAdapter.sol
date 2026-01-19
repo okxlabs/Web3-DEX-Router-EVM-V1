@@ -7,6 +7,19 @@ import "../interfaces/ISavings.sol";
 import "../interfaces/IERC20.sol";
 import "../libraries/SafeERC20.sol";
 
+/**
+ * @title SavingsPoolAdapter
+ * @notice Adapter for Spark Savings Pool
+ * @dev Adapter for Spark Savings Pool
+ * 
+ * External Methods Used:
+ *   - deposit(uint256 assets, address to) -> void : Deposits assets into the Savings Pool
+ *   - redeem(uint256 shares, address to, address from) -> void : Redeems shares from the Savings Pool
+ * 
+ * Supported Savings Protocols:
+ *   - Spark Savings Pool
+ * 
+ */
 contract SavingsPoolAdapter is IAdapter {
 
     // fromToken == Asset

@@ -139,7 +139,7 @@ abstract contract AbstractAdapterTest is Test {
         // Create adapter
         customAdapter = createCustomAdapter(testCase.networkId);
         // Set default payer
-        defaultPayer = address(customAdapter); ///@notice: payer is set by dexrouter
+        defaultPayer = address(customAdapter); /// @notice Payer is set by dexrouter.
 
         // Setup tokens
         if (

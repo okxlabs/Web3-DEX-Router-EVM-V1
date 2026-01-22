@@ -271,7 +271,7 @@ library UnxswapExactOutRouter {
     ) private returns (address, uint256, uint256) {
         uint256 fromTokenCommissionAmount;
         (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SigModeWithCommission(
-            token == address(0) ? uint256(uint160(_ETH)) : uint256(uint160(token)) | mode,
+            token == address(0) ? (uint256(uint160(_ETH)) | mode) : (uint256(uint160(token)) | mode),
             payer,
             amount,
             recipient,

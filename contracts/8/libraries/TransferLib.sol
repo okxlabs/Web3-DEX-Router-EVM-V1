@@ -55,6 +55,8 @@ library TransferLib {
             return (payer, inputAmount, fromTokenCommissionAmount);
         }
 
+        require(inputAmount + fromTokenCommissionAmount <= type(uint160).max, "amount too large");
+
         // For _MODE_PERMIT2_SIGNATURE mode, the owner is constrained to router's msg.sender for now, but it still need to be encoded in the permit2Info calldata for future compatibility.
         // But we use payer instead of msg.sender here, because all passed in payer is router's msg.sender and for UnxswapV3ExactOutRouter the msg.sender got here is not router's msg.sender but pool address.
         require(extraData.permit2Info.owner == payer, "permit2Info owner mismatch");
@@ -108,8 +110,6 @@ library TransferLib {
         uint256 totalRate,
         IDexRouter.ExtraData memory extraData
     ) private {
-        require(inputAmount + fromTokenCommissionAmount <= type(uint160).max, "amount too large");
-
         IDexRouter.CommissionInfo memory commissionInfo = extraData.commissionInfo;
         // Get permitTransferFrom parameters
         uint256 permitLength;

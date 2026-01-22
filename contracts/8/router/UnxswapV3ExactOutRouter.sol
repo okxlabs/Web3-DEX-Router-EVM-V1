@@ -331,7 +331,7 @@ library UnxswapV3ExactOutRouter {
         if (tempAmount == 0) { // Means it is the last swap
             uint256 fromTokenCommissionAmount = 0;
             (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SigModeWithCommission(
-                ethAmount > 0 ? uint256(uint160(_ETH)) : uint256(uint160(token)) | mode,
+                ethAmount > 0 ? (uint256(uint160(_ETH)) | mode) : (uint256(uint160(token)) | mode),
                 payer,
                 amount,
                 recipient,

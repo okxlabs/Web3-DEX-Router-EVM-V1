@@ -104,8 +104,10 @@ library UnxswapV3ExactOutRouter {
         IDexRouter.ExtraData memory extraData
     ) private returns (uint256 consumeAmount) {
         receiver = receiver == address(0) ? msg.sender : receiver;
+
         // Step 1: If the swap starts from ETH, the contract will wrap ETH to WETH in the last pool.
         TempStorage.setEthAmount(msg.value);
+
         // Step 2: Adjust the target output amount to include commission if commission is taken from the output token.
         uint256 targetTokenBefore = 0;
         address middleReceiver = receiver;
@@ -114,15 +116,18 @@ library UnxswapV3ExactOutRouter {
             targetTokenBefore,
             middleReceiver
         ) = ExactOutSwapHelper.beforeSwap(swapCache.amountOut, middleReceiver, targetTokenBefore, extraData);
-        // Step 3: Determine the source token and to token for the swap.
-        (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
 
+        // Step 3: Get token, transfer mode and validate.
         uint256 mode = pools[0] & _TRANSFER_MODE_MASK;
         require(
             mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
             "invalid transfer mode"
         );
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
+
+        (address srcToken, address toToken) = UniswapTokenInfoHelper.getUniswapV3TokenInfo(msg.value > 0, pools);
+
+        CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
 
         // Step 4: Execute the swap. If srcToken is ETH, any excess ETH will be refunded after the swap.
         uint256 fromTokenCommissionAmount;

@@ -38,9 +38,6 @@ library ExactOutSwapHelper {
 
     // Only handle commission.
     function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal {
-        // Validate commission info
-        CommissionLib.validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, afterSwapParams.mode); /// @notice For commission validation, ETH needs to be 0xEeee.
-
         // Handle commission from the source token if applicable.
         if (
             afterSwapParams.commissionInfo.isFromTokenCommission &&

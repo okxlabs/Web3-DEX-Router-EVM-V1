@@ -55,6 +55,10 @@ library TransferLib {
             return (payer, inputAmount, fromTokenCommissionAmount);
         }
 
+        // For _MODE_PERMIT2_SIGNATURE mode, the owner is constrained to router's msg.sender for now, but it still need to be encoded in the permit2Info calldata for future compatibility.
+        // But we use payer instead of msg.sender here, because all passed in payer is router's msg.sender and for UnxswapV3ExactOutRouter the msg.sender got here is not router's msg.sender but pool address.
+        require(extraData.permit2Info.owner == payer, "permit2Info owner mismatch");
+
         // For _MODE_PERMIT2_SIGNATURE mode, token needs to be claimed to address `to` by calling permitTransferFrom. And the address `to` needs to be set according to the situation.
         // For following 2 situations, the address `to` should be set to address(this):
         // 1. onlyOneAssetTo=address(0): means the swap method needs the swapToken to be claimed to address(this).

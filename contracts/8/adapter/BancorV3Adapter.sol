@@ -63,11 +63,12 @@ contract BancorV3Adapter is IAdapter {
             );
         }
 
+        if (targetToken == ETH_ADDRESS) {
+            targetToken = WETH_ADDRESS;
+            IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
+        }
+
         if (to != address(this)) {
-            if (targetToken == ETH_ADDRESS) {
-                targetToken = WETH_ADDRESS;
-                IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
-            }
             SafeERC20.safeTransfer(
                 IERC20(targetToken),
                 to,

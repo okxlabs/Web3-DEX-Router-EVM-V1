@@ -14,7 +14,7 @@ contract LitePSMAdapterTest is Test {
     address UsdsPsmWrapper = 0xA188EEC8F81263234dA3622A406892F3D630f98c;
     address amy = vm.rememberKey(1);
     address tokenApprove = 0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f;
-    DexRouter dexRouter = DexRouter(payable(0xF3dE3C0d654FDa23daD170f0f320a92172509127));
+    DexRouter dexRouter = DexRouter(payable(0x5E1f62Dac767b0491e3CE72469C217365D5B48cC));
 
     function setUp() public {
         vm.createSelectFork(vm.envString("ETH_RPC_URL"));

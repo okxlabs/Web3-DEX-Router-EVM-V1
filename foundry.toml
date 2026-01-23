@@ -41,14 +41,15 @@ ftm = "https://rpc.ankr.com/fantom"
 linea = "https://linea-mainnet.infura.io/v3/13a28cf2840044cda0912560a2336725"
 mantle = "https://rpc.mantle.xyz"
 okc = "http://35.72.176.238:26659"
-op = "https://optimism-mainnet.public.blastapi.io"
+op = "https://optimism.drpc.org"
 polygon = "https://polygon-mainnet.g.alchemy.com/v2/aMbWrR8EcmCGpF6rCSNk0P24wTZbbG7R"
 polyzkevm = "https://zkevm-rpc.com"
 scroll = "https://rpc.scroll.io"
-xlayer = "https://xlayer.drpc.org"
+xlayer = "https://rpc.xlayer.tech"
 sonic = "https://sonic-rpc.publicnode.com"
 unichain = "https://unichain.drpc.org"
 monad = "https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO"
+katana = "https://katana.drpc.org"
 
 [fmt]
 line_length = 120

@@ -1,14 +1,25 @@
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
+const { ethers, network } = hre;
 const deployed = require('./deployed');
-const { assert } = require("chai");
+const { buildZkProvider, getZkContract, isZkSyncNetwork } = require("./utils/zksync");
+
+const getProvider = () =>
+    isZkSyncNetwork(hre, network.name) ? buildZkProvider(hre, network.name) : ethers.provider;
+
+const getContract = async (contractName, address, provider) =>
+    isZkSyncNetwork(hre, network.name)
+        ? getZkContract(hre, contractName, address, provider)
+        : ethers.getContractAt(contractName, address);
 
 async function main() {
     // console.log(deployed);
     const dexRouter = deployed.base.newImpl
+    const provider = getProvider();
     // check wnative relayer
-    const WNativeRelayer = await ethers.getContractAt(
+    const WNativeRelayer = await getContract(
         "WNativeRelayer",
-        deployed.base.wNativeRelayer
+        deployed.base.wNativeRelayer,
+        provider
     )
     // keccak256(abi.encode(address(0xf332761c673b59B21fF6dfa8adA44d78c12dEF09),uint(152)))
     const packedData = ethers.utils.solidityPack(
@@ -16,7 +27,7 @@ async function main() {
         [dexRouter, 152]
     );
     let slot = ethers.utils.keccak256(packedData);
-    let res = await ethers.provider.getStorageAt(WNativeRelayer.address, slot)
+    let res = await provider.getStorageAt(WNativeRelayer.address, slot)
     const decodedBool = ethers.utils.defaultAbiCoder.decode(
         ["bool"], // The type we expect ("bool")
         res // The raw storage slot data
@@ -24,7 +35,7 @@ async function main() {
     console.log("wnative relayer config", decodedBool)
 
     // check tokenapprove proxy
-    const TokenApproveProxy = await ethers.getContractAt("TokenApproveProxy", deployed.base.tokenApproveProxy)
+    const TokenApproveProxy = await getContract("TokenApproveProxy", deployed.base.tokenApproveProxy, provider)
     let res2 = await TokenApproveProxy.allowedApprove(dexRouter)
     console.log("token approve proxy", res2)
     // check owner

@@ -70,11 +70,11 @@ contract BancorAdapter is IAdapter {
             BANCOR_ADDRESS,
             0
         );
+        if (targetToken == ETH_ADDRESS) {
+            IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
+            targetToken = WETH_ADDRESS;
+        }
         if (to != address(this)) {
-            if (targetToken == ETH_ADDRESS) {
-                IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
-                targetToken = WETH_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(targetToken),
                 to,

@@ -1,4 +1,5 @@
 const hre = require("hardhat");
+const { network } = hre;
 const deployed = require('./deployed');
 async function main() {
     console.log("Starting contract verification...");
@@ -15,18 +16,22 @@ async function main() {
     } catch (error) {
         console.error("Verification failed:", error);
     }
-    try {
-        // Verify on Oklink
-        console.log("Verifying on Oklink...");
-        await hre.run("okverify", {
-            address: deployed.base.newImpl,
-            constructorArguments: [], // Adjust if your contract has constructor arguments
-            contract: "contracts/8/DexRouter.sol:DexRouter"
-        });
-        console.log("Verification on Oklink completed!");
+    if (network.name !== 'zksync') {
+        try {
+            // Verify on Oklink
+            console.log("Verifying on Oklink...");
+            await hre.run("okverify", {
+                address: deployed.base.newImpl,
+                constructorArguments: [], // Adjust if your contract has constructor arguments
+                contract: "contracts/8/DexRouter.sol:DexRouter"
+            });
+            console.log("Verification on Oklink completed!");
 
-    } catch (error) {
-        console.error("Verification failed:", error);
+        } catch (error) {
+            console.error("Verification failed:", error);
+        }
+    } else {
+        console.log("Skipping Oklink verification for zkSync network.");
     }
 
     // try {

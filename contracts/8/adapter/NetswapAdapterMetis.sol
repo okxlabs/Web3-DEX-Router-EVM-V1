@@ -46,14 +46,16 @@ contract NetswapAdapter is IAdapter {
         uint256 sellBaseAmountWithFee = sellBaseAmount * (10000 - dnyFee);
         uint256 receiveQuoteAmount = sellBaseAmountWithFee * reserveOut / (reserveIn * 10000 + sellBaseAmountWithFee);
         IUni(pool).swap(0, receiveQuoteAmount, address(this), new bytes(0));
+        
+        address quoteToken = IUni(pool).token1();
+
+        if (quoteToken == ETH) {
+            WETH.deposit{value: address(this).balance}();
+            quoteToken = address(WETH);
+        } 
+
         if (to != address(this)) {
-            address quoteToken = IUni(pool).token1();
-            if (quoteToken == ETH) {
-                WETH.deposit{value: address(this).balance}();
-                WETH.transfer(to, WETH.balanceOf(address(this)));
-            } else {
-                SafeERC20.safeTransfer(IERC20(quoteToken), to, IERC20(quoteToken).balanceOf(address(this)));
-            }
+            SafeERC20.safeTransfer(IERC20(quoteToken), to, IERC20(quoteToken).balanceOf(address(this)));
         }
     }
 
@@ -88,14 +90,15 @@ contract NetswapAdapter is IAdapter {
         uint256 sellQuoteAmountWithFee = sellQuoteAmount * (10000 - dnyFee);
         uint256 receiveBaseAmount = sellQuoteAmountWithFee * reserveOut / (reserveIn * 10000 + sellQuoteAmountWithFee);
         IUni(pool).swap(receiveBaseAmount, 0, to, new bytes(0));
+
+        address baseToken = IUni(pool).token0();
+        if (baseToken == ETH) {
+            WETH.deposit{value: address(this).balance}();
+            baseToken = address(WETH);
+        }
+
         if (to != address(this)) {
-            address baseToken = IUni(pool).token0();
-            if (baseToken == ETH) {
-                WETH.deposit{value: address(this).balance}();
-                WETH.transfer(to, WETH.balanceOf(address(this)));
-            } else {
-                SafeERC20.safeTransfer(IERC20(baseToken), to, IERC20(baseToken).balanceOf(address(this)));
-            }
+            SafeERC20.safeTransfer(IERC20(baseToken), to, IERC20(baseToken).balanceOf(address(this)));
         }
     }
     receive() external payable {}

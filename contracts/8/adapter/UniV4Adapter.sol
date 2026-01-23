@@ -108,11 +108,17 @@ contract UniV4Adapter is IAdapter, SafeCallback {
 
         (PoolKey memory poolKey, bool zeroForOne) = getPoolAndSwapDirection(pathKey, pathKey.inputCurrency); 
 
-        (uint128 actualAmountIn, uint128 amountOut) = _swap(poolKey, zeroForOne, -int256(amountIn));
+        uint256 settledAmount = _settle(pathKey.inputCurrency, amountIn);
+        
+        (uint128 actualAmountIn, uint128 amountOut) = _swap(poolKey, zeroForOne, -int256(settledAmount));
         
         require(amountOut > 0, "Amount must be positive");
 
-        _settle(pathKey.inputCurrency, actualAmountIn);
+        // Refund unused input tokens to payerOrigin
+        int256 inputDelta = poolManager.currencyDelta(address(this), pathKey.inputCurrency);
+        if (inputDelta > 0) {
+            _take(pathKey.inputCurrency, _payerOrigin, uint256(inputDelta));
+        }
 
         if (Currency.unwrap(pathKey.outputCurrency) == address(0)) { 
             _take(pathKey.outputCurrency, address(this), amountOut); 
@@ -120,31 +126,6 @@ contract UniV4Adapter is IAdapter, SafeCallback {
             SafeERC20.safeTransfer(IERC20(WETH), to, amountOut); 
         } else { 
             _take(pathKey.outputCurrency, to, amountOut); 
-        }
-
-        // Refund excess tokens to payerOrigin
-        if (_payerOrigin != address(0)) {
-            address fromToken = Currency.unwrap(pathKey.inputCurrency);
-            uint256 refundAmount;
-            
-            if (fromToken == address(0)) {
-                // Handle ETH: wrap to WETH first
-                refundAmount = address(this).balance;
-                if (refundAmount > 0) {
-                    IWETH(WETH).deposit{value: refundAmount}();
-                    fromToken = WETH; // Update fromToken to WETH for transfer
-                }
-            } else {
-                // Handle ERC20 tokens
-                refundAmount = IERC20(fromToken).balanceOf(address(this));
-            }
-            
-            if (refundAmount > 0) {
-                (bool s,) = address(fromToken).call(
-                    abi.encodeWithSignature("transfer(address,uint256)", _payerOrigin, refundAmount)
-                );
-                require(s, "Transfer failed");
-            }
         }
 
         return "";
@@ -189,18 +170,20 @@ contract UniV4Adapter is IAdapter, SafeCallback {
     }
 
     /// @notice Pay and settle a currency to the PoolManager
-    function _settle(Currency currency, uint256 amount) internal {
-        if (amount == 0) return;
+    /// @dev For fee-on-transfer tokens, the actual settled amount may be less than the transfer amount
+    /// @return paid The actual amount settled (after transfer fees if any)
+    function _settle(Currency currency, uint256 amount) internal returns (uint256 paid) {
+        if (amount == 0) return 0;
         poolManager.sync(currency);
         if (currency.isAddressZero()) {
-            poolManager.settle{value: amount}();
+            paid = poolManager.settle{value: amount}();
         } else {
             SafeERC20.safeTransfer(
                 IERC20(Currency.unwrap(currency)),
                 address(poolManager),
                 amount
             );
-            poolManager.settle();
+            paid = poolManager.settle();
         }
     }
 

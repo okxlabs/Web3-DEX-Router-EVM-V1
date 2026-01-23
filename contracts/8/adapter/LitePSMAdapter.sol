@@ -13,32 +13,43 @@ contract LitePSMAdapter is IAdapter {
     address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     uint256 public immutable to18ConversionFactor = 1 * 10 ** 12;
     
-    // fromToken == DAI/USDS
     function sellBase(
         address to,
         address pool,
         bytes memory moreInfo
     ) external override {
-        address fromToken = abi.decode(moreInfo, (address));
-        uint256 buyAmount = IERC20(fromToken).balanceOf(address(this));
-        SafeERC20.safeApprove(IERC20(fromToken), pool, buyAmount);
-        IDssLitePsm(pool).buyGem(
-            to, 
-            buyAmount / to18ConversionFactor
-        );
+        _executeSwap(to, pool, moreInfo);
     }
 
-    // fromToken == USDC
     function sellQuote(
         address to,
         address pool,
         bytes memory moreInfo
     ) external override {
-        uint256 sellAmount = IERC20(USDC).balanceOf(address(this));
-        SafeERC20.safeApprove(IERC20(USDC), pool, sellAmount);
-        IDssLitePsm(pool).sellGem(
-            to, 
-            sellAmount
-        );
+        _executeSwap(to, pool, moreInfo);
+    }
+
+    function _executeSwap(
+        address to,
+        address pool,
+        bytes memory moreInfo
+    ) internal {
+        address fromToken = abi.decode(moreInfo, (address));
+        
+        if (fromToken == USDC) {
+            uint256 sellAmount = IERC20(USDC).balanceOf(address(this));
+            SafeERC20.safeApprove(IERC20(USDC), pool, sellAmount);
+            IDssLitePsm(pool).sellGem(
+                to, 
+                sellAmount
+            );
+        } else {
+            uint256 buyAmount = IERC20(fromToken).balanceOf(address(this));
+            SafeERC20.safeApprove(IERC20(fromToken), pool, buyAmount);
+            IDssLitePsm(pool).buyGem(
+                to, 
+                buyAmount / to18ConversionFactor
+            );
+        }
     }
 }

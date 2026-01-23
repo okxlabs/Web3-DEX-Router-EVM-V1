@@ -24,7 +24,7 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](9);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](13);
         cases[0] = getApeSwapV2TestCases();
         cases[1] = getRDexV2TestCases();
         cases[2] = getLynexTestCases();
@@ -34,7 +34,71 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
         cases[6] = getCronaSwapTestCases();
         cases[7] = getAVAXTestCase();
         cases[8] = getInSwapTestCases();
+        cases[9] = getMonadJoeTestCases();
+        cases[10] = getXLayerTestCases();
+        cases[11] = getFomoSwapTestCases();
+        cases[12] = getUniswapV2TestCases();
 
+        return cases;
+    }
+
+    function getUniswapV2TestCases() internal pure returns (SwapTestCase[] memory) {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        // https://www.oklink.com/zh-hans/x-layer/tx/0x2028ac1aed16c61d466fc75e0fbb74cfcaabcbb9f0bf3bb9635c19e15915dcc1
+        cases[0] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 49787016,
+            fromToken: address(0xB87c35d19aF3E2b5C894d5d50d792629E3157777), // UNIX
+            toToken: address(0xe538905cf8410324e03A5A23C1c177a474D59b2b), // WOKB
+            pool: address(0x7f2069d333B7ca9f4486d578ea0fc4857CBE59DF),
+            amount: 15297.839708600288 * 10 ** 18,
+            expectedOutput: 0,
+            sellBase: true,
+            expectRevert: false,
+            description: "UNIX to WOKB on XLayer",
+            moreInfo: abi.encode(997, 1000),
+            fromTokenPreTo: address(0)
+        });
+        return cases;
+    }
+
+    function getXLayerTestCases() internal pure returns (SwapTestCase[] memory) {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        // https://www.oklink.com/zh-hans/x-layer/tx/0x3b41faea3739219928321dc07b021f102b65d9869b98368a11a40783df9d2ed6
+        cases[0] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 49777232 - 1,
+            fromToken: address(0x1E4a5963aBFD975d8c9021ce480b42188849D41d),
+            toToken: address(0x64AF27d32F7b6FabeFeFC128a365128dF36BC1A5),
+            pool: address(0xA70E64138f1C70F0aA5cE7A5DdDe78ECDb49a144),
+            amount: 7.841025 * 10 ** 6,
+            expectedOutput: 0,
+            sellBase: true,
+            expectRevert: false,
+            description: "USDT to XLS on XLayer",
+            moreInfo: abi.encode(9975, 10000),
+            fromTokenPreTo: address(0)
+        });
+        return cases;
+    }   
+
+    function getFomoSwapTestCases() internal pure returns (SwapTestCase[] memory) {
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        // https://www.oklink.com/zh-hans/x-layer/tx/0x8722a69da2bec4e11f25446ab7d234a620616389f5c55a41f39bd9a8904caad2
+        cases[0] = SwapTestCase({
+            networkId: "xlayer",
+            forkBlock: 49710695,
+            fromToken: address(0x402155689b2Ab416530096435eD4C3c179Aa8E4a),
+            toToken: address(0x74b7F16337b8972027F6196A17a631aC6dE26d22),
+            pool: address(0xD4929164819C14b93e4206952040778590fA8881),
+            amount: 113534931300000000000000,
+            expectedOutput: 0.934225 * 10 ** 6,
+            sellBase: true,
+            expectRevert: false,
+            description: "xxdd to USDC on XLayer",
+            moreInfo: abi.encode(996, 1000),
+            fromTokenPreTo: address(0)
+        });
         return cases;
     }
 
@@ -307,6 +371,32 @@ contract UniversalUniswapV2AdapterTest is AbstractAdapterTest {
             fromTokenPreTo: address(0)
         });
         
+        return cases;
+    }
+
+    function getMonadJoeTestCases() internal pure returns (SwapTestCase[] memory) {
+        address JOE = 0x371c7ec6D8039ff7933a2AA28EB827Ffe1F52f07;
+        address WMON = 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A;
+
+        address JOE_WMON_PAIR = 0xD38eD09999c1FB29cAB12862a51618ed52BA65A1;
+
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+        // https://monadvision.com/tx/0xd329b1e9591b7d576ebac0c43452aa49da487efdc653a8d143bef637417cce69
+        cases[0] = SwapTestCase({
+            networkId: "monad",
+            forkBlock: 40847265 - 1,
+            fromToken: WMON,
+            toToken: JOE,
+            pool: JOE_WMON_PAIR,
+            amount: 49500000000000000000,
+            expectedOutput: 18374430384319061977,
+            sellBase: false,
+            expectRevert: false,
+            description: "WMON to JOE on Monad",
+            moreInfo: abi.encode(997, 1000),
+            fromTokenPreTo: address(0)
+        });
+
         return cases;
     }
 } 

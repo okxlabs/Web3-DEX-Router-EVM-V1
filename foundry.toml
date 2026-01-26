@@ -18,6 +18,15 @@ remappings = [
 evm_version = "london"
 fs_permissions = [{access = "read-write", path = "./"}]
 
+[profile.default.zksync]
+compile = true                          # Enable zkEVM compilation
+startup = true                          # Auto switch to zkEVM environment on startup
+zksolc = "1.5.10"                       # zksolc version (avoid 1.5.9 due to bugs)
+fallback_oz = true                      # Fallback to -Oz optimization when contract is too large
+optimizer = true                        # Enable optimizer
+optimizer_mode = "z"                    # Optimization mode: 3 (performance) | s (size) | z (max size reduction)
+# suppressed_errors = ["sendtransfer"]    # Suppress transfer/send errors (ZKsync-specific)
+
 [lint]
 # disable all lint checks, avoid too many note warnings when building
 ignore = ["**/*"]
@@ -60,6 +69,8 @@ conflux = "${CONFLUX_RPC_URL}"
 metis = "${METIS_RPC_URL}"
 merlin = "${MERLIN_RPC_URL}"
 iotex = "${IOTEX_RPC_URL}"
+# verifier: zksync, with foundry-zksync
+zksync = "${ZKSYNC_RPC_URL}"
 
 [fmt]
 line_length = 120

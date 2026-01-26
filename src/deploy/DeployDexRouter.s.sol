@@ -11,7 +11,7 @@ import "@dex/DexRouter.sol";
  */
 contract Deploy is Script {
     function run() public {
-        address owner = "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1";
+        address owner = 0xAcE2B3E7c752d5deBca72210141d464371b3B9b1;
 
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);

@@ -49,11 +49,12 @@ contract PancakeStableSwapTwoAdapter is IAdapter {
             );
         }
 
+        if (toToken == BNB_ADDRESS) {
+            IWETH(WBNB_ADDRESS).deposit{value: address(this).balance}();
+            toToken = WBNB_ADDRESS;
+        }
+
         if (to != address(this)) {
-            if (toToken == BNB_ADDRESS) {
-                IWETH(WBNB_ADDRESS).deposit{value: address(this).balance}();
-                toToken = WBNB_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

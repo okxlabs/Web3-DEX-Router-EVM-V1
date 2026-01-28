@@ -15,7 +15,7 @@ library ExactOutSwapHelper {
         address middleReceiver,
         uint256 targetTokenBefore,
         IDexRouter.ExtraData memory extraData
-    ) internal returns (uint256, uint256, address) {
+    ) internal view returns (uint256, uint256, address) {
         // Ensure no trim.
         require(!extraData.trimInfo.hasTrim, "trim is not supported in exact out swap");
 
@@ -38,9 +38,6 @@ library ExactOutSwapHelper {
 
     // Only handle commission.
     function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal {
-        // Validate commission info
-        CommissionLib.validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, _MODE_LEGACY); /// @notice For commission validation, ETH needs to be 0xEeee.
-
         // Handle commission from the source token if applicable.
         if (
             afterSwapParams.commissionInfo.isFromTokenCommission &&

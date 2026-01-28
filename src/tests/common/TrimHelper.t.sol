@@ -10,22 +10,22 @@ contract TrimHelper {
     /*
      *  Trim data should be encoded after method calldata and before commission data, the size may be 64 or 96 bytes.
      *  Single Trim:
-     *  ┌─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┐
-     *  │ trim_flag   │ padding     │ expect_amount   │ trim_flag   │ trim_rate   │ trim_address    │
-     *  │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │
-     *  │0x777777771111│0x000000000000│               │0x777777771111│            │                 │
-     *  └─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┘
-     *  ←──────────────--- 32 bytes ---──────────────→ ←──────────────--- 32 bytes ---──────────────→
+     *  ┌─────────────┬─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┐
+     *  │ trim_flag   │ isToB       │ padding     │ expect_amount   │ trim_flag   │ trim_rate   │ trim_address    │
+     *  │ 6 bytes     │ 1 byte      │ 5 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │
+     *  │0x777777771111│0x80 or 0x00│0x0000000000 │                 │0x777777771111│            │                 │
+     *  └─────────────┴─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┘
+     *  ←──────────────────────── 32 bytes ────────────────────────→ ←──────────────--- 32 bytes ---──────────────→
      *  Dual Trim:
-     *  ┌─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┐
-     *  │ trim_flag   │ charge_rate │ charge_address  │ trim_flag   │ padding     │ expect_amount   │ trim_flag   │ trim_rate   │ trim_address    │
-     *  │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │
-     *  │0x777777772222│            │                 │0x777777772222│0x800000000000│               │0x777777772222│            │                 │
-     *  └─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┘
-     *  ←──────────────--- 32 bytes ---──────────────→ ←──────────────--- 32 bytes --──────────────→ ←──────────────--- 32 bytes ---──────────────→
+     *  ┌─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────┬─────────────────┬─────────────┬─────────────┬─────────────────┐
+     *  │ trim_flag   │ charge_rate │ charge_address  │ trim_flag   │ isToB       │ padding     │ expect_amount   │ trim_flag   │ trim_rate   │ trim_address    │
+     *  │ 6 bytes     │ 6 bytes     │ 20 bytes        │ 6 bytes     │ 1 byte      │ 5 bytes     │ 20 bytes        │ 6 bytes     │ 6 bytes     │ 20 bytes        │
+     *  │0x777777772222│            │                 │0x777777772222│0x80 or 0x00│0x0000000000 │                 │0x777777772222│            │                 │
+     *  └─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────┴─────────────────┴─────────────┴─────────────┴─────────────────┘
+     *  ←──────────────--- 32 bytes ---──────────────→ ←──────────────────────── 32 bytes ───────────────────────→ ←──────────────--- 32 bytes ---──────────────→
      *  For both single and dual trim, isToBTrim flag is encoded in padding of the second bytes32.
-     *  - If isToBTrim is true, the padding is 0x800000000000.
-     *  - If isToBTrim is false, the padding is 0x000000000000.
+     *  - If isToBTrim is true, the isToB is 0x80.
+     *  - If isToBTrim is false, the isToB is 0x00.
     */
 
     struct TrimInfo {

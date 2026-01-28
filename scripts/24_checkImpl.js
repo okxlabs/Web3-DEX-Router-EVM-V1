@@ -1,7 +1,9 @@
-const { ethers, network } = require("hardhat");
+const hre = require("hardhat");
+const { ethers, network } = hre;
 const deployed = require('./deployed');
 require('colors');
 const Diff = require('diff');
+const { buildZkProvider, isZkSyncNetwork } = require("./utils/zksync");
 
 // For the zeta network specifically, the configuration is in the zeta/base.js file
 const zetaConfig = require('./deployed/zeta/base.js');
@@ -15,7 +17,8 @@ async function main() {
         process.exit(1);
     }
 
-    let code = await ethers.provider.getCode(newImpl);
+    const provider = isZkSyncNetwork(hre, network.name) ? buildZkProvider(hre, network.name) : ethers.provider;
+    let code = await provider.getCode(newImpl);
     code = code.toLowerCase();
 
     // Get the compiled contract bytecode for comparison

@@ -425,9 +425,6 @@ library ExtraDataLib {
             permit2Info.signature = abi.encodePacked(bytes32(permit2SignatureCache[0]), bytes32(permit2SignatureCache[1]));
         }
 
-        /// owner is constrained to msg.sender for now, but it still need to be encoded in the permit2Info calldata for future compatibility.
-        require(permit2Info.owner == msg.sender, "permit2Info owner mismatch");
-
         return permit2Info;
     }
 

@@ -52,10 +52,11 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
         override
         returns (SwapTestCase[][] memory)
     {
-        SwapTestCase[][] memory cases = new SwapTestCase[][](3);
+        SwapTestCase[][] memory cases = new SwapTestCase[][](4);
         cases[0] = getUniV4TestCases();
         cases[1] = getClankerTestCases();
         cases[2] = getZoraTestCases();
+        cases[3] = getFeeOnTransferTestCases();
 
         return cases;
     }
@@ -382,6 +383,46 @@ contract UniV4HookAdapterTest is AbstractAdapterTest {
             expectRevert: false,
             description: "ZORA to CREATOR COIN to CONTENT COIN",
             moreInfo: abi.encode(pathKeys2),
+            fromTokenPreTo: address(0)
+        });
+
+        return cases;
+    }
+
+    function getFeeOnTransferTestCases()
+        internal
+        pure
+        returns (SwapTestCase[] memory)
+    {
+        // Token addresses on Base network
+        address FeeToken = 0x1A85b97F8b0E1CEE4D5500E093F5970a2aeB3fB8; // Fee-on-transfer token
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+
+        SwapTestCase[] memory cases = new SwapTestCase[](1);
+
+        // Test: Fee-on-transfer token to USDC on Base
+        UniV4HookAdapter.PathKey[] memory pathKeys = new UniV4HookAdapter.PathKey[](1);
+        pathKeys[0] = UniV4HookAdapter.PathKey({
+            inputCurrency: Currency.wrap(FeeToken),
+            intermediateCurrency: Currency.wrap(USDC),
+            fee: 50000,
+            tickSpacing: 1000,
+            hook: address(0),
+            hookData: ""
+        });
+
+        cases[0] = SwapTestCase({
+            networkId: "base",
+            forkBlock: 38611960,
+            fromToken: FeeToken,
+            toToken: USDC,
+            pool: 0x498581fF718922c3f8e6A244956aF099B2652b2b, // Pool manager on Base
+            amount: 915523991890652198646, // ~915 FeeToken
+            expectedOutput: 0, // dynamic
+            sellBase: true,
+            expectRevert: false,
+            description: "Fee-on-transfer token to USDC on Base UniV4",
+            moreInfo: abi.encode(pathKeys),
             fromTokenPreTo: address(0)
         });
 

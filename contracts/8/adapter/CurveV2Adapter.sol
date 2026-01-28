@@ -54,11 +54,13 @@ contract CurveV2Adapter is IAdapter {
             pool,
             0
         );
+
+        if (toToken == ETH_ADDRESS) {
+            IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
+            toToken = WETH_ADDRESS;
+        }
+
         if (to != address(this)) {
-            if (toToken == ETH_ADDRESS) {
-                IWETH(WETH_ADDRESS).deposit{value: returnAmount}();
-                toToken = WETH_ADDRESS;
-            }
             SafeERC20.safeTransfer(
                 IERC20(toToken),
                 to,

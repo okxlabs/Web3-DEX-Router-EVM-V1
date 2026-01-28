@@ -17,5 +17,5 @@ module.exports = {
     _TYPE_HASH: "",
     nftmarketplace: "",
 
-    newImpl: "0xC259de94F6bedDec5Ed1C024b0283082ffa50cca",
+    newImpl: "0x0EfA3a01Eb0708f9E40B661C6Cd7C56c83B9F45A",
 }

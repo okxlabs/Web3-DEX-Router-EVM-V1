@@ -99,7 +99,7 @@ library SwapWrapRouter {
             amount, 
             fromTokenCommissionAmount
         ) = TransferLib.handlePermit2SigModeWithCommission(
-            reversed ? (mode | uint256(uint160(_WETH))) : uint256(uint160(_ETH)),
+            reversed ? (mode | uint256(uint160(_WETH))) : (mode | uint256(uint160(_ETH))),
             swapCache.payer,
             amount,
             address(0),

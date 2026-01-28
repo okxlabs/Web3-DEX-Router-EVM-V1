@@ -122,6 +122,13 @@ library UnxswapExactOutRouter {
         ) = ExactOutSwapHelper.beforeSwap(swapCache.amountOut, middleReceiver, targetTokenBefore, extraData);
 
         // Step 2: Validate and execute the swap.
+        uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
+        require(
+            mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
+            "invalid transfer mode"
+        );
+        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
+
         // If srcToken is ETH, the user must prepay ETH; any excess will be refunded after the swap.
         address srcTokenAddress = CommonLib.bytes32ToAddress(srcToken);
         address toToken;
@@ -132,14 +139,8 @@ library UnxswapExactOutRouter {
                 srcTokenAddress == fromToken || (srcTokenAddress == address(0) && fromToken == _ETH),
                 "fromToken mismatch"
             );
+            CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, toToken, mode);
         }
-
-        uint256 mode = uint256(pools[0]) & _TRANSFER_MODE_MASK;
-        require(
-            mode == _MODE_LEGACY || mode == _MODE_DIRECT || mode == _MODE_PERMIT2_ALLOWANCE || mode == _MODE_PERMIT2_SIGNATURE,
-            "invalid transfer mode"
-        );
-        extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         uint256 fromTokenCommissionAmount;
         (swapCache.payer, consumeAmount, fromTokenCommissionAmount) = _unxswapExactOutInternal(
@@ -270,7 +271,7 @@ library UnxswapExactOutRouter {
     ) private returns (address, uint256, uint256) {
         uint256 fromTokenCommissionAmount;
         (payer, amount, fromTokenCommissionAmount) = TransferLib.handlePermit2SigModeWithCommission(
-            token == address(0) ? uint256(uint160(_ETH)) : uint256(uint160(token)) | mode,
+            token == address(0) ? (uint256(uint160(_ETH)) | mode) : (uint256(uint160(token)) | mode),
             payer,
             amount,
             recipient,

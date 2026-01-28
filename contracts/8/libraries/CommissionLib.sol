@@ -271,12 +271,6 @@ library CommissionLib {
                 let rate := mload(add(commissionInfo, add(0xa0, mul(i, 0x40))))
                 totalRate := add(totalRate, rate)
             }
-            if gt(totalRate, COMMISSION_RATE_LIMIT) {
-                _revertWithReason(
-                    0x00000016206572726f7220636f6d6d697373696f6e2072617465000000000000,
-                    0x5a
-                ) // "error commission rate"
-            }
             if eq(token, _ETH) { // commission token is ETH, the process is same between no toB mode and toB mode
                 let sendAmount := 0
                 for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
@@ -288,10 +282,7 @@ library CommissionLib {
                         amount := sub(fromTokenCommissionAmount, sendAmount)
                     }
                     default {
-                        amount := div(
-                            mul(fromTokenCommissionAmount, rate),
-                            totalRate
-                        )
+                        amount := _mulDiv(fromTokenCommissionAmount, rate, totalRate)
                         sendAmount := add(sendAmount, amount)
                     }
                     _sendETH(referrer, amount)
@@ -330,10 +321,7 @@ library CommissionLib {
                         amount := sub(fromTokenCommissionAmount, sendAmount)
                     }
                     default {
-                        amount := div(
-                            mul(fromTokenCommissionAmount, rate),
-                            totalRate
-                        )
+                        amount := _mulDiv(fromTokenCommissionAmount, rate, totalRate)
                         sendAmount := add(sendAmount, amount)
                     }
 
@@ -478,12 +466,6 @@ library CommissionLib {
                     let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
                     totalRate := add(totalRate, rate)
                 }
-                if gt(totalRate, COMMISSION_RATE_LIMIT) {
-                    _revertWithReason(
-                        0x00000016206572726f7220636f6d6d697373696f6e2072617465000000000000,
-                        0x5a
-                    ) // "error commission rate"
-                }
                 commissionAmount := 0
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
@@ -626,6 +608,9 @@ library CommissionLib {
                 || (!commissionInfo.isFromTokenCommission && !commissionInfo.isToTokenCommission),
             "Invalid commission info"
         );
+
+        uint256 totalRate = calculateTotalRate(commissionInfo);
+        require(totalRate <= COMMISSION_RATE_LIMIT, "Invalid commission rate");
     }
 
     function calculateTotalRate(IDexRouter.CommissionInfo memory commissionInfo) internal pure returns (uint256 totalRate) {

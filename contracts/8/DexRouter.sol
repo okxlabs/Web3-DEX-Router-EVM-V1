@@ -105,7 +105,7 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         BaseRequest calldata baseRequest,
         RouterPath[] calldata paths
     )
-        public
+        external
         payable
         nonReentrant
         whenNotPaused
@@ -190,7 +190,7 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         uint256 minReturn,
         address receiver,
         bytes32[] calldata pools
-    ) public payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
+    ) external payable nonReentrant whenNotPaused returns (uint256 returnAmount) {
         uint256 swapDataLength = 4 + abi.encode(srcToken, amount, minReturn, receiver, pools).length;
         IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
         return UnxswapRouter.unxswapTo(srcToken, amount, minReturn, receiver, pools, extraData);

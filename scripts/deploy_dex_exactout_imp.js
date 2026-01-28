@@ -1,24 +1,37 @@
-const { ethers, upgrades } = require("hardhat");
+const hre = require("hardhat");
+const { ethers } = hre;
+const { Deployer } = require("@matterlabs/hardhat-zksync-deploy");
+const { isZkSyncNetwork, buildZkWallet } = require("./utils/zksync");
 const deployed = require('./deployed');
 
-async function main() {
-    console.log(deployed.base);
-
-    DexRouter = await ethers.getContractFactory("DexRouterExactOut");
-    dexRouter = await DexRouter.deploy();
+const deployOnEvm = async () => {
+    const DexRouter = await ethers.getContractFactory("DexRouterExactOut");
+    const dexRouter = await DexRouter.deploy();
     await dexRouter.deployed();
-    console.log("dexRouterExactOut: " + dexRouter.address);
-    let tx = await dexRouter.initialize();
+    const tx = await dexRouter.initialize();
     console.log("dexRouterExactOut initialized", tx);
     await tx.wait();
     console.log("dexRouterExactOut initialized");
-    // tx2 = await dexRouter.transferOwnership("0xace2b3e7c752d5debca72210141d464371b3b9b1")
-    // console.log("dexRouter transferOwnership", tx2);
-    // await tx2.wait();
-    // console.log("dexRouter transferOwnership");
-
-    // Return the address
     return dexRouter.address;
+}
+
+const deployOnZkSync = async () => {
+    const wallet = buildZkWallet(hre);
+    const deployer = new Deployer(hre, wallet);
+    const artifact = await deployer.loadArtifact("DexRouterExactOut");
+    const dexRouter = await deployer.deploy(artifact, []);
+    const tx = await dexRouter.initialize();
+    console.log("dexRouterExactOut initialized", tx);
+    await tx.wait();
+    console.log("dexRouterExactOut initialized");
+    return dexRouter.address;
+}
+
+async function main() {
+    console.log(deployed.base);
+    const address = await (isZkSyncNetwork(hre) ? deployOnZkSync() : deployOnEvm());
+    console.log("dexRouterExactOut: " + address);
+    return address;
 }
 
 // Export the main function

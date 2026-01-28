@@ -14,7 +14,7 @@ module.exports = {
     commisson: "",
     p2pTrading: "",
     nftmarketplace: "",
-    newImpl: "0xa081120347e57EB74DE8a9bE4a0441EbcB0A35F6",
+    newImpl: "0x3163Ed233a3Cb5E6B7F10A6f02b01F15867a8779",
 }
 
 

@@ -52,7 +52,7 @@ contract XdockAdapter is IAdapter {
             }
             amountOut = IERC20(tradeInfo.tokenAddress).balanceOf(address(this));
             SafeERC20.safeTransfer(IERC20(tradeInfo.tokenAddress), to, amountOut);
-            emit OrderRecord(true, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn - dust, amountOut);
+            emit OrderRecord(true, tradeInfo.fundAddress, tradeInfo.tokenAddress, amountIn, amountOut);
         } else {
             amountIn = tradeInfo.sellMemeAmount;
             address fundToken = address(0);
@@ -62,7 +62,7 @@ contract XdockAdapter is IAdapter {
 
             amountOut = _getBalance(fundToken, tx.origin) - amountOut;
             require(amountOut >= tradeInfo.minReturnAmount, "XdockAdapter: Min return not reached");
-            emit OrderRecord(false, tradeInfo.tokenAddress, tradeInfo.fundAddress, amountIn, amountOut);
+            emit OrderRecord(false, tradeInfo.tokenAddress, tradeInfo.fundAddress, tradeInfo.sellMemeAmount, amountOut);
         }
     }
 

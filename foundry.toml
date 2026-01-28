@@ -71,6 +71,12 @@ merlin = "${MERLIN_RPC_URL}"
 iotex = "${IOTEX_RPC_URL}"
 # verifier: zksync, with foundry-zksync
 zksync = "${ZKSYNC_RPC_URL}"
+# test environments (same chainId as mainnet, reuse mainnet RPC)
+eth_stg = "${ETH_RPC_URL}"
+arb_stg = "${ARB_RPC_URL}"
+bsc_stg = "${BSC_RPC_URL}"
+base_stg = "${BASE_RPC_URL}"
+xlayer_stg = "${XLAYER_RPC_URL}"
 
 [fmt]
 line_length = 120

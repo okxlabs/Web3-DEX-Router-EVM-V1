@@ -14,15 +14,10 @@
  *   npx hardhat deploy-upgrade --network arb --broadcast     # Deploy
  */
 
-const fs = require('fs');
-const path = require('path');
+
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
-const { isZkSyncNetwork, buildZkWallet } = require('../scripts/utils/zksync');
-
-const getDeployedDir = (network) =>
-  network === 'zksync' ? 'zkSyncEra' : network;
 
 // Files that need to be saved/restored
 const FILES_TO_SAVE = [

@@ -26,7 +26,7 @@ const CHAINS = {
   apechain: { chainId: 33139, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=33139', verifier: 'etherscan' },
   plasma: { chainId: 9745, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=9745', verifier: 'etherscan' },
   monad: { chainId: 143, verifierUrl: 'https://sourcify-api-monad.blockvision.org/', verifier: 'sourcify' },
-  // zksyncEra: { chainId: 324, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=324', verifier: 'etherscan', aliases: ['zksync'] }, // TODO
+  zksyncEra: { chainId: 324, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=324', verifier: 'etherscan', aliases: ['zksync'] },
   // verifier: oklink
   manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
   ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
@@ -41,6 +41,12 @@ const CHAINS = {
   metis: { chainId: 1088, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
+  // test environments (same chainId as mainnet, separate deployment directories)
+  eth_stg: { chainId: 1, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=1', verifier: 'etherscan' },
+  arb_stg: { chainId: 42161, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=42161', verifier: 'etherscan' },
+  bsc_stg: { chainId: 56, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=56', verifier: 'etherscan' },
+  base_stg: { chainId: 8453, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=8453', verifier: 'etherscan' },
+  xlayer_stg: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
 };
 
 /**

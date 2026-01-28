@@ -3,7 +3,7 @@ module.exports = {
     wNativeRelayer: "0xF828bC75b2b63DAC9dD84642AcCe1bB88E842531",
     tokenApprove: "0x67FA2B5E7eF52B422434b512A5790C43766Ef6F3",
     tokenApproveProxy: "0x2949A7b2771Cc70ecd400871236D345979E1c5E7",
-    permit2: "",
+    permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0xBb686278C6EB5B0a9Cc4406F8Db5A79BfaF53a99",
     xbridge: "0xbDa85Eb0a4864525C96D072C00fa8dA2a76871ec",
     //nftmarket: "",

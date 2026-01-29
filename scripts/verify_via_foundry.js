@@ -32,7 +32,7 @@ const CHAINS = {
   ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
   polyzkevm: { chainId: 1101, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/polyzkevm', verifier: 'oklink' },
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
-  ethw: { chainId: 100, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
+  ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: manual (flatten contracts for web verification)
   mode: { chainId: 34443, verifier: 'manual' },
   zeta: { chainId: 7000, verifier: 'manual' },

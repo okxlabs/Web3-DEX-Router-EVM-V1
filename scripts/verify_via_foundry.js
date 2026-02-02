@@ -25,8 +25,9 @@ const CHAINS = {
   sei: { chainId: 1329, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=1329', verifier: 'etherscan' },
   apechain: { chainId: 33139, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=33139', verifier: 'etherscan' },
   plasma: { chainId: 9745, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=9745', verifier: 'etherscan' },
+  // verifier: sourcify or custom
   monad: { chainId: 143, verifierUrl: 'https://sourcify-api-monad.blockvision.org/', verifier: 'sourcify' },
-  zksyncEra: { chainId: 324, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=324', verifier: 'etherscan', aliases: ['zksync'] },
+  zksyncEra: { chainId: 324, verifierUrl: 'https://block-explorer-api.mainnet.zksync.io/api', verifier: 'custom', aliases: ['zksync'] },
   // verifier: oklink
   manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
   ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
@@ -194,9 +195,10 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
   
   let cmd = 'forge verify-contract';
   
-  if (chainConfig.verifier === 'sourcify') {
-    cmd += ` \\\n  --rpc-url ${chain}`;
-    cmd += ` \\\n  --verifier sourcify`;
+  if (chainConfig.verifier === 'sourcify' || chainConfig.verifier === 'custom') {
+    const rpcChain = chain === 'zksyncEra' ? 'zksync' : chain;
+    cmd += ` \\\n  --rpc-url ${rpcChain}`;
+    cmd += ` \\\n  --verifier ${chainConfig.verifier}`;
     cmd += ` \\\n  --verifier-url '${chainConfig.verifierUrl}'`;
     cmd += ` \\\n  --compiler-version 0.8.17`;
     cmd += ` \\\n  --num-of-optimizations 200`;

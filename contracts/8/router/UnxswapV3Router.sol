@@ -227,6 +227,7 @@ library UnxswapV3Router {
         _uniswapV3Swap(
             swapCache.payer,
             payable(middleReceiver),
+            swapCache.refundTo,
             amount,
             pools
         );
@@ -243,6 +244,7 @@ library UnxswapV3Router {
     /// @notice Conducts a swap using the Uniswap V3 protocol internally within the contract.
     /// @param payer The address of the account providing the tokens for the swap.
     /// @param receiver The address that will receive the tokens after the swap.
+    /// @param refundTo The address to refund the unused tokens to.
     /// @param amount The amount of the source token to be swapped.
     /// @param pools An array of pool identifiers defining the swap route within Uniswap V3.
     /// @return returnAmount The amount of tokens received from the swap.
@@ -251,6 +253,7 @@ library UnxswapV3Router {
     function _uniswapV3Swap(
         address payer,
         address payable receiver,
+        address refundTo,
         uint256 amount,
         uint256[] calldata pools
     ) internal returns (uint256 returnAmount) {
@@ -437,7 +440,7 @@ library UnxswapV3Router {
                 }
                 
             }
-            let refundTo := payer
+
             {
                 let wrapWeth := gt(callvalue(), 0)
                 if wrapWeth {

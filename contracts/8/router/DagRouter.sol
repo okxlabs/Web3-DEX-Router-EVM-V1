@@ -6,6 +6,7 @@ import "../libraries/EventLib.sol";
 import "../libraries/CommonLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/TransferLib.sol";
+import "../libraries/TrimLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IERC20.sol";
 import "../interfaces/IWETH.sol";
@@ -47,6 +48,7 @@ library DagRouter {
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
+        TrimLib.validateTrimInfo(extraData.trimInfo);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, receiver);

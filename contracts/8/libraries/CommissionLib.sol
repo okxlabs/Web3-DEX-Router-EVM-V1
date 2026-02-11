@@ -611,6 +611,15 @@ library CommissionLib {
 
         uint256 totalRate = calculateTotalRate(commissionInfo);
         require(totalRate <= COMMISSION_RATE_LIMIT, "Invalid commission rate");
+
+        // Validate referrer addresses are not zero
+        for (uint256 i = 0; i < commissionInfo.commissionLength; i++) {
+            address referrerAddress;
+            assembly ("memory-safe") {
+                referrerAddress := mload(add(commissionInfo, add(0xc0, mul(i, 0x40))))
+            }
+            require(referrerAddress != address(0), "Invalid referrer address");
+        }
     }
 
     function calculateTotalRate(IDexRouter.CommissionInfo memory commissionInfo) internal pure returns (uint256 totalRate) {

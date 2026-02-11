@@ -7,6 +7,7 @@ import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/CommonLib.sol";
 import "../libraries/ExtraDataLib.sol";
 import "../libraries/CommissionLib.sol";
+import "../libraries/TrimLib.sol";
 import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IERC20.sol";
@@ -22,8 +23,6 @@ library UnxswapRouter {
         0xa9059cbbd0e30db0000000000000000000000000000000000000000000000000;
     uint256 private constant _SWAP_GETRESERVES_SELECTOR =
         0x022c0d9f0902f1ac000000000000000000000000000000000000000000000000;
-    uint256 private constant _WITHDRAW_TRNASFER_SELECTOR =
-        0x2e1a7d4da9059cbb000000000000000000000000000000000000000000000000;
     uint256 private constant _BALANCEOF_TOKEN0_SELECTOR =
         0x70a082310dfe1681000000000000000000000000000000000000000000000000;
     uint256 private constant _BALANCEOF_TOKEN1_SELECTOR =
@@ -148,6 +147,7 @@ library UnxswapRouter {
             "invalid transfer mode"
         );
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, toToken, mode);
+        TrimLib.validateTrimInfo(extraData.trimInfo);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = CommonLib.getBalanceOf(toToken, receiver);
@@ -467,7 +467,7 @@ library UnxswapRouter {
                 mstore(0x40, add(freePtr, 0x84))
                 mstore(
                     freePtr,
-                    0x0a5ea46600000000000000000000000000000000000000000000000000000000
+                    _CLAIM_TOKENS_CALL_SELECTOR_32
                 ) // claimTokens
                 mstore(add(freePtr, 0x04), token)
                 mstore(add(freePtr, 0x24), _payer)

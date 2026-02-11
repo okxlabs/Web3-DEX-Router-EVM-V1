@@ -6,6 +6,7 @@ import "../libraries/EventLib.sol";
 import "../libraries/UniswapTokenInfoHelper.sol";
 import "../libraries/CommonLib.sol";
 import "../libraries/CommissionLib.sol";
+import "../libraries/TrimLib.sol";
 import "../libraries/TransferLib.sol";
 import "../interfaces/IDexRouter.sol";
 import "../interfaces/IERC20.sol";
@@ -160,6 +161,7 @@ library UnxswapV3Router {
         }
 
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, srcToken, swapCache.toToken, mode);
+        TrimLib.validateTrimInfo(extraData.trimInfo);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
@@ -673,20 +675,25 @@ library UnxswapV3Router {
             let emptyPtr := mload(0x40)
             let resultPtr := add(emptyPtr, 21) // 0x15 = _FF_FACTORY size
 
+
+            // Store token0/token1/fee at emptyPtr+32 to avoid overwriting
+            // Solidity's free memory pointer at 0x40
+            let hashBase := add(emptyPtr, 32)
+
             mstore(emptyPtr, _SELECTORS)
             // token0
-            if iszero(staticcall(gas(), caller(), emptyPtr, 4, 0, 32)) {
+            if iszero(staticcall(gas(), caller(), emptyPtr, 4, hashBase, 32)) {
                 reRevert()
             }
             //token1
             if iszero(
-                staticcall(gas(), caller(), add(emptyPtr, 4), 4, 32, 32)
+                staticcall(gas(), caller(), add(emptyPtr, 4), 4, add(hashBase, 32), 32)
             ) {
                 reRevert()
             }
             // fee
             if iszero(
-                staticcall(gas(), caller(), add(emptyPtr, 8), 4, 64, 32)
+                staticcall(gas(), caller(), add(emptyPtr, 8), 4, add(hashBase, 64), 32)
             ) {
                 reRevert()
             }
@@ -695,16 +702,16 @@ library UnxswapV3Router {
             let amount
             switch sgt(amount0Delta, 0)
             case 1 {
-                token := mload(0)
+                token := mload(hashBase)
                 amount := amount0Delta
             }
             default {
-                token := mload(32)
+                token := mload(add(hashBase, 32))
                 amount := amount1Delta
             }
-            // let salt := keccak256(0, 96)
+            // let salt := keccak256(hashBase, 96)
             mstore(emptyPtr, _FF_FACTORY)
-            mstore(resultPtr, keccak256(0, 96)) // Compute the inner hash in-place
+            mstore(resultPtr, keccak256(hashBase, 96)) // Compute the inner hash in-place
             mstore(add(resultPtr, 32), _POOL_INIT_CODE_HASH)
             let pool := and(keccak256(emptyPtr, 85), _ADDRESS_MASK)
             if iszero(eq(pool, caller())) {

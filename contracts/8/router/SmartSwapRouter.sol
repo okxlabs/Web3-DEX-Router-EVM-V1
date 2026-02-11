@@ -5,6 +5,7 @@ import "../libraries/Constants.sol";
 import "../libraries/EventLib.sol";
 import "../libraries/CommissionLib.sol";
 import "../libraries/CommonLib.sol";
+import "../libraries/TrimLib.sol";
 import "../libraries/TransferLib.sol";
 import "../libraries/PMMLib.sol";
 import "../interfaces/IDexRouter.sol";
@@ -74,6 +75,7 @@ library SmartSwapRouter {
         
         address fromToken = CommonLib.bytes32ToAddress(baseRequest.fromToken);
         CommissionLib.validateCommissionInfo(extraData.commissionInfo, fromToken, baseRequest.toToken, mode);
+        TrimLib.validateTrimInfo(extraData.trimInfo);
         extraData.commissionInfo.tokenWithMode = mode | extraData.commissionInfo.tokenWithMode;
 
         if (mode == _MODE_BY_INVEST && extraData.refundTo != address(0)) {
@@ -197,7 +199,7 @@ library SmartSwapRouter {
             }
             require(
                 totalBatchAmount <= baseRequest.fromTokenAmount,
-                "Route: number of batches should be <= fromTokenAmount"
+                "Route: total batch amount should be <= fromTokenAmount"
             );
         }
 
@@ -244,8 +246,6 @@ library SmartSwapRouter {
         IDexRouter.RouterPath[] memory hops
     ) private {
         address fromToken = CommonLib.bytes32ToAddress(hops[0].fromToken);
-        bool toNext;
-        bool noTransfer;
 
         // execute hop
         uint256 hopLength = hops.length;
@@ -259,16 +259,10 @@ library SmartSwapRouter {
             address to = address(this);
             if (i == hopLength - 1 && !isToNative) {
                 to = receiver;
-            } else if (i < hopLength - 1 && hops[i + 1].assetTo.length == 1) {
-                to = hops[i + 1].assetTo[0];
-                toNext = true;
-            } else {
-                toNext = false;
             }
 
             // 3.2 execute forks
-            _exeForks(payer, refundTo, to, batchAmount, hops[i], noTransfer);
-            noTransfer = toNext;
+            _exeForks(payer, refundTo, to, batchAmount, hops[i]);
 
             unchecked {
                 ++i;
@@ -281,17 +275,16 @@ library SmartSwapRouter {
     /// @param to The address of the receiver.
     /// @param batchAmount The amount to be transferred in each batch.
     /// @param path The routing path for the swap.
-    /// @param noTransfer A flag to indicate whether the token transfer should be skipped.
     /// @dev It includes checks for the total weight of the paths and executes the swapping through the adapters.
     function _exeForks(
         address payer,
         address refundTo,
         address to,
         uint256 batchAmount,
-        IDexRouter.RouterPath memory path,
-        bool noTransfer
+        IDexRouter.RouterPath memory path
     ) private {
         uint256 totalWeight;
+        uint256 accAmount;
         for (uint256 i = 0; i < path.mixAdapters.length; i++) {
             bytes32 rawData = bytes32(path.rawData[i]);
             address poolAddress;
@@ -311,18 +304,20 @@ library SmartSwapRouter {
                     );
                 }
 
-                if (!noTransfer) {
-                    uint256 _fromTokenAmount = weight == 10_000
-                        ? batchAmount
-                        : (batchAmount * weight) / 10_000;
-                    if (_fromTokenAmount > 0) {
-                        TransferLib.transferInternal(
-                            payer,
-                            path.assetTo[i],
-                            path.fromToken,
-                            _fromTokenAmount
-                        );
-                    }
+                uint256 _fromTokenAmount;
+                if (i == path.mixAdapters.length - 1) {
+                    _fromTokenAmount = batchAmount - accAmount;
+                } else {
+                    _fromTokenAmount = (batchAmount * weight) / 10_000;
+                    accAmount += _fromTokenAmount;
+                }
+                if (_fromTokenAmount > 0) {
+                    TransferLib.transferInternal(
+                        payer,
+                        path.assetTo[i],
+                        path.fromToken,
+                        _fromTokenAmount
+                    );
                 }
             }
 

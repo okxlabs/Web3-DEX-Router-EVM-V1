@@ -285,7 +285,7 @@ library SmartSwapRouter {
     ) private {
         uint256 totalWeight;
         uint256 accAmount;
-        for (uint256 i = 0; i < path.mixAdapters.length; i++) {
+        for (uint256 i = 0; i < path.mixAdapters.length; ++i) {
             bytes32 rawData = bytes32(path.rawData[i]);
             address poolAddress;
             bool reverse;

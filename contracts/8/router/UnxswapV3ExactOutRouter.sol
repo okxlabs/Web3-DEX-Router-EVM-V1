@@ -246,7 +246,7 @@ library UnxswapV3ExactOutRouter {
         bytes memory callbackData;
         if (pools.length > 1) {
             uint256[] memory remainingPools = new uint256[](pools.length - 1);
-            for (uint i = 0; i < pools.length - 1; i++) {
+            for (uint i = 0; i < pools.length - 1; ++i) {
                 remainingPools[i] = pools[i];
             }
             callbackData = abi.encodePacked(V3_EXACT_OUT_CALLBACK_FLAG, abi.encode(payer, mode, remainingPools, extraData));

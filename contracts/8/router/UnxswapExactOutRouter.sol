@@ -214,7 +214,7 @@ library UnxswapExactOutRouter {
         // Execute all swaps in the path.
         address toToken;
         {
-            for(uint i = 0; i < pools.length; i++) {
+            for(uint i = 0; i < pools.length; ++i) {
                 bytes32 poolData = pools[i];
                 address to;
                 

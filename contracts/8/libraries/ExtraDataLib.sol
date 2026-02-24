@@ -169,7 +169,7 @@ library ExtraDataLib {
         require(endPoints[0] == calldataSize, "First endPoint must equal calldataSize");
 
         // Check 2: Each extraData region must be consecutive (no overlaps or gaps)
-        for (uint256 i = 0; i < EXTRA_DATA_TYPE_NUM - 1; i++) {
+        for (uint256 i = 0; i < EXTRA_DATA_TYPE_NUM - 1; ++i) {
             require(endPoints[i + 1] == endPoints[i] - lengths[i] * 32, "ExtraData regions not consecutive");
         }
 

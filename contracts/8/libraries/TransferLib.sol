@@ -137,7 +137,7 @@ library TransferLib {
                 requestedAmount: inputAmount + fromTokenCommissionAmount
             });
         } else { // Generate permit params with permit2 array length > 1 (fromTokenCommission with NoToB mode)
-            for (uint256 i = 0; i < permitLength; i++) {
+            for (uint256 i = 0; i < permitLength; ++i) {
                 permitBatchTransferFrom.permitted[i] = ISignatureTransfer.TokenPermissions({
                     token: token,
                     amount: extraData.permit2Info.amounts[i]
@@ -149,7 +149,7 @@ library TransferLib {
                 requestedAmount: inputAmount
             });
             uint256 accumulatedAmount = 0;
-            for (uint256 i = 0; i < permitLength - 1; i++) {
+            for (uint256 i = 0; i < permitLength - 1; ++i) {
                 uint256 commissionRate;
                 address referrerAddress;
                 assembly ("memory-safe") {

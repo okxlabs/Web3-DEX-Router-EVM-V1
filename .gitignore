@@ -36,7 +36,7 @@ artifacts/
 requirement
 .cursor
 out/
-
+zkout/
 .npm-cache
 .npm-home
 artifacts-zk

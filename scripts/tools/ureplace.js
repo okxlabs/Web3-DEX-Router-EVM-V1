@@ -1,159 +1,127 @@
 const fs = require("fs");
+const { network } = require('hardhat');
 const deployed = require('../deployed');
+const gasLimitConfig = require('../gas_limit/native_transfer_gas');
 
-const UNXSWAP_ROUTER_PATH = "./contracts/8/libraries/CommonUtils.sol";
-const PMMROUTER_PATH = "./contracts/8/PMMRouter.sol";
-const EIP712_PATH = "./contracts/8/libraries/draft-EIP712Upgradable.sol";
-const UNIV3_PATH = "./contracts/8/UnxswapV3Router.sol";
-const UNIV3_EXACTOUT_PATH = "./contracts/8/UnxswapV3ExactOutRouter.sol";
+// File paths
+const CONSTANTS_PATH = "./contracts/8/libraries/Constants.sol";
+const UNIV3_PATH = "./contracts/8/router/UnxswapV3Router.sol";
+const UNIV3_EXACTOUT_PATH = "./contracts/8/router/UnxswapV3ExactOutRouter.sol";
 
-const EMPTY_FF_FACTORY = "0x0000000000000000000000000000000000000000000000000000000000000000" // 32bytes
+// Default addresses for empty values
+const EMPTY_FF_FACTORY = "0x0000000000000000000000000000000000000000000000000000000000000000"; // 32bytes
+const EMPTY_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-// Replaces the contract address in the constant part of the UnxswapRouter file
-// _WETH, _APPROVE_PROXY_32, _WNATIVE_RELAY_32 Three constant addresses
-// npx hardhat run scripts/tools/ureplace.js [network name, eg: eth]
-function replace_contant(UnxswapRouterPath) {
-  // console.log(deployed.base);
+/**
+ * Replaces the network-specific constants in Constants.sol
+ * - NATIVE_TOKEN_TRANSFER_GAS_LIMIT
+ * - _WETH
+ * - _APPROVE_PROXY
+ * - _PERMIT2
+ */
+function replace_constants(constantsPath) {
+  const networkName = network.name;
+  console.log(`Replacing constants for network: ${networkName}`);
 
-  // Reading the file
-  fs.readFile(UnxswapRouterPath, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
+  let context = fs.readFileSync(constantsPath, 'utf8');
 
-    let context = data.toString();
-    // address public constant
-    context = context.replace(/_WETH\s+=\s+0x[0-9a-fA-F]+/, "_WETH = " + deployed.base.wNativeToken)
-    context = context.replace(/_APPROVE_PROXY\s+=\s+0x[0-9a-fA-F]+/, "_APPROVE_PROXY = " + deployed.base.tokenApproveProxy)
-    context = context.replace(/_WNATIVE_RELAY\s+=\s+0x[0-9a-fA-F]+/, "_WNATIVE_RELAY = " + deployed.base.wNativeRelayer)
+  // Replace NATIVE_TOKEN_TRANSFER_GAS_LIMIT
+  const gasLimit = gasLimitConfig.getGasLimit(networkName);
+  context = context.replace(
+    /NATIVE_TOKEN_TRANSFER_GAS_LIMIT\s*=\s*\d+/,
+    `NATIVE_TOKEN_TRANSFER_GAS_LIMIT = ${gasLimit}`
+  );
+  console.log(`  - NATIVE_TOKEN_TRANSFER_GAS_LIMIT = ${gasLimit}`);
 
-    fs.writeFile(UnxswapRouterPath, context, (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
+  // Replace _WETH
+  if (deployed.base.wNativeToken) {
+    context = context.replace(
+      /address constant _WETH\s*=\s*0x[0-9a-fA-F]+/,
+      `address constant _WETH = ${deployed.base.wNativeToken}`
+    );
+    console.log(`  - _WETH = ${deployed.base.wNativeToken}`);
+  }
 
-    console.log("replace finish !")
-  });
+  // Replace _APPROVE_PROXY
+  if (deployed.base.tokenApproveProxy) {
+    context = context.replace(
+      /address constant _APPROVE_PROXY\s*=\s*0x[0-9a-fA-F]+/,
+      `address constant _APPROVE_PROXY = ${deployed.base.tokenApproveProxy}`
+    );
+    console.log(`  - _APPROVE_PROXY = ${deployed.base.tokenApproveProxy}`);
+  }
+
+  // Replace _PERMIT2 - use empty address if permit2 is not set or empty
+  let permit2Address = deployed.base.permit2;
+  if (!permit2Address || permit2Address === "") {
+    permit2Address = EMPTY_ADDRESS;
+    console.log(`  - _PERMIT2 = ${permit2Address} (not configured, using zero address)`);
+  } else {
+    console.log(`  - _PERMIT2 = ${permit2Address}`);
+  }
+  context = context.replace(
+    /address constant _PERMIT2\s*=\s*0x[0-9a-fA-F]+/,
+    `address constant _PERMIT2 = ${permit2Address}`
+  );
+
+  fs.writeFileSync(constantsPath, context);
+  console.log("Constants.sol replace finish!");
 }
 
-function replace_pmm_contant(PMMROUTER_PATH) {
-  // console.log(deployed.base);
-
-  // Reading the file
-  fs.readFile(PMMROUTER_PATH, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
-
-    let context = data.toString();
-    // address public constant
-    context = context.replace(/_FACTORY\s=\s\w*/, "_FACTORY = " + deployed.base._FACTORY)
-
-    fs.writeFile(PMMROUTER_PATH, context, (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
-
-    console.log("replace finish !")
-  });
-}
-
-function replace_pmm_eip712_contant(EIP712_PATH) {
-  // console.log(deployed.base);
-
-  // Reading the file
-  fs.readFile(EIP712_PATH, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
-
-    let context = data.toString();
-    // address public constant
-    context = context.replace(/_CACHED_DOMAIN_SEPARATOR\s=\s\w*/, "_CACHED_DOMAIN_SEPARATOR = " + deployed.base._CACHED_DOMAIN_SEPARATOR)
-    context = context.replace(/_HASHED_NAME\s=\s\w*/, "_HASHED_NAME = " + deployed.base._HASHED_NAME)
-    context = context.replace(/_HASHED_VERSION\s=\s\w*/, "_HASHED_VERSION = " + deployed.base._HASHED_VERSION)
-    context = context.replace(/_TYPE_HASH\s=\s\w*/, "_TYPE_HASH = " + deployed.base._TYPE_HASH)
-    context = context.replace(/_CACHED_CHAIN_ID\s=\s\w*/, "_CACHED_CHAIN_ID = " + deployed.base._CACHED_CHAIN_ID)
-    context = context.replace(/_CACHED_THIS\s=\s\w*/, "_CACHED_THIS = " + deployed.base.dexRouter)
-
-    fs.writeFile(EIP712_PATH, context, (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
-
-    console.log("replace finish !")
-  });
-}
-
-function replace_univ3_contant(UnxswapRouterPath) {
-  // console.log(deployed.base);
-
-  // 如果 _FF_FACTORY 不存在或为空，使用 0x00 地址
+/**
+ * Replaces the _FF_FACTORY constant in UnxswapV3Router.sol
+ */
+function replace_univ3_constant(unxswapRouterPath) {
+  // Use empty address if _FF_FACTORY is not set or empty
   let factoryAddress = deployed.base._FF_FACTORY;
-  if (factoryAddress == null || factoryAddress == "") {
-    console.log("warning: _FF_FACTORY is null or empty, using 0x00 address");
+  if (!factoryAddress || factoryAddress === "") {
+    console.log("warning: _FF_FACTORY is not configured, using zero address");
     factoryAddress = EMPTY_FF_FACTORY;
   }
-  // Reading the file
-  fs.readFile(UnxswapRouterPath, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
 
-    let context = data.toString();
-    // address public constant
-    context = context.replace(/_FF_FACTORY\s+=\s+0x[0-9a-fA-F]+/, "_FF_FACTORY = " + factoryAddress);
-    // context = context.replace(/_FF_FACTORY\s=\s\w*/, "_FF_FACTORY = " + factoryAddress);
-    // if (deployed.base._POOL_INIT_CODE_HASH != null || deployed.base._POOL_INIT_CODE_HASH != "") {
-    //   context = context.replace(/_POOL_INIT_CODE_HASH\s=\s\w*/, "_POOL_INIT_CODE_HASH = " + deployed.base._POOL_INIT_CODE_HASH);
-    // }
-    fs.writeFile(UnxswapRouterPath, context, (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
+  let context = fs.readFileSync(unxswapRouterPath, 'utf8');
+  context = context.replace(
+    /_FF_FACTORY\s*=\s*0x[0-9a-fA-F]+/,
+    `_FF_FACTORY = ${factoryAddress}`
+  );
 
-    console.log("replace finish !")
-  });
+  fs.writeFileSync(unxswapRouterPath, context);
+  console.log(`UnxswapV3Router.sol _FF_FACTORY replace finish! (${factoryAddress})`);
 }
 
-function replace_univ3_exactout_contant(UnxswapRouterPath) {
-  // console.log(deployed.base);
-
-  // 如果 _FF_FACTORY 不存在或为空，使用 0x00 地址
+/**
+ * Replaces the _FF_FACTORY_ADDRESS constant in UnxswapV3ExactOutRouter.sol
+ */
+function replace_univ3_exactout_constant(unxswapExactOutRouterPath) {
+  // Use empty address if _FF_FACTORY is not set or empty
   let factoryAddress = deployed.base._FF_FACTORY;
-  if (factoryAddress == null || factoryAddress == "") {
-    console.log("warning: _FF_FACTORY is null or empty, using 0x00 address");
-    factoryAddress = EMPTY_FF_FACTORY;
+  if (!factoryAddress || factoryAddress === "") {
+    console.log("warning: _FF_FACTORY is not configured, using zero address for _FF_FACTORY_ADDRESS");
+    factoryAddress = EMPTY_ADDRESS;
+  } else {
+    // Convert _FF_FACTORY (bytes32 format: 0xff + address + padding) to address format
+    // Remove "0xff" prefix and take the next 40 characters (20 bytes address)
+    factoryAddress = "0x" + factoryAddress.slice(4, 44);
   }
-  // Reading the file
-  fs.readFile(UnxswapRouterPath, function (err, data) {
-    if (err) {
-      return console.error(err);
-    }
 
-    let context = data.toString();
-    // address public constant
-    context = context.replace(/_FF_FACTORY_ADDRESS\s+=\s+address\(0x[0-9a-fA-F]+\)/, "_FF_FACTORY_ADDRESS = address(" + factoryAddress.replace("0xff", "0x").slice(0, 42) + ")");
-    // context = context.replace(/_FF_FACTORY\s=\s\w*/, "_FF_FACTORY = " + factoryAddress);
-    // if (deployed.base._POOL_INIT_CODE_HASH != null || deployed.base._POOL_INIT_CODE_HASH != "") {
-    //   context = context.replace(/_POOL_INIT_CODE_HASH\s=\s\w*/, "_POOL_INIT_CODE_HASH = " + deployed.base._POOL_INIT_CODE_HASH);
-    // }
-    fs.writeFile(UnxswapRouterPath, context, (err) => {
-      if (err) {
-        console.log(err);
-      }
-    });
+  let context = fs.readFileSync(unxswapExactOutRouterPath, 'utf8');
+  context = context.replace(
+    /_FF_FACTORY_ADDRESS\s*=\s*address\(0x[0-9a-fA-F]+\)/,
+    `_FF_FACTORY_ADDRESS = address(${factoryAddress})`
+  );
 
-    console.log("replace finish !")
-  });
+  fs.writeFileSync(unxswapExactOutRouterPath, context);
+  console.log(`UnxswapV3ExactOutRouter.sol _FF_FACTORY_ADDRESS replace finish! (address(${factoryAddress}))`);
 }
 
-replace_contant(UNXSWAP_ROUTER_PATH);
-// replace_pmm_contant(PMMROUTER_PATH);
-// replace_pmm_eip712_contant(EIP712_PATH);
-replace_univ3_contant(UNIV3_PATH);
-// replace_univ3_exactout_contant(UNIV3_EXACTOUT_PATH);
+// Execute replacements
+console.log(`\n========== Starting ureplace.js for network: ${network.name} ==========\n`);
+
+// Replace Constants.sol (NATIVE_TOKEN_TRANSFER_GAS_LIMIT, _WETH, _APPROVE_PROXY, _PERMIT2)
+replace_constants(CONSTANTS_PATH);
+
+// Replace UnxswapV3Router.sol (_FF_FACTORY)
+replace_univ3_constant(UNIV3_PATH);
+
+// Replace UnxswapV3ExactOutRouter.sol (_FF_FACTORY_ADDRESS)
+replace_univ3_exactout_constant(UNIV3_EXACTOUT_PATH);

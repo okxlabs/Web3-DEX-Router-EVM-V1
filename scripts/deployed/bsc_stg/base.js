@@ -3,6 +3,7 @@ module.exports = {
     wNativeRelayer: "0xBb686278C6EB5B0a9Cc4406F8Db5A79BfaF53a99",
     tokenApprove: "0x7d6a100553e1bb2F98f48986381C9e6FD9945Ac6",
     tokenApproveProxy: "0x1d948e5d85B7987aE664b2dC0f34dcf1ADC576fc",
+    permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0xF4858d71e5d7D27e3F7270390Cd57545DcA35aa9",
     xbridge: '0x5C837a8f114548A3C13209068d0241aacdd33EeC',
     //nftmarket: "0x9beDDCb663954B7e858fA73d28F0fC64dD7D20B3",
@@ -25,6 +26,14 @@ module.exports = {
     newExactOutImpl: "0xEe4199FC21Df7F6c09FD7Bbf598016b3C2bBf635",
     preDexRouterExactOut: "0x5f73fafF23dD542BD4Ef4ec67D7849f31B6662eB",
 
-    newImpl: "0x1B1Ea64513D8e5ba58AA3C1CF4e179dB3FDE4EB0",
+    newImpl: "0x7afb22e2a2794b42171ef739fa546dc5789d9bc8",
 
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x437192Ceea87607D3a672b36137212D061d76e66",
+    smartSwapRouterLibrary: "0xE89602d8132Dc7A0e20A494Fb0F637E72dD6Cf69",
+    swapWrapRouterLibrary: "0x9daEF93e77a09f2d8b7cbe8eEE9e5e77aD1DAaDa",
+    unxswapExactOutRouterLibrary: "0x1D8F9F3AF4Dc657D85e71863Fa9a47199Af2c3EB",
+    unxswapRouterLibrary: "0x590C8389a3E655c75eB2A4001f39a22FC99AfACD",
+    unxswapV3ExactOutRouterLibrary: "0x916A1928e20ac6396c96Da50F837AED61a3b2044",
+    unxswapV3RouterLibrary: "0x069Ac8013d1Cb7ABc4F08e627251155E42E3E054",
 }

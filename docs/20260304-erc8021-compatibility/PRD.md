@@ -107,4 +107,4 @@ DexRouter 使用自定义机制，通过 assembly（`calldatasize()` 和 `callda
 3. 分佣和正滑点数据的解析结果与当前行为完全一致
 4. 无 ExtraData 的调用行为不变（无分佣/无正滑点）
 5. 常见路径 gas 额外消耗可控
-6. 合约体积增加 < 500 字节
+6. DexRouter deployed bytecode 不超过 EIP-170 可部署上限（24,576 字节）

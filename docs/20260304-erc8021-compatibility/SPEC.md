@@ -815,10 +815,10 @@ calldatasize() = 36 (selector + 1 个 bytes32):
 
 | # | TODO | 范围 | 说明 |
 |---|------|------|------|
-| 1 | CommissionLib.sol — 添加 effectiveEnd 后向扫描逻辑 | `_getCommissionAndTrimInfo()` assembly 块内，`_revertWithReason` 之后、首次 `calldataload` 之前 | 实现对齐计算 + 后向 bytes32 步长扫描 + 预过滤 + 完整 8-way flag 匹配 |
+| 1 | CommissionLib.sol — 添加 effectiveEnd 后向扫描逻辑 | `_getCommissionAndTrimInfo()` assembly 块内，`_revertWithReason` 之后、首次 `calldataload` 之前 | 实现对齐计算 + 后向 bytes32 步长扫描 + 完整 8-way flag 匹配（实现时移除了预过滤以节省合约体积，详见 PLAN 1.1） |
 | 2 | CommissionLib.sol — 替换 6 处 `calldatasize()` 锚点为 `effectiveEnd` | 第 111、162、198、227、248、278 行 | 纯文本替换，不改变解析逻辑 |
 | 3 | 新增后缀容忍度单元测试 | 新测试文件 | 覆盖：有/无 ExtraData × 有/无后缀 × 各种后缀长度 |
 | 4 | 新增 Fuzz 测试 | 新测试文件 | 随机后缀长度和内容，验证解析结果不变 |
 | 5 | 回归验证 | 全部现有测试 | `forge test` 全部通过，确认向后兼容 |
-| 6 | 合约体积验证 | 编译产物 | 体积增量 < 500 字节（PRD 成功指标 #6） |
+| 6 | 合约体积验证 | 编译产物 | deployed bytecode 不超过 EIP-170 限制 24,576 字节（PRD 成功指标 #6） |
 

@@ -28,7 +28,7 @@ contract DexRouter is
     UniswapTokenInfoHelper,
     DagRouter
 {
-    string public constant version = "v1.0.8-suffix-compatibility";
+    string public constant version = "v1.0.8-suffix-compat";
     using UniversalERC20 for IERC20;
 
     //-------------------------------

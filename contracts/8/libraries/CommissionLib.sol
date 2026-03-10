@@ -339,7 +339,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
         //         trimInfo.chargeRate
         //     );
         // }
-        assembly {
+        assembly ("memory-safe") {
             if or(or(mload(commissionInfo), mload(add(commissionInfo, 0x20))), mload(trimInfo)) {
                 let ptr := mload(0x40)
                 mstore(ptr, mload(add(commissionInfo, 0x60)))        // toBCommission
@@ -347,6 +347,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 mstore(add(ptr, 0x40), mload(add(trimInfo, 0x20)))   // trimRate
                 mstore(add(ptr, 0x60), mload(add(trimInfo, 0xa0)))   // chargeRate
                 log1(ptr, 0x80, 0x7970b0744fdb6cf0b120e5e0a5f4da3ab8cbec6d5d9ec8a4f327ccc1d8a5eb8b)
+                mstore(0x40, add(ptr, 0x80))
             }
         }
     }

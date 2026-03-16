@@ -2,21 +2,27 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "@dex/DexRouter.sol";
-import "@dex/DexRouterExactOut.sol";
-import "@dex/TokenApprove.sol";
-import "@dex/TokenApproveProxy.sol";
-import "@dex/utils/WNativeRelayer.sol";
-import "@dex/interfaces/IWETH.sol";
+import "@dex-exactout/DexRouterExactOut.sol";
+// These @dex/ interfaces have no transitive deps that conflict with @dex-exactout/
 import "@dex/interfaces/IUniswapV2Factory.sol";
 import "@dex/interfaces/IUniswapV2Router02.sol";
 import "@dex/interfaces/IUniswapV2Pair.sol";
-import "@dex/interfaces/uniV3/IUniswapV3Factory.sol";
 import "@dex/interfaces/uniV3/IUniswapV3Pool.sol";
 import "@dex/interfaces/uniV3/INonfungiblePositionManager.sol";
 import { MockERC20 } from "./mock/MockERC20.sol";
 import { CustomERC20 } from "./mock/MeMeERC20.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+// Minimal interfaces to avoid importing @dex/TokenApproveProxy.sol and @dex/utils/WNativeRelayer.sol
+// which would transitively pull in IERC20/SafeERC20/RevertReasonParser that conflict with @dex-exactout/ copies.
+interface ITokenApproveProxy {
+    function owner() external view returns (address);
+    function addProxy(address proxy) external;
+}
+
+interface IWNativeRelayerMinimal {
+    function setCallerOk(address[] calldata callers, bool ok) external;
+}
 
 interface IUniswapV3MintCallback {
     function uniswapV3MintCallback(
@@ -28,9 +34,9 @@ interface IUniswapV3MintCallback {
 
 contract BaseTestSetup is Test, IUniswapV3MintCallback {
     DexRouterExactOut dexRouterExactOut;
-    TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f);
-    TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
-    WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757));
+    address tokenApprove = 0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f;
+    ITokenApproveProxy tokenApproveProxy = ITokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
+    IWNativeRelayerMinimal wNativeRelayer = IWNativeRelayerMinimal(0x5703B683c7F928b721CA95Da988d73a3299d4757);
     IWETH weth = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     IUniswapV2Factory factory = IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);
     IUniswapV3Factory v3Factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);

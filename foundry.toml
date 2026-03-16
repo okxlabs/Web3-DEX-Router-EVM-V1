@@ -13,6 +13,7 @@ remappings = [
     "eth-gas-reporter/=node_modules/eth-gas-reporter/",
     "hardhat/=node_modules/hardhat/",
     "@dex/=contracts/8/",
+    "@dex-exactout/=contracts/exactout/"
 ]
 
 evm_version = "cancun"

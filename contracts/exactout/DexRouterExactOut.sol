@@ -18,11 +18,11 @@ import "./libraries/Permitable.sol";
 import "./libraries/PMMLib.sol";
 import "./libraries/CommissionLib.sol";
 import "./libraries/EthReceiver.sol";
+import "./libraries/WrapETHSwap.sol";
 import "./libraries/CommonUtils.sol";
 import "./libraries/TempStorage.sol";
 import "./storage/PMMRouterStorage.sol";
 import "./storage/DexRouterStorage.sol";
-import "./libraries/UniswapTokenInfoHelper.sol";
 
 /// @title DexRouterExactOut
 /// @notice Entrance of Split trading in Dex platform, must be inherited from UnxswapExactOutRouter and UnxswapV3ExactOutRouter
@@ -36,11 +36,11 @@ contract DexRouterExactOut is
     UnxswapExactOutRouter,
     UnxswapV3ExactOutRouter,
     DexRouterStorage,
+    WrapETHSwap,
     CommissionLib,
-    PMMRouterStorage,
-    UniswapTokenInfoHelper
+    PMMRouterStorage
 {
-    string public constant version = "v1.0.5-tee";
+    string public constant version = "v1.0.4-toB-commission";
     using UniversalERC20 for IERC20;
 
     struct AfterSwapParams {
@@ -48,7 +48,6 @@ contract DexRouterExactOut is
         uint256 consumeAmount;
         uint256 targetTokenBefore;
         address srcToken;
-        address toToken;
         address receiver;
         address payer;
     }
@@ -155,10 +154,9 @@ contract DexRouterExactOut is
             middleReceiver
         ) = _beforeSwap(amount, middleReceiver, targetTokenBefore);
 
-        // Step 2: Validate and execute the swap.
+        // Step 2: Execute the swap.
         // If srcToken is ETH, the user must prepay ETH; any excess will be refunded after the swap.
         address srcTokenAddress = address(uint160(srcToken & _ADDRESS_MASK));
-        address toToken = _validateUnxswapToken(srcTokenAddress, pools);
         consumeAmount = _unxswapExactOutInternal(
             IERC20(srcTokenAddress),
             amount,
@@ -175,23 +173,9 @@ contract DexRouterExactOut is
                 consumeAmount: consumeAmount,
                 targetTokenBefore: targetTokenBefore,
                 srcToken: srcTokenAddress == address(0) ? _ETH : srcTokenAddress,
-                toToken: toToken,
                 receiver: receiver,
                 payer: payer
             })
-        );
-    }
-
-    /// @notice For unxswap, if srcToken is ETH, srcToken needs to be address(0).
-    function _validateUnxswapToken(
-        address srcTokenAddress,
-        bytes32[] calldata pools
-    ) internal view returns (address toToken) {
-        address fromToken;
-        (fromToken, toToken) = _getUnxswapTokenInfo(msg.value > 0, pools);
-        require(
-            (srcTokenAddress == fromToken && fromToken != _ETH) || (srcTokenAddress == address(0) && fromToken == _ETH),
-            "unxswap: token mismatch"
         );
     }
 
@@ -244,8 +228,21 @@ contract DexRouterExactOut is
             targetTokenBefore,
             middleReceiver
         ) = _beforeSwap(amountOut, middleReceiver, targetTokenBefore);
-        // Step 3: Determine the source token and to token for the swap.
-        (address srcToken, address toToken) = _getUniswapV3TokenInfo(msg.value > 0, pools);
+        // Step 3: Determine the source token for the swap.
+        address srcToken;
+
+        if (msg.value > 0) {
+            srcToken = _ETH;
+        } else {
+            address poolAddr = address(uint160(pools[0] & _ADDRESS_MASK));
+            bool zeroForOne = (pools[0] & _ONE_FOR_ZERO_MASK) == 0;
+
+            if (zeroForOne) {
+                srcToken = IUniV3(poolAddr).token0();
+            } else {
+                srcToken = IUniV3(poolAddr).token1();
+            }
+        }
 
         // Step 4: Execute the swap. If srcToken is ETH, any excess ETH will be refunded after the swap.
         consumeAmount = _uniswapV3SwapExactOut(
@@ -263,7 +260,6 @@ contract DexRouterExactOut is
                 consumeAmount: consumeAmount,
                 targetTokenBefore: targetTokenBefore,
                 srcToken: srcToken,
-                toToken: toToken,
                 receiver: address(uint160(receiver)),
                 payer: payer
             })
@@ -279,7 +275,7 @@ contract DexRouterExactOut is
         address middleReceiver,
         uint256 targetTokenBefore
     ) internal returns (CommissionInfo memory, uint256, uint256, address) {
-        (CommissionInfo memory commissionInfo, ) = _getCommissionAndTrimInfo();
+        CommissionInfo memory commissionInfo = _getCommissionInfo();
         if (
             commissionInfo.isToTokenCommission &&
             commissionInfo.commissionRate > 0
@@ -300,9 +296,6 @@ contract DexRouterExactOut is
 
     // Handles commission.
     function _afterSwap(AfterSwapParams memory afterSwapParams) internal {
-        // validate commission info
-        _validateCommissionInfo(afterSwapParams.commissionInfo, afterSwapParams.srcToken, afterSwapParams.toToken, _MODE_LEGACY); // @notice For commission validation, ETH needs to be 0xEeee.
-
         // Handle commission from the source token if applicable.
         if (
             afterSwapParams.commissionInfo.isFromTokenCommission &&
@@ -322,11 +315,10 @@ contract DexRouterExactOut is
             }
             _doCommissionFromToken(
                 afterSwapParams.commissionInfo,
+                afterSwapParams.srcToken,
                 afterSwapParams.payer,
                 afterSwapParams.receiver,
-                afterSwapParams.consumeAmount,
-                false,
-                afterSwapParams.toToken
+                afterSwapParams.consumeAmount
             );
             if (
                 afterSwapParams.srcToken == _ETH &&
@@ -358,13 +350,10 @@ contract DexRouterExactOut is
             afterSwapParams.commissionInfo.isToTokenCommission &&
             afterSwapParams.commissionInfo.commissionRate > 0
         ) {
-            TrimInfo memory trimInfo;
-            _doCommissionAndTrimToToken(
+            _doCommissionToToken(
                 afterSwapParams.commissionInfo,
                 afterSwapParams.receiver,
-                afterSwapParams.targetTokenBefore,
-                afterSwapParams.toToken,
-                trimInfo
+                afterSwapParams.targetTokenBefore
             );
         }
     }

@@ -11,6 +11,8 @@ import "./interfaces/IApproveProxy.sol";
 
 contract UnxswapExactOutRouter is CommonUtils {
 
+    uint256 private constant _WETH_MASK =
+        0x4000000000000000000000000000000000000000000000000000000000000000;
     uint256 private constant _NUMERATOR_MASK =
         0x0000000000000000ffffffff0000000000000000000000000000000000000000;
 

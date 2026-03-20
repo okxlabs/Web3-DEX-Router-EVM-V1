@@ -41,12 +41,13 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
     uint256 internal constant TRIM_DUAL_FLAG =
         0x7777777722220000000000000000000000000000000000000000000000000000;
 
-    event CommissionAndTrimInfo(
-        uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
-        uint256 toBTrim, // 0 for no trim, 1 for no-toB trim, 2 for toB trim
-        uint256 trimRate,
-        uint256 chargeRate
-    );
+    // @notice CommissionAndTrimInfo is emitted in assembly, commentted out for contract size saving
+    // event CommissionAndTrimInfo(
+    //     uint256 toBCommission, // 0 for no commission, 1 for no-toB commission, 2 for toB commission
+    //     uint256 toBTrim, // 0 for no trim, 1 for no-toB trim, 2 for toB trim
+    //     uint256 trimRate,
+    //     uint256 chargeRate
+    // );
 
     // @notice CommissionFromTokenRecord is emitted in assembly, commentted out for contract size saving
     // event CommissionFromTokenRecord(
@@ -108,7 +109,39 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 revert(0, len)
             }
 
-            let commissionData := calldataload(sub(calldatasize(), 0x20))
+            // Backward scan to find the true ExtraData boundary (effectiveEnd).
+            // External suffixes (e.g. ERC-8021) may be appended after ExtraData,
+            // so calldatasize() may no longer be the right edge.
+            let calldataEnd := calldatasize()
+
+            // Strip non-aligned suffix bytes: calldata should be 4B selector + N*32B
+            let remainder := mod(sub(calldataEnd, 4), 0x20)
+            let effectiveEnd := sub(calldataEnd, remainder)
+
+            // Scan backward through 32-byte aligned positions to find the rightmost known flag.
+            // Direct exact-match against all 8 known flag values (6 commission + 2 trim).
+            let scanPos := effectiveEnd
+            // 0x23 = 35: ensures scanPos >= 0x24 so calldataload reads from offset >= 4 (past selector)
+            for { } gt(scanPos, 0x23) { scanPos := sub(scanPos, 0x20) } {
+                // _COMMISSION_FLAG_MASK == _TRIM_FLAG_MASK (both 0xffffffffffff000...0), so one mask covers all flags
+                let flagMasked := and(calldataload(sub(scanPos, 0x20)), _COMMISSION_FLAG_MASK)
+                // exact match against all 8 known flag values (6 commission + 2 trim)
+                if or(
+                    or(
+                        or(eq(flagMasked, FROM_TOKEN_COMMISSION), eq(flagMasked, TO_TOKEN_COMMISSION)),
+                        or(eq(flagMasked, FROM_TOKEN_COMMISSION_DUAL), eq(flagMasked, TO_TOKEN_COMMISSION_DUAL))
+                    ),
+                    or(
+                        or(eq(flagMasked, FROM_TOKEN_COMMISSION_MULTIPLE), eq(flagMasked, TO_TOKEN_COMMISSION_MULTIPLE)),
+                        or(eq(flagMasked, TRIM_FLAG), eq(flagMasked, TRIM_DUAL_FLAG))
+                    )
+                ) {
+                    effectiveEnd := scanPos
+                    break
+                }
+            }
+
+            let commissionData := calldataload(sub(effectiveEnd, 0x20))
             let flag := and(commissionData, _COMMISSION_FLAG_MASK)
             let referrerNum := 0
             if or(
@@ -159,7 +192,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     add(0xc0, commissionInfo),
                     and(commissionData, _ADDRESS_MASK)
                 ) // 1st referrerAddress
-                commissionData := calldataload(sub(calldatasize(), 0x40))
+                commissionData := calldataload(sub(effectiveEnd, 0x40))
                 let toBCommission := NO_TO_B_MODE // default toBCommission is 1 for no-toB commission when commissionData exists
                 if gt(and(commissionData, _TO_B_COMMISSION_MASK), 0) {
                     toBCommission := TO_B_MODE // toB commission value when commissionData exists
@@ -195,7 +228,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 for { let i := 1 } lt(i, MAX_COMMISSION_MULTIPLE_NUM) { i := add(i, 1) } {
                     switch lt(i, referrerNum) // if i < referrerNum, the i-th commission pair is valid
                     case 1 {
-                        commissionData := calldataload(sub(calldatasize(), add(0x40, mul(i, 0x20))))
+                        commissionData := calldataload(sub(effectiveEnd, add(0x40, mul(i, 0x20))))
                         let flag2 := and(commissionData, _COMMISSION_FLAG_MASK)
                         if iszero(eq(flag, flag2)) {
                             _revertWithReason(
@@ -224,7 +257,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                 offset := mul(add(referrerNum, 1), 0x20)
             }
             // get first bytes32 of trim data
-            let trimData := calldataload(sub(calldatasize(), add(offset, 0x20)))
+            let trimData := calldataload(sub(effectiveEnd, add(offset, 0x20)))
             flag := and(trimData, _TRIM_FLAG_MASK)
             let hasTrim := or(
                 eq(flag, TRIM_FLAG),
@@ -245,7 +278,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
                     and(trimData, _TRIM_EXPECT_AMOUNT_OUT_OR_ADDRESS_MASK)
                 ) // trimAddress
                 // get second bytes32 of trim data
-                trimData := calldataload(sub(calldatasize(), add(offset, 0x40)))
+                trimData := calldataload(sub(effectiveEnd, add(offset, 0x40)))
                 let flag2 := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(flag, flag2)) {
                     _revertWithReason(
@@ -275,7 +308,7 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             switch eq(flag, TRIM_DUAL_FLAG)
             case 1 {
                 // get third bytes32 of trim data
-                trimData := calldataload(sub(calldatasize(), add(offset, 0x60)))
+                trimData := calldataload(sub(effectiveEnd, add(offset, 0x60)))
                 let flag2 := and(trimData, _TRIM_FLAG_MASK)
                 if iszero(eq(flag, flag2)) {
                     _revertWithReason(
@@ -298,13 +331,24 @@ abstract contract CommissionLib is AbstractCommissionLib, CommonUtils {
             }
         }
 
-        if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
-            emit CommissionAndTrimInfo(
-                commissionInfo.toBCommission,
-                trimInfo.toBTrim,
-                trimInfo.trimRate,
-                trimInfo.chargeRate
-            );
+        // if (commissionInfo.isFromTokenCommission || commissionInfo.isToTokenCommission || trimInfo.hasTrim) {
+        //     emit CommissionAndTrimInfo(
+        //         commissionInfo.toBCommission,
+        //         trimInfo.toBTrim,
+        //         trimInfo.trimRate,
+        //         trimInfo.chargeRate
+        //     );
+        // }
+        assembly ("memory-safe") {
+            if or(or(mload(commissionInfo), mload(add(commissionInfo, 0x20))), mload(trimInfo)) {
+                let ptr := mload(0x40)
+                mstore(ptr, mload(add(commissionInfo, 0x60)))        // toBCommission
+                mstore(add(ptr, 0x20), mload(add(trimInfo, 0x60)))   // toBTrim
+                mstore(add(ptr, 0x40), mload(add(trimInfo, 0x20)))   // trimRate
+                mstore(add(ptr, 0x60), mload(add(trimInfo, 0xa0)))   // chargeRate
+                log1(ptr, 0x80, 0x7970b0744fdb6cf0b120e5e0a5f4da3ab8cbec6d5d9ec8a4f327ccc1d8a5eb8b)
+                mstore(0x40, add(ptr, 0x80))
+            }
         }
     }
 

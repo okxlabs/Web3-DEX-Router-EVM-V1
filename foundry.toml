@@ -1,7 +1,7 @@
 [profile.default]
 src = "contracts/8"
 out = "artifacts"
-test = "src/tests/adapter/"
+test = "src/tests/suffix/"
 
 libs = ["node_modules", "lib"]
 optimizer = true
@@ -16,7 +16,7 @@ remappings = [
     "@dex-exactout/=contracts/exactout/"
 ]
 
-evm_version = "cancun"
+evm_version = "london"
 fs_permissions = [{access = "read-write", path = "./"}]
 
 # Sourcify verification settings for Monad

@@ -9,5 +9,5 @@ module.exports = {
     _POOL_INIT_CODE_HASH: "",
     investEntrance: "",
     proxyAdmin: "0x3a1078eF3B6E36D1560B15f6e0BFa715567A96bA",
-    newImpl: "0xD3B3e6433d6A7f94c28CE907311fB21b0f0b659e",
+    newImpl: "0x6f7c20464258c732577c87a9B467619e03e5C158",
 }

@@ -8,13 +8,11 @@ require('hardhat-log-remover');
 require("@openzeppelin/hardhat-upgrades");
 require("@matterlabs/hardhat-zksync-deploy");
 require("@matterlabs/hardhat-zksync-solc");
-require("@matterlabs/hardhat-zksync-verify");
+// require("@matterlabs/hardhat-zksync-verify");
 require('dotenv').config();
 require("./scripts/multichain.js");
-require('@okxweb3/hardhat-explorer-verify');
+// require('@okxweb3/hardhat-explorer-verify');
 require("./tasks/deploy-upgrade");
-
-require("@zetachain/toolkit/tasks");
 
 // Note: If no private key is configured in the project, the first test account of Hardhat is used by default
 const PRIVATE_KEY = process.env.PRIVATE_KEY_DEPLOYER || 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';

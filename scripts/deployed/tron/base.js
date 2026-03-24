@@ -10,5 +10,5 @@ module.exports = {
     marketMaker: "",
     pmmAdapter: "",
     protocolAdmin: "",
-    newImpl: "TLxPPVU2C7sDeZ8wJdGkMQVtsVShz1fZTT",
+    newImpl: "TAGVH5t42MuofaAfUauPPRe4Qw3i8Z3QHM",
 }

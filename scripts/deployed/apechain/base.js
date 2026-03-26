@@ -14,5 +14,5 @@ module.exports = {
     //p2pTrading: "",
     p2pTrading: "",
     nftmarketplace: "",
-    newImpl: "0x23E2f2FA1967FAffde2e05fDecbb3fa787A5D3E5",
+    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
 }

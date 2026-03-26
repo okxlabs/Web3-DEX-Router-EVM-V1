@@ -1,5 +1,15 @@
 const fs = require("fs");
-const deployed = require('../deployed');
+
+let deployed;
+const networkName = process.argv[2];
+if (networkName) {
+  // node 直接调用: node scripts/tools/ureplace.js <network>
+  const base = require(`../deployed/${networkName}/base`);
+  deployed = { base };
+} else {
+  // hardhat 环境: npx hardhat run scripts/tools/ureplace.js --network <network>
+  deployed = require('../deployed');
+}
 
 const UNXSWAP_ROUTER_PATH = "./contracts/8/libraries/CommonUtils.sol";
 const PMMROUTER_PATH = "./contracts/8/PMMRouter.sol";

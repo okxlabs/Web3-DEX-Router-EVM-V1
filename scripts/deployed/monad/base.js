@@ -9,6 +9,6 @@ module.exports = {
     _FF_FACTORY: "0xff204faca1764b154221e35c0d20abb3c5257104980000000000000000000000",
     _CACHED_CHAIN_ID: 143,
     commisson: "",
-    newImpl: "0x6088d94C5a40CEcd3ae2D4e0710cA687b91c61d0",
+    newImpl: "0x7A7AD9aa93cd0A2D0255326E5Fb145CEc14997FF",
     proxyAdmin: "",
 }

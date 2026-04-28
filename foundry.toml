@@ -67,3 +67,17 @@ contract_new_lines = false
 sort_imports = true
 pow_no_space = true
 call_compact_args = true
+
+[profile.security-manager]
+src = "contracts/8"
+out = "artifacts"
+test = "src/tests/security-manager"
+libs = ["node_modules", "lib"]
+optimizer = true
+optimizer_runs = 1
+remappings = [
+    "@openzeppelin/=node_modules/@openzeppelin/",
+    "@dex/=contracts/8/",
+]
+evm_version = "london"
+fs_permissions = [{access = "read-write", path = "./"}]

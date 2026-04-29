@@ -14,6 +14,15 @@ contract SecurityManager is AccessControl {
     EnumerableSet.AddressSet private _whitelist;
 
     event ProxyAdded(address indexed proxy);
+    event ProxyRemoved(address indexed proxy);
+
+    modifier onlyAdminOrSecurity() {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || hasRole(SECURITY_ROLE, msg.sender),
+            "SM: unauthorized"
+        );
+        _;
+    }
 
     constructor(
         address _tokenApproveProxy,
@@ -49,5 +58,11 @@ contract SecurityManager is AccessControl {
         require(_whitelist.add(_proxy), "SM: already in whitelist");
         tokenApproveProxy.addProxy(_proxy);
         emit ProxyAdded(_proxy);
+    }
+
+    function removeProxy(address _proxy) external onlyAdminOrSecurity {
+        require(_whitelist.remove(_proxy), "SM: not in whitelist");
+        tokenApproveProxy.removeProxy(_proxy);
+        emit ProxyRemoved(_proxy);
     }
 }

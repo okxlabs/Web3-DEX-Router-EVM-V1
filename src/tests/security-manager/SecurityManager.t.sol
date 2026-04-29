@@ -9,6 +9,7 @@ import "@dex/TokenApproveProxy.sol";
 
 contract SecurityManagerTest is Test {
     event ProxyAdded(address indexed proxy);
+    event ProxyRemoved(address indexed proxy);
 
     TokenApproveProxy oldProxy;
     SecurityManager sm;
@@ -121,5 +122,59 @@ contract SecurityManagerTest is Test {
         vm.prank(MULTISIG);
         vm.expectRevert(bytes("SM: zero address"));
         sm.addProxy(address(0));
+    }
+
+    function _grantSecurityRole() internal {
+        // Cache the role getter before vm.prank: the getter is the next external call
+        // and would otherwise consume the prank, leaving grantRole to run as the test contract.
+        bytes32 securityRole = sm.SECURITY_ROLE();
+        vm.prank(MULTISIG);
+        sm.grantRole(securityRole, SECURITY_CO);
+    }
+
+    function test_RemoveProxy_ByAdmin() public {
+        vm.prank(MULTISIG);
+        sm.removeProxy(DEX_ROUTER);
+        assertFalse(sm.whitelistContains(DEX_ROUTER));
+        assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+    }
+
+    function test_RemoveProxy_BySecurityRole() public {
+        _grantSecurityRole();
+        vm.prank(SECURITY_CO);
+        sm.removeProxy(DEX_ROUTER);
+        assertFalse(sm.whitelistContains(DEX_ROUTER));
+        assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+    }
+
+    function test_RemoveProxy_EmitsEvent() public {
+        vm.expectEmit(true, false, false, true);
+        emit ProxyRemoved(DEX_ROUTER);
+        vm.prank(MULTISIG);
+        sm.removeProxy(DEX_ROUTER);
+    }
+
+    function test_RemoveProxy_ByRandomEOA_Reverts() public {
+        vm.expectRevert(bytes("SM: unauthorized"));
+        vm.prank(address(0xDEAD));
+        sm.removeProxy(DEX_ROUTER);
+    }
+
+    function test_RemoveProxy_NotInWhitelist_Reverts() public {
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("SM: not in whitelist"));
+        sm.removeProxy(address(0xDEAD));
+    }
+
+    function test_RemoveProxy_AfterRevoke_Reverts() public {
+        _grantSecurityRole();
+        // Cache the role getter before vm.prank for the same reason as in _grantSecurityRole.
+        bytes32 securityRole = sm.SECURITY_ROLE();
+        vm.prank(MULTISIG);
+        sm.revokeRole(securityRole, SECURITY_CO);
+
+        vm.expectRevert(bytes("SM: unauthorized"));
+        vm.prank(SECURITY_CO);
+        sm.removeProxy(DEX_ROUTER);
     }
 }

@@ -47,7 +47,7 @@ contract SecurityManager is AccessControl {
     /// @param _tokenApproveProxy Address of the underlying TokenApproveProxy this contract will govern. Must be non-zero. SecurityManager must be (or become) the owner of this proxy off-band for any admin path to actually take effect downstream.
     /// @param _admin Address granted DEFAULT_ADMIN_ROLE. Must be non-zero. This account can later grant/revoke SECURITY_ROLE.
     /// @param _initialWhitelist Proxies to seed the mirror with. Each entry must be non-zero (S3) and must already be allowed on the underlying proxy (S4) — these invariants bootstrap mirror-proxy parity without needing any external calls back to the underlying.
-    /// @dev S3 (zero rejection) and S4 (must-already-be-on-proxy) are enforced per-entry. Duplicates in `_initialWhitelist` are silently deduplicated by EnumerableSet, but supplying duplicates is not recommended.
+    /// @dev S3 (zero rejection) and S4 (must-already-be-on-proxy) are enforced per-entry. Duplicates in `_initialWhitelist` are rejected (S5).
     constructor(
         address _tokenApproveProxy,
         address _admin,
@@ -63,7 +63,7 @@ contract SecurityManager is AccessControl {
                 ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]),
                 "SM: not allowed on proxy"
             );
-            _whitelist.add(_initialWhitelist[i]);
+            require(_whitelist.add(_initialWhitelist[i]), "SM: dup in initial");
         }
     }
 
@@ -110,22 +110,30 @@ contract SecurityManager is AccessControl {
         emit ProxyAdded(_proxy);
     }
 
-    /// @notice Remove a proxy from the whitelist and from the underlying TokenApproveProxy.
-    /// @param _proxy The proxy address to revoke. Must currently be in the whitelist.
-    /// @dev DEFAULT_ADMIN_ROLE OR SECURITY_ROLE. The split between add (admin-only) and remove (admin OR security) is the entire reason this contract exists: it lets an incident-response role rapidly revoke a compromised proxy without holding full admin power. Writes to BOTH the mirror and the underlying proxy.
+    /// @notice Remove a proxy from the whitelist and/or from the underlying TokenApproveProxy.
+    /// @param _proxy The proxy address to revoke. Must be in the SM mirror OR on the underlying proxy; reverts only if it is in NEITHER.
+    /// @dev DEFAULT_ADMIN_ROLE OR SECURITY_ROLE. The split between add (admin-only) and remove (admin OR security) is the entire reason this contract exists: it lets an incident-response role rapidly revoke a compromised proxy without holding full admin power. Accepts "ghost" addresses — proxies that exist on the underlying TokenApproveProxy but were never seeded into the SM mirror — so that SECURITY_ROLE can still revoke them in an emergency. Writes to whichever side(s) actually contain the entry.
     function removeProxy(address _proxy) external onlyAdminOrSecurity {
-        require(_whitelist.remove(_proxy), "SM: not in whitelist");
-        tokenApproveProxy.removeProxy(_proxy);
+        bool inMirror = _whitelist.remove(_proxy);
+        bool onProxy = tokenApproveProxy.isAllowedProxy(_proxy);
+        require(inMirror || onProxy, "SM: not in whitelist");
+        if (onProxy) {
+            tokenApproveProxy.removeProxy(_proxy);
+        }
         emit ProxyRemoved(_proxy);
     }
 
-    /// @notice Batch-remove proxies from the whitelist and from the underlying TokenApproveProxy.
-    /// @param _proxies Proxies to revoke. Entries that are not currently whitelisted are silently skipped (no revert), so this can be safely retried after a partial failure or used for best-effort fan-out.
-    /// @dev DEFAULT_ADMIN_ROLE OR SECURITY_ROLE. Same semantics as {removeProxy} except for the skip-on-missing behavior.
+    /// @notice Batch-remove proxies from the whitelist and/or from the underlying TokenApproveProxy.
+    /// @param _proxies Proxies to revoke. Each entry is processed with the same "in mirror OR on proxy" semantics as {removeProxy}; entries that are in NEITHER side are silently skipped (no revert), so a single bad input does not poison the batch.
+    /// @dev DEFAULT_ADMIN_ROLE OR SECURITY_ROLE. Same semantics as {removeProxy} except for the skip-on-missing behavior, which preserves the operational property that this can be retried after a partial failure or used for best-effort fan-out. Ghost addresses (on underlying but absent from the mirror) are removed.
     function removeProxies(address[] calldata _proxies) external onlyAdminOrSecurity {
         for (uint256 i = 0; i < _proxies.length; i++) {
-            if (_whitelist.remove(_proxies[i])) {
-                tokenApproveProxy.removeProxy(_proxies[i]);
+            bool inMirror = _whitelist.remove(_proxies[i]);
+            bool onProxy = tokenApproveProxy.isAllowedProxy(_proxies[i]);
+            if (inMirror || onProxy) {
+                if (onProxy) {
+                    tokenApproveProxy.removeProxy(_proxies[i]);
+                }
                 emit ProxyRemoved(_proxies[i]);
             }
         }

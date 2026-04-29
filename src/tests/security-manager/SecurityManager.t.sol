@@ -77,6 +77,15 @@ contract SecurityManagerTest is Test {
         new SecurityManager(address(oldProxy), MULTISIG, initial);
     }
 
+    function test_Constructor_RevertsOnDuplicateInInitialWhitelist() public {
+        address[] memory dup = new address[](3);
+        dup[0] = DEX_ROUTER;
+        dup[1] = XBRIDGE;
+        dup[2] = DEX_ROUTER; // duplicate of dup[0]
+        vm.expectRevert(bytes("SM: dup in initial"));
+        new SecurityManager(address(oldProxy), MULTISIG, dup);
+    }
+
     function test_AddProxy_ByAdmin_AddsToMirrorAndProxy() public {
         address newProxy = address(0xD1);
         vm.prank(MULTISIG);
@@ -165,6 +174,59 @@ contract SecurityManagerTest is Test {
         vm.prank(MULTISIG);
         vm.expectRevert(bytes("SM: not in whitelist"));
         sm.removeProxy(address(0xDEAD));
+    }
+
+    function _deployFreshSmWithGhost() internal returns (TokenApproveProxy ghostProxy, SecurityManager ghostSm, address ghost) {
+        // Build a deployment where the underlying proxy has 3 entries but SM is seeded with only 2.
+        // The third entry (ghost) is on the underlying but NOT in SM's mirror — exactly the
+        // scenario Finding 1 is designed to recover from.
+        ghostProxy = new TokenApproveProxy();
+        ghostProxy.initialize();
+        ghostProxy.addProxy(DEX_ROUTER);
+        ghostProxy.addProxy(XBRIDGE);
+        ghost = address(0x1337);
+        ghostProxy.addProxy(ghost);
+
+        address[] memory seed = new address[](2);
+        seed[0] = DEX_ROUTER;
+        seed[1] = XBRIDGE;
+        ghostSm = new SecurityManager(address(ghostProxy), MULTISIG, seed);
+        ghostProxy.transferOwnership(address(ghostSm));
+    }
+
+    function test_RemoveProxy_GhostOnProxyOnly_BySecurityRole_Succeeds() public {
+        (TokenApproveProxy ghostProxy, SecurityManager ghostSm, address ghost) = _deployFreshSmWithGhost();
+        bytes32 securityRole = ghostSm.SECURITY_ROLE();
+        vm.prank(MULTISIG);
+        ghostSm.grantRole(securityRole, SECURITY_CO);
+
+        // Ghost was never in the mirror, but IS on the underlying. Security firm must be able to revoke it.
+        vm.prank(SECURITY_CO);
+        ghostSm.removeProxy(ghost);
+
+        assertFalse(ghostProxy.isAllowedProxy(ghost), "ghost still on underlying");
+        assertFalse(ghostSm.whitelistContains(ghost), "mirror should not contain ghost");
+    }
+
+    function test_RemoveProxy_GhostOnProxyOnly_ByAdmin_Succeeds() public {
+        (TokenApproveProxy ghostProxy, SecurityManager ghostSm, address ghost) = _deployFreshSmWithGhost();
+        vm.prank(MULTISIG);
+        ghostSm.removeProxy(ghost);
+        assertFalse(ghostProxy.isAllowedProxy(ghost));
+    }
+
+    function test_RemoveProxies_GhostOnProxy_RemovesGhost() public {
+        (TokenApproveProxy ghostProxy, SecurityManager ghostSm, address ghost) = _deployFreshSmWithGhost();
+        address[] memory list = new address[](2);
+        list[0] = DEX_ROUTER; // in mirror AND on proxy
+        list[1] = ghost;       // ghost: on proxy only
+
+        vm.prank(MULTISIG);
+        ghostSm.removeProxies(list);
+
+        assertFalse(ghostProxy.isAllowedProxy(DEX_ROUTER));
+        assertFalse(ghostProxy.isAllowedProxy(ghost), "ghost not removed in batch");
+        assertEq(ghostSm.whitelistLength(), 1, "only XBRIDGE should remain in mirror");
     }
 
     function test_RemoveProxy_AfterRevoke_Reverts() public {

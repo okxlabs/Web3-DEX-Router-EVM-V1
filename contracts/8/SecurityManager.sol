@@ -23,6 +23,11 @@ contract SecurityManager is AccessControl {
         tokenApproveProxy = ITokenApproveProxyAdmin(_tokenApproveProxy);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         for (uint256 i = 0; i < _initialWhitelist.length; i++) {
+            require(_initialWhitelist[i] != address(0), "SM: zero in initial");
+            require(
+                ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]),
+                "SM: not allowed on proxy"
+            );
             _whitelist.add(_initialWhitelist[i]);
         }
     }

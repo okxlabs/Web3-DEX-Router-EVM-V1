@@ -44,13 +44,30 @@ contract SecurityManagerTest is Test {
 
     function test_Constructor_RevertsOnZeroProxy() public {
         address[] memory empty = new address[](0);
-        vm.expectRevert();
+        vm.expectRevert(bytes("SM: zero proxy"));
         new SecurityManager(address(0), MULTISIG, empty);
     }
 
     function test_Constructor_RevertsOnZeroAdmin() public {
         address[] memory empty = new address[](0);
-        vm.expectRevert();
+        vm.expectRevert(bytes("SM: zero admin"));
         new SecurityManager(address(oldProxy), address(0), empty);
+    }
+
+    function test_Constructor_RevertsOnZeroInInitialWhitelist() public {
+        address[] memory initial = new address[](2);
+        initial[0] = DEX_ROUTER;
+        initial[1] = address(0);
+        vm.expectRevert(bytes("SM: zero in initial"));
+        new SecurityManager(address(oldProxy), MULTISIG, initial);
+    }
+
+    function test_Constructor_RevertsIfNotAllowedOnProxy() public {
+        // 0xCAFE is on the proxy (added in setUp); 0xDEAD is not.
+        address[] memory initial = new address[](2);
+        initial[0] = DEX_ROUTER;
+        initial[1] = address(0xDEAD);
+        vm.expectRevert(bytes("SM: not allowed on proxy"));
+        new SecurityManager(address(oldProxy), MULTISIG, initial);
     }
 }

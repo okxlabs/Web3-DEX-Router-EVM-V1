@@ -932,7 +932,7 @@ git commit -m "test(security-manager): add integration and edge-case tests"
 ## Task 10: Hardhat 部署脚本 + 多链配置
 
 **Files:**
-- Create: `scripts/40_deploy_security_manager.js`
+- Create: `scripts/32_deploy_security_manager.js`
 - Create: `scripts/security-manager-config.json`
 
 **Step 1: 创建多链配置文件**
@@ -1020,7 +1020,7 @@ Expected: 编译成功，artifacts 中能找到 SecurityManager。
 **Step 5: 提交**
 
 ```bash
-git add scripts/40_deploy_security_manager.js scripts/security-manager-config.json
+git add scripts/32_deploy_security_manager.js scripts/security-manager-config.json
 git commit -m "feat(security-manager): add hardhat deploy script and per-chain config"
 ```
 

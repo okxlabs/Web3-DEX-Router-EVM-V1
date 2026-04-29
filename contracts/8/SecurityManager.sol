@@ -82,4 +82,8 @@ contract SecurityManager is AccessControl {
             }
         }
     }
+
+    function setTokenApprove(address _tokenApprove) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        tokenApproveProxy.setTokenApprove(_tokenApprove);
+    }
 }

@@ -285,4 +285,24 @@ contract SecurityManagerTest is Test {
         vm.expectRevert();
         sm.whitelistAt(99);
     }
+
+    function test_SetTokenApprove_ByAdmin() public {
+        address newTokenApprove = address(0xE1);
+        vm.prank(MULTISIG);
+        sm.setTokenApprove(newTokenApprove);
+        assertEq(oldProxy.tokenApprove(), newTokenApprove);
+    }
+
+    function test_SetTokenApprove_BySecurityRole_Reverts() public {
+        _grantSecurityRole();
+        vm.expectRevert();
+        vm.prank(SECURITY_CO);
+        sm.setTokenApprove(address(0xE2));
+    }
+
+    function test_SetTokenApprove_ByRandomEOA_Reverts() public {
+        vm.expectRevert();
+        vm.prank(address(0xDEAD));
+        sm.setTokenApprove(address(0xE3));
+    }
 }

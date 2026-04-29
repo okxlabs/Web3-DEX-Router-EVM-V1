@@ -260,6 +260,15 @@ contract SecurityManagerTest is Test {
         vm.expectRevert(bytes("SM: not allowed on proxy"));
         new SecurityManager(address(oldProxy), MULTISIG, initial);
     }
+
+    function test_Constructor_RevertsOnDuplicateInInitialWhitelist() public {
+        address[] memory dup = new address[](3);
+        dup[0] = DEX_ROUTER;
+        dup[1] = XBRIDGE;
+        dup[2] = DEX_ROUTER; // duplicate of dup[0]
+        vm.expectRevert(bytes("SM: dup in initial"));
+        new SecurityManager(address(oldProxy), MULTISIG, dup);
+    }
 }
 ```
 
@@ -302,7 +311,7 @@ contract SecurityManager is AccessControl {
                 ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]),
                 "SM: not allowed on proxy"
             );
-            _whitelist.add(_initialWhitelist[i]);
+            require(_whitelist.add(_initialWhitelist[i]), "SM: dup in initial");
         }
     }
 
@@ -319,7 +328,7 @@ contract SecurityManager is AccessControl {
 **Step 4: 跑测试，确认全部通过**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv`
-Expected: 7/7 PASS。
+Expected: 8/8 PASS。
 
 **Step 5: 提交**
 
@@ -330,12 +339,15 @@ git commit -m "feat(security-manager): scaffold contract with constructor"
 
 **关于构造函数 invariant 的设计决策**
 
-构造函数对 `_initialWhitelist[]` 做两层校验：
+构造函数对 `_initialWhitelist[]` 做三层校验：
 
-1. `require(_initialWhitelist[i] != address(0), ...)` — 与 Task 3 `addProxy` 的零地址校验对称，避免运行时入口比构造函数更严格的不一致状态。
-2. `require(ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]), ...)` — 防止"幽灵镜像条目"：如果某个地址在 `_initialWhitelist` 但不在老 Proxy 上，SM 的 `removeProxy` 会因镜像存在而通过，但 `tokenApproveProxy.removeProxy()` 在老 Proxy 上是 no-op（mapping 本就是 false），导致 SM 的镜像与老 Proxy 实际状态分叉。
+1. **S3** `require(_initialWhitelist[i] != address(0), "SM: zero in initial")` — 与 Task 3 `addProxy` 的零地址校验对称，避免运行时入口比构造函数更严格的不一致状态。
+2. **S4** `require(ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]), "SM: not allowed on proxy")` — 防止"幽灵镜像条目"：如果某个地址在 `_initialWhitelist` 但不在老 Proxy 上，SM 的 `removeProxy` 会因镜像存在而通过，但 `tokenApproveProxy.removeProxy()` 在老 Proxy 上是 no-op（mapping 本就是 false），导致 SM 的镜像与老 Proxy 实际状态分叉。
+3. **S5** `require(_whitelist.add(_initialWhitelist[i]), "SM: dup in initial")`（**审计后增加**） — 拒绝 `_initialWhitelist` 中的重复项。`EnumerableSet.add` 默认对重复条目静默返回 false，会让最终镜像 length 小于配置 length，破坏部署阶段的基线完整性可信度。
 
-这两个校验意味着 `initialWhitelist` 必须是「老 Proxy 现有白名单的子集」，没有冗余/前瞻空间。这是有意识的取舍：构造函数 fail-fast，避免部署后才发现配置错误。
+这三个校验意味着 `initialWhitelist` 必须是「老 Proxy 现有白名单的去重子集」，没有冗余/前瞻空间。这是有意识的取舍：构造函数 fail-fast，避免部署后才发现配置错误。
+
+注：S4 单向保证「mirror ⊆ proxy whitelist」，并不要求「proxy whitelist ⊆ mirror」 — 这意味着真实 Proxy 上可能存在 `_initialWhitelist[]` 漏报的"幽灵地址"。Task 4/5 的 `removeProxy` / `removeProxies` 在审计后已修改为支持移除幽灵地址，所以这个不对称不会阻塞紧急响应（详见 Task 4/5）。
 
 ---
 
@@ -529,11 +541,23 @@ modifier onlyAdminOrSecurity() {
 }
 
 function removeProxy(address _proxy) external onlyAdminOrSecurity {
-    require(_whitelist.remove(_proxy), "SM: not in whitelist");
-    tokenApproveProxy.removeProxy(_proxy);
+    bool inMirror = _whitelist.remove(_proxy);
+    bool onProxy = tokenApproveProxy.isAllowedProxy(_proxy);
+    require(inMirror || onProxy, "SM: not in whitelist");
+    if (onProxy) {
+        tokenApproveProxy.removeProxy(_proxy);
+    }
     emit ProxyRemoved(_proxy);
 }
 ```
+
+**关于 "ghost address" 处理（审计后增加）**
+
+最初的实现是 `require(_whitelist.remove(_proxy), ...)`，要求地址必须在 SM 镜像中。但构造函数 S4 只单向保证 `mirror ⊆ proxy whitelist` — 老 Proxy 上可能存在 `_initialWhitelist[]` 漏掉的 ghost 地址。一旦 ghost 被攻击者控制：
+- `_whitelist.remove` 返回 false → revert
+- 安全公司无法处置，必须回到多签 add+remove 链路
+
+这违背了 SECURITY_ROLE 设立的初衷。审计后的修复：移除时镜像和老 Proxy 都查一次，只要任一侧有这个地址就允许移除，操作只对真实存在的一侧生效。仅当两边都没有时才 revert（防止操作者打错地址静默成功）。
 
 **Step 4: 跑测试**
 
@@ -655,13 +679,19 @@ Expected: 5 个失败（`removeProxies` 函数不存在）。
 ```solidity
 function removeProxies(address[] calldata _proxies) external onlyAdminOrSecurity {
     for (uint256 i = 0; i < _proxies.length; i++) {
-        if (_whitelist.remove(_proxies[i])) {
-            tokenApproveProxy.removeProxy(_proxies[i]);
+        bool inMirror = _whitelist.remove(_proxies[i]);
+        bool onProxy = tokenApproveProxy.isAllowedProxy(_proxies[i]);
+        if (inMirror || onProxy) {
+            if (onProxy) {
+                tokenApproveProxy.removeProxy(_proxies[i]);
+            }
             emit ProxyRemoved(_proxies[i]);
         }
     }
 }
 ```
+
+批量版本与 `removeProxy` 同样支持 ghost 地址处理（审计后），但保留 skip-on-missing 语义 — 既不在镜像也不在 proxy 上的条目静默跳过，避免单个错误输入污染整批。
 
 **Step 4: 跑测试**
 

@@ -8,6 +8,8 @@ import "@dex/SecurityManager.sol";
 import "@dex/TokenApproveProxy.sol";
 
 contract SecurityManagerTest is Test {
+    event ProxyAdded(address indexed proxy);
+
     TokenApproveProxy oldProxy;
     SecurityManager sm;
 
@@ -71,5 +73,51 @@ contract SecurityManagerTest is Test {
         initial[1] = address(0xDEAD);
         vm.expectRevert(bytes("SM: not allowed on proxy"));
         new SecurityManager(address(oldProxy), MULTISIG, initial);
+    }
+
+    function test_AddProxy_ByAdmin_AddsToMirrorAndProxy() public {
+        address newProxy = address(0xD1);
+        vm.prank(MULTISIG);
+        sm.addProxy(newProxy);
+
+        assertTrue(sm.whitelistContains(newProxy));
+        assertTrue(oldProxy.isAllowedProxy(newProxy));
+    }
+
+    function test_AddProxy_EmitsEvent() public {
+        address newProxy = address(0xD2);
+        vm.expectEmit(true, false, false, false);
+        emit ProxyAdded(newProxy);
+        vm.prank(MULTISIG);
+        sm.addProxy(newProxy);
+    }
+
+    function test_AddProxy_ByNonAdmin_Reverts() public {
+        address attacker = address(0xDEAD);
+        vm.expectRevert();
+        vm.prank(attacker);
+        sm.addProxy(address(0xD3));
+    }
+
+    function test_AddProxy_BySecurityRole_Reverts() public {
+        bytes32 securityRole = sm.SECURITY_ROLE();
+        vm.prank(MULTISIG);
+        sm.grantRole(securityRole, SECURITY_CO);
+
+        vm.expectRevert();
+        vm.prank(SECURITY_CO);
+        sm.addProxy(address(0xD4));
+    }
+
+    function test_AddProxy_Duplicate_Reverts() public {
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("SM: already in whitelist"));
+        sm.addProxy(DEX_ROUTER);
+    }
+
+    function test_AddProxy_ZeroAddress_Reverts() public {
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("SM: zero address"));
+        sm.addProxy(address(0));
     }
 }

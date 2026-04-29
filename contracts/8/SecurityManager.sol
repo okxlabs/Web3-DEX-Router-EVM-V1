@@ -13,6 +13,8 @@ contract SecurityManager is AccessControl {
     ITokenApproveProxyAdmin public immutable tokenApproveProxy;
     EnumerableSet.AddressSet private _whitelist;
 
+    event ProxyAdded(address indexed proxy);
+
     constructor(
         address _tokenApproveProxy,
         address _admin,
@@ -38,5 +40,12 @@ contract SecurityManager is AccessControl {
 
     function whitelistContains(address _proxy) external view returns (bool) {
         return _whitelist.contains(_proxy);
+    }
+
+    function addProxy(address _proxy) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_proxy != address(0), "SM: zero address");
+        require(_whitelist.add(_proxy), "SM: already in whitelist");
+        tokenApproveProxy.addProxy(_proxy);
+        emit ProxyAdded(_proxy);
     }
 }

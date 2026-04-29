@@ -325,4 +325,55 @@ contract SecurityManagerTest is Test {
         vm.expectRevert(bytes("SM: zero address"));
         sm.transferTokenApproveProxyOwnership(address(0));
     }
+
+    function test_Integration_AddRemoveAddSequence() public {
+        address proxyAddr = address(0xAA);
+
+        vm.prank(MULTISIG);
+        sm.addProxy(proxyAddr);
+        assertTrue(oldProxy.isAllowedProxy(proxyAddr));
+
+        vm.prank(MULTISIG);
+        sm.removeProxy(proxyAddr);
+        assertFalse(oldProxy.isAllowedProxy(proxyAddr));
+
+        vm.prank(MULTISIG);
+        sm.addProxy(proxyAddr); // should succeed again
+        assertTrue(oldProxy.isAllowedProxy(proxyAddr));
+    }
+
+    function test_Integration_MirrorAndProxyStayInSync() public {
+        // 任意一组操作后，镜像与老 Proxy 状态都必须一致
+        address[] memory pool = new address[](3);
+        pool[0] = address(0xA1A1);
+        pool[1] = address(0xA2A2);
+        pool[2] = address(0xA3A3);
+
+        vm.startPrank(MULTISIG);
+        sm.addProxy(pool[0]);
+        sm.addProxy(pool[1]);
+        sm.addProxy(pool[2]);
+
+        address[] memory removeList = new address[](2);
+        removeList[0] = pool[0];
+        removeList[1] = DEX_ROUTER;
+        sm.removeProxies(removeList);
+        vm.stopPrank();
+
+        address[] memory mirror = sm.getWhitelist();
+        for (uint256 i = 0; i < mirror.length; i++) {
+            assertTrue(oldProxy.isAllowedProxy(mirror[i]), "mirror leak");
+        }
+        // 镜像之外应不在老 Proxy
+        assertFalse(oldProxy.isAllowedProxy(pool[0]));
+        assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+    }
+
+    function test_Empty_InitialWhitelist_Works() public {
+        TokenApproveProxy freshProxy = new TokenApproveProxy();
+        freshProxy.initialize();
+        address[] memory empty = new address[](0);
+        SecurityManager freshSm = new SecurityManager(address(freshProxy), MULTISIG, empty);
+        assertEq(freshSm.whitelistLength(), 0);
+    }
 }

@@ -24,6 +24,76 @@
 - **多链通用**：脚本读取一份每链配置文件（chain → {oldProxy, admin, initialWhitelist}），脚本本身链无关。
 - **后续动作**：脚本仅完成部署。`oldProxy.transferOwnership(SecurityManager)` 和 `grantRole(SECURITY_ROLE, ...)` 由多签在合约管理平台手动发起，**不放入脚本**（避免脚本持有任何敏感权限）。
 
+## 测试约定（适用于 Task 2 起所有测试）
+
+在 Task 2 开发过程中遇到了几个 toolchain 相关的坑，统一在此说明，后续 Task 测试代码默认遵守这些约定。
+
+**约定 1 — 文件级 solhint 关闭 `func-name-mixedcase`**
+
+测试文件顶部（pragma 后）加一行：
+
+```solidity
+// solhint-disable func-name-mixedcase
+```
+
+理由：Foundry 标准测试命名 `test_Foo_Bar` 是 snake_case + 段内 camelCase 的混合，与 solhint:recommended 的 `func-name-mixedcase` 规则冲突。整个项目（包括 `src/tests/adapter/`）都是这个命名约定，文件级压制是统一做法。
+
+**约定 2 — Event 在测试合约里本地声明**
+
+不要使用 `emit ContractName.EventName(...)` 这种合约限定 emit。
+
+```solidity
+contract SecurityManagerTest is Test {
+    event ProxyAdded(address indexed proxy);    // 本地声明
+    event ProxyRemoved(address indexed proxy);  // 本地声明
+
+    // ...
+
+    function test_X_EmitsEvent() public {
+        vm.expectEmit(true, false, false, true);
+        emit ProxyAdded(addr);   // 不限定，直接用本地声明
+        // 触发实际 emit 的调用
+    }
+}
+```
+
+理由：`emit ContractName.EventName(...)` 语法需要 solc ≥ 0.8.21，本项目 pinned 在 0.8.17。Foundry 的 `vm.expectEmit` 通过 topic hash 匹配，topic hash 由签名决定与声明位置无关，本地声明完全等价。
+
+**约定 3 — `vm.expectEmit` 第四个 flag 设为 `true`**
+
+```solidity
+vm.expectEmit(true, false, false, true);
+//            ↑                   ↑
+//            check topic1        check non-indexed data
+```
+
+理由：即使 event 当前没有非索引字段，未来加字段时 `checkData=true` 让测试自动验证；`false` 会让回归静默通过。
+
+**约定 4 — `vm.prank` 之前 cache 任何 view-getter 调用**
+
+`vm.prank` 只覆盖**下一次外部调用**。如果下一次调用是 view getter（例如 `sm.SECURITY_ROLE()`），prank 会被 getter 消耗，真正想 prank 的目标函数会以默认 sender 运行。
+
+**错误**：
+
+```solidity
+vm.prank(MULTISIG);
+sm.grantRole(sm.SECURITY_ROLE(), SECURITY_CO);
+//           └── 这次外部调用消耗掉 prank
+//                 grantRole 实际以 test contract 身份运行 → 失败
+```
+
+**正确**：
+
+```solidity
+// Cache the role getter before vm.prank: the getter is the next external call
+// and would otherwise consume the prank, leaving grantRole to run as the test contract.
+bytes32 securityRole = sm.SECURITY_ROLE();
+vm.prank(MULTISIG);
+sm.grantRole(securityRole, SECURITY_CO);
+```
+
+如果 cache 不便（getter 返回 struct/array），用 `vm.startPrank/stopPrank` 包住整段。
+
 ---
 
 ## Task 0: 准备测试环境
@@ -382,10 +452,15 @@ git commit -m "feat(security-manager): implement addProxy with admin-only access
 
 **Step 1: 追加测试**
 
+注意：在测试合约顶部 event 区，加 `event ProxyRemoved(address indexed proxy);` 本地声明（参考"测试约定 2"）。
+
 ```solidity
 function _grantSecurityRole() internal {
+    // Cache the role getter before vm.prank: the getter is the next external call
+    // and would otherwise consume the prank, leaving grantRole to run as the test contract.
+    bytes32 securityRole = sm.SECURITY_ROLE();
     vm.prank(MULTISIG);
-    sm.grantRole(sm.SECURITY_ROLE(), SECURITY_CO);
+    sm.grantRole(securityRole, SECURITY_CO);
 }
 
 function test_RemoveProxy_ByAdmin() public {
@@ -404,8 +479,8 @@ function test_RemoveProxy_BySecurityRole() public {
 }
 
 function test_RemoveProxy_EmitsEvent() public {
-    vm.expectEmit(true, false, false, false);
-    emit SecurityManager.ProxyRemoved(DEX_ROUTER);
+    vm.expectEmit(true, false, false, true);
+    emit ProxyRemoved(DEX_ROUTER);
     vm.prank(MULTISIG);
     sm.removeProxy(DEX_ROUTER);
 }
@@ -424,8 +499,10 @@ function test_RemoveProxy_NotInWhitelist_Reverts() public {
 
 function test_RemoveProxy_AfterRevoke_Reverts() public {
     _grantSecurityRole();
+    // Cache before vm.prank for the same reason as in _grantSecurityRole.
+    bytes32 securityRole = sm.SECURITY_ROLE();
     vm.prank(MULTISIG);
-    sm.revokeRole(sm.SECURITY_ROLE(), SECURITY_CO);
+    sm.revokeRole(securityRole, SECURITY_CO);
 
     vm.expectRevert(bytes("SM: unauthorized"));
     vm.prank(SECURITY_CO);

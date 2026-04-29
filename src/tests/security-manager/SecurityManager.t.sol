@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// solhint-disable func-name-mixedcase
+
 import "forge-std/Test.sol";
 import "@dex/SecurityManager.sol";
 import "@dex/TokenApproveProxy.sol";

@@ -277,6 +277,16 @@ git commit -m "feat(security-manager): scaffold contract with constructor"
 
 **Step 1: 追加测试**
 
+注意：在测试合约 (`SecurityManagerTest`) 顶部、state vars 前添加一行本地 event 声明：
+
+```solidity
+event ProxyAdded(address indexed proxy);
+```
+
+理由：`emit SomeContract.EventName(...)` 这种合约限定的 emit 语法需要 solc ≥ 0.8.21，本项目 pinned 在 0.8.17，因此采用 Foundry 标准做法 — 测试合约里本地声明同名 event，topic hash 由签名决定与声明位置无关，`vm.expectEmit` 能匹配。
+
+追加在测试合约里的测试函数：
+
 ```solidity
 function test_AddProxy_ByAdmin_AddsToMirrorAndProxy() public {
     address newProxy = address(0xD1);
@@ -289,8 +299,9 @@ function test_AddProxy_ByAdmin_AddsToMirrorAndProxy() public {
 
 function test_AddProxy_EmitsEvent() public {
     address newProxy = address(0xD2);
-    vm.expectEmit(true, false, false, false);
-    emit SecurityManager.ProxyAdded(newProxy);
+    // checkData=true 防止未来给 ProxyAdded 加非索引字段时测试静默通过
+    vm.expectEmit(true, false, false, true);
+    emit ProxyAdded(newProxy);
     vm.prank(MULTISIG);
     sm.addProxy(newProxy);
 }
@@ -303,8 +314,11 @@ function test_AddProxy_ByNonAdmin_Reverts() public {
 }
 
 function test_AddProxy_BySecurityRole_Reverts() public {
+    // Cache the role getter before vm.prank: the getter is the next external call
+    // and would otherwise consume the prank, leaving grantRole to run as the test contract.
+    bytes32 securityRole = sm.SECURITY_ROLE();
     vm.prank(MULTISIG);
-    sm.grantRole(sm.SECURITY_ROLE(), SECURITY_CO);
+    sm.grantRole(securityRole, SECURITY_CO);
 
     vm.expectRevert();
     vm.prank(SECURITY_CO);
@@ -338,6 +352,8 @@ event ProxyAdded(address indexed proxy);
 
 function addProxy(address _proxy) external onlyRole(DEFAULT_ADMIN_ROLE) {
     require(_proxy != address(0), "SM: zero address");
+    // No isAllowedProxy() pre-check needed: this call is what causes the proxy entry.
+    // Mirror-proxy parity holds by induction from the constructor's S4 invariant.
     require(_whitelist.add(_proxy), "SM: already in whitelist");
     tokenApproveProxy.addProxy(_proxy);
     emit ProxyAdded(_proxy);

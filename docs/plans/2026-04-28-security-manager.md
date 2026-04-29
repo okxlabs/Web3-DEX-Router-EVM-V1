@@ -748,6 +748,8 @@ git commit -m "feat(security-manager): add getWhitelist and whitelistAt query"
 
 **Step 1: 追加测试**
 
+注意：在测试合约顶部 event 声明区，加 `event TokenApproveChanged(address newTokenApprove);` 本地声明（参考"测试约定 2"）。该 event 的真实声明在 TokenApproveProxy.sol 上 — 本地声明是为了用 5-arg 形式的 `vm.expectEmit` 校验事件来自老 Proxy 而非 SM。
+
 ```solidity
 function test_SetTokenApprove_ByAdmin() public {
     address newTokenApprove = address(0xE1);
@@ -768,25 +770,44 @@ function test_SetTokenApprove_ByRandomEOA_Reverts() public {
     vm.prank(address(0xDEAD));
     sm.setTokenApprove(address(0xE3));
 }
+
+function test_SetTokenApprove_ZeroAddress_Reverts() public {
+    vm.prank(MULTISIG);
+    vm.expectRevert(bytes("SM: zero address"));
+    sm.setTokenApprove(address(0));
+}
+
+function test_SetTokenApprove_EmitsUnderlyingEvent() public {
+    address newTokenApprove = address(0xE9);
+    // SM 不发自己的 event，依赖底层 TokenApproveProxy 的 TokenApproveChanged。
+    // 5-arg expectEmit 锁定事件来自 oldProxy 而非 sm。
+    vm.expectEmit(false, false, false, true, address(oldProxy));
+    emit TokenApproveChanged(newTokenApprove);
+    vm.prank(MULTISIG);
+    sm.setTokenApprove(newTokenApprove);
+}
 ```
 
 **Step 2: 跑测试，确认失败**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_SetTokenApprove`
-Expected: 3 失败。
+Expected: 5 失败。
 
 **Step 3: 实现**
 
 ```solidity
 function setTokenApprove(address _tokenApprove) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    require(_tokenApprove != address(0), "SM: zero address");
     tokenApproveProxy.setTokenApprove(_tokenApprove);
 }
 ```
 
+零地址保护原因：与 constructor S3、addProxy、transferTokenApproveProxyOwnership 的零地址校验保持对称；`setTokenApprove` 是改 claimTokens 转发目标的关键路径，多签误填 0 会直接 brick 整条转账链路。
+
 **Step 4: 跑测试**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_SetTokenApprove`
-Expected: 3/3 PASS。
+Expected: 5/5 PASS。
 
 **Step 5: 提交**
 
@@ -825,12 +846,25 @@ function test_TransferProxyOwnership_ZeroAddress_Reverts() public {
     vm.expectRevert(bytes("SM: zero address"));
     sm.transferTokenApproveProxyOwnership(address(0));
 }
+
+function test_TransferProxyOwnership_PreventsLaterAdminCalls() public {
+    address newOwner = address(0xF9);
+    vm.prank(MULTISIG);
+    sm.transferTokenApproveProxyOwnership(newOwner);
+
+    // 转移完所有权后，SM 不再是老 Proxy 的 owner，
+    // 任何透传 admin 调用必须在底层 onlyOwner 检查处 revert。
+    // 锁定 escape hatch 的不可逆语义。
+    vm.prank(MULTISIG);
+    vm.expectRevert(bytes("Ownable: caller is not the owner"));
+    sm.addProxy(address(0xAB));
+}
 ```
 
 **Step 2: 跑测试，确认失败**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_TransferProxyOwnership`
-Expected: 3 失败。
+Expected: 4 失败。
 
 **Step 3: 实现**
 
@@ -844,7 +878,7 @@ function transferTokenApproveProxyOwnership(address _newOwner) external onlyRole
 **Step 4: 跑测试**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_TransferProxyOwnership`
-Expected: 3/3 PASS。
+Expected: 4/4 PASS。
 
 **Step 5: 提交**
 
@@ -904,6 +938,18 @@ function test_Integration_MirrorAndProxyStayInSync() public {
     // 镜像之外应不在老 Proxy
     assertFalse(oldProxy.isAllowedProxy(pool[0]));
     assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+
+    // Length invariant: 起始 {DEX_ROUTER, XBRIDGE} = 2，加 pool[0..2] = +3 → 5，
+    // 然后 removeProxies 移除 {pool[0], DEX_ROUTER} = -2 → 3。
+    assertEq(mirror.length, 3);
+
+    // 反方向 parity: 已知幸存者必须既在老 Proxy 上又在镜像里。
+    assertTrue(oldProxy.isAllowedProxy(XBRIDGE));
+    assertTrue(oldProxy.isAllowedProxy(pool[1]));
+    assertTrue(oldProxy.isAllowedProxy(pool[2]));
+    assertTrue(sm.whitelistContains(XBRIDGE));
+    assertTrue(sm.whitelistContains(pool[1]));
+    assertTrue(sm.whitelistContains(pool[2]));
 }
 
 function test_Empty_InitialWhitelist_Works() public {
@@ -912,6 +958,19 @@ function test_Empty_InitialWhitelist_Works() public {
     address[] memory empty = new address[](0);
     SecurityManager freshSm = new SecurityManager(address(freshProxy), MULTISIG, empty);
     assertEq(freshSm.whitelistLength(), 0);
+}
+
+function test_GetWhitelist_EmptyAfterRemoveAll() public {
+    address[] memory list = new address[](2);
+    list[0] = DEX_ROUTER;
+    list[1] = XBRIDGE;
+    vm.prank(MULTISIG);
+    sm.removeProxies(list);
+
+    assertEq(sm.whitelistLength(), 0);
+    assertEq(sm.getWhitelist().length, 0);
+    vm.expectRevert();
+    sm.whitelistAt(0);
 }
 ```
 

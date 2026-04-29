@@ -1,0 +1,13 @@
+{
+  "_comment": "每条链独立填写。initialWhitelist 必须基于链下基线审计的结果填入；initialWhitelist 与该链上老 Proxy 实际白名单必须一致。",
+  "eth": {
+    "tokenApproveProxy": "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
+    "admin": "<填多签地址>",
+    "initialWhitelist": []
+  },
+  "bsc": {
+    "tokenApproveProxy": "<填该链老 Proxy 地址>",
+    "admin": "<填多签地址>",
+    "initialWhitelist": []
+  }
+}

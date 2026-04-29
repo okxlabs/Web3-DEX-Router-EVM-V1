@@ -65,4 +65,13 @@ contract SecurityManager is AccessControl {
         tokenApproveProxy.removeProxy(_proxy);
         emit ProxyRemoved(_proxy);
     }
+
+    function removeProxies(address[] calldata _proxies) external onlyAdminOrSecurity {
+        for (uint256 i = 0; i < _proxies.length; i++) {
+            if (_whitelist.remove(_proxies[i])) {
+                tokenApproveProxy.removeProxy(_proxies[i]);
+                emit ProxyRemoved(_proxies[i]);
+            }
+        }
+    }
 }

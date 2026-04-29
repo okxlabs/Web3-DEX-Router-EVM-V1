@@ -177,4 +177,52 @@ contract SecurityManagerTest is Test {
         vm.prank(SECURITY_CO);
         sm.removeProxy(DEX_ROUTER);
     }
+
+    function test_RemoveProxies_ByAdmin_RemovesAll() public {
+        address[] memory list = new address[](2);
+        list[0] = DEX_ROUTER;
+        list[1] = XBRIDGE;
+
+        vm.prank(MULTISIG);
+        sm.removeProxies(list);
+
+        assertFalse(sm.whitelistContains(DEX_ROUTER));
+        assertFalse(sm.whitelistContains(XBRIDGE));
+        assertEq(sm.whitelistLength(), 0);
+    }
+
+    function test_RemoveProxies_BySecurityRole() public {
+        _grantSecurityRole();
+        address[] memory list = new address[](2);
+        list[0] = DEX_ROUTER;
+        list[1] = XBRIDGE;
+
+        vm.prank(SECURITY_CO);
+        sm.removeProxies(list);
+
+        assertEq(sm.whitelistLength(), 0);
+        assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+        assertFalse(oldProxy.isAllowedProxy(XBRIDGE));
+    }
+
+    function test_RemoveProxies_SkipsNonExistent() public {
+        address[] memory list = new address[](3);
+        list[0] = DEX_ROUTER;
+        list[1] = address(0xDEAD); // not in whitelist
+        list[2] = XBRIDGE;
+
+        vm.prank(MULTISIG);
+        sm.removeProxies(list); // should not revert
+
+        assertEq(sm.whitelistLength(), 0);
+    }
+
+    function test_RemoveProxies_ByRandomEOA_Reverts() public {
+        address[] memory list = new address[](1);
+        list[0] = DEX_ROUTER;
+
+        vm.expectRevert(bytes("SM: unauthorized"));
+        vm.prank(address(0xDEAD));
+        sm.removeProxies(list);
+    }
 }

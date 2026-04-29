@@ -211,10 +211,33 @@ contract SecurityManagerTest is Test {
         list[1] = address(0xDEAD); // not in whitelist
         list[2] = XBRIDGE;
 
+        vm.recordLogs();
         vm.prank(MULTISIG);
         sm.removeProxies(list); // should not revert
 
         assertEq(sm.whitelistLength(), 0);
+
+        // Verify ONLY DEX_ROUTER and XBRIDGE produced ProxyRemoved events;
+        // address(0xDEAD) was skipped and must NOT appear.
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 sig = keccak256("ProxyRemoved(address)");
+        uint256 emittedCount = 0;
+        bool sawDexRouter = false;
+        bool sawXbridge = false;
+        bool sawDead = false;
+        for (uint256 i = 0; i < entries.length; i++) {
+            if (entries[i].topics.length > 0 && entries[i].topics[0] == sig) {
+                emittedCount++;
+                address indexedAddr = address(uint160(uint256(entries[i].topics[1])));
+                if (indexedAddr == DEX_ROUTER) sawDexRouter = true;
+                if (indexedAddr == XBRIDGE) sawXbridge = true;
+                if (indexedAddr == address(0xDEAD)) sawDead = true;
+            }
+        }
+        assertEq(emittedCount, 2, "expected exactly 2 ProxyRemoved events");
+        assertTrue(sawDexRouter, "DEX_ROUTER event missing");
+        assertTrue(sawXbridge, "XBRIDGE event missing");
+        assertFalse(sawDead, "0xDEAD must not produce ProxyRemoved event");
     }
 
     function test_RemoveProxies_ByRandomEOA_Reverts() public {
@@ -223,6 +246,22 @@ contract SecurityManagerTest is Test {
 
         vm.expectRevert(bytes("SM: unauthorized"));
         vm.prank(address(0xDEAD));
+        sm.removeProxies(list);
+    }
+
+    function test_RemoveProxies_EmitsEventPerRemoval() public {
+        address[] memory list = new address[](2);
+        list[0] = DEX_ROUTER;
+        list[1] = XBRIDGE;
+
+        // Lock in the per-proxy event semantics. If a future change collapses these
+        // into a single batch event, this test will catch it.
+        vm.expectEmit(true, false, false, true);
+        emit ProxyRemoved(DEX_ROUTER);
+        vm.expectEmit(true, false, false, true);
+        emit ProxyRemoved(XBRIDGE);
+
+        vm.prank(MULTISIG);
         sm.removeProxies(list);
     }
 }

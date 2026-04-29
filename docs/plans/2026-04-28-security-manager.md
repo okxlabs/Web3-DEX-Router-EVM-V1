@@ -591,10 +591,32 @@ function test_RemoveProxies_SkipsNonExistent() public {
     list[1] = address(0xDEAD); // not in whitelist
     list[2] = XBRIDGE;
 
+    vm.recordLogs();
     vm.prank(MULTISIG);
     sm.removeProxies(list); // should not revert
 
     assertEq(sm.whitelistLength(), 0);
+
+    // 负断言：被跳过的地址不能产生 ProxyRemoved 事件
+    Vm.Log[] memory entries = vm.getRecordedLogs();
+    bytes32 sig = keccak256("ProxyRemoved(address)");
+    uint256 emittedCount = 0;
+    bool sawDexRouter = false;
+    bool sawXbridge = false;
+    bool sawDead = false;
+    for (uint256 i = 0; i < entries.length; i++) {
+        if (entries[i].topics.length > 0 && entries[i].topics[0] == sig) {
+            emittedCount++;
+            address indexedAddr = address(uint160(uint256(entries[i].topics[1])));
+            if (indexedAddr == DEX_ROUTER) sawDexRouter = true;
+            if (indexedAddr == XBRIDGE) sawXbridge = true;
+            if (indexedAddr == address(0xDEAD)) sawDead = true;
+        }
+    }
+    assertEq(emittedCount, 2, "expected exactly 2 ProxyRemoved events");
+    assertTrue(sawDexRouter, "DEX_ROUTER event missing");
+    assertTrue(sawXbridge, "XBRIDGE event missing");
+    assertFalse(sawDead, "0xDEAD must not produce ProxyRemoved event");
 }
 
 function test_RemoveProxies_ByRandomEOA_Reverts() public {
@@ -605,12 +627,28 @@ function test_RemoveProxies_ByRandomEOA_Reverts() public {
     vm.prank(address(0xDEAD));
     sm.removeProxies(list);
 }
+
+function test_RemoveProxies_EmitsEventPerRemoval() public {
+    address[] memory list = new address[](2);
+    list[0] = DEX_ROUTER;
+    list[1] = XBRIDGE;
+
+    // 锁定每个被移除的地址各发一条 ProxyRemoved 事件，
+    // 防止未来重构合并成 batch event 而破坏 indexer。
+    vm.expectEmit(true, false, false, true);
+    emit ProxyRemoved(DEX_ROUTER);
+    vm.expectEmit(true, false, false, true);
+    emit ProxyRemoved(XBRIDGE);
+
+    vm.prank(MULTISIG);
+    sm.removeProxies(list);
+}
 ```
 
 **Step 2: 跑测试，确认失败**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_RemoveProxies`
-Expected: 4 个失败。
+Expected: 5 个失败（`removeProxies` 函数不存在）。
 
 **Step 3: 实现 removeProxies**
 
@@ -628,7 +666,7 @@ function removeProxies(address[] calldata _proxies) external onlyAdminOrSecurity
 **Step 4: 跑测试**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv --match-test test_RemoveProxies`
-Expected: 4/4 PASS。
+Expected: 5/5 PASS。
 
 **Step 5: 提交**
 

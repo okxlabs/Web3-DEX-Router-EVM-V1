@@ -132,9 +132,10 @@ contract SecurityManager is AccessControl {
     }
 
     /// @notice Forward `setTokenApprove` to the underlying TokenApproveProxy, redirecting where it pulls user tokens from.
-    /// @param _tokenApprove The new TokenApprove contract address on the underlying proxy.
-    /// @dev DEFAULT_ADMIN_ROLE only. This is a highly sensitive operation: it changes the source-of-truth for ALL user token transfers routed through the underlying proxy. Pure pass-through — no mirror state to update here.
+    /// @param _tokenApprove The new TokenApprove contract address on the underlying proxy. Must be non-zero.
+    /// @dev DEFAULT_ADMIN_ROLE only. Reverts on zero address. Pass-through to TokenApproveProxy.setTokenApprove — no mirror state to update here. This is a highly sensitive operation: it changes the source-of-truth for ALL user token transfers routed through the underlying proxy.
     function setTokenApprove(address _tokenApprove) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_tokenApprove != address(0), "SM: zero address");
         tokenApproveProxy.setTokenApprove(_tokenApprove);
     }
 

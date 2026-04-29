@@ -10,6 +10,7 @@ import "@dex/TokenApproveProxy.sol";
 contract SecurityManagerTest is Test {
     event ProxyAdded(address indexed proxy);
     event ProxyRemoved(address indexed proxy);
+    event TokenApproveChanged(address newTokenApprove);
 
     TokenApproveProxy oldProxy;
     SecurityManager sm;
@@ -306,6 +307,22 @@ contract SecurityManagerTest is Test {
         sm.setTokenApprove(address(0xE3));
     }
 
+    function test_SetTokenApprove_ZeroAddress_Reverts() public {
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("SM: zero address"));
+        sm.setTokenApprove(address(0));
+    }
+
+    function test_SetTokenApprove_EmitsUnderlyingEvent() public {
+        address newTokenApprove = address(0xE9);
+        // The underlying TokenApproveProxy emits TokenApproveChanged when setTokenApprove succeeds.
+        // SM does not emit its own event; we lock the delegation contract here.
+        vm.expectEmit(false, false, false, true, address(oldProxy));
+        emit TokenApproveChanged(newTokenApprove);
+        vm.prank(MULTISIG);
+        sm.setTokenApprove(newTokenApprove);
+    }
+
     function test_TransferProxyOwnership_ByAdmin() public {
         address newOwner = address(0xF1);
         vm.prank(MULTISIG);
@@ -324,6 +341,18 @@ contract SecurityManagerTest is Test {
         vm.prank(MULTISIG);
         vm.expectRevert(bytes("SM: zero address"));
         sm.transferTokenApproveProxyOwnership(address(0));
+    }
+
+    function test_TransferProxyOwnership_PreventsLaterAdminCalls() public {
+        address newOwner = address(0xF9);
+        vm.prank(MULTISIG);
+        sm.transferTokenApproveProxyOwnership(newOwner);
+
+        // After ownership has moved away, SM is no longer the owner of the underlying proxy,
+        // so any pass-through admin call must revert at the underlying's onlyOwner check.
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("Ownable: caller is not the owner"));
+        sm.addProxy(address(0xAB));
     }
 
     function test_Integration_AddRemoveAddSequence() public {
@@ -367,6 +396,32 @@ contract SecurityManagerTest is Test {
         // 镜像之外应不在老 Proxy
         assertFalse(oldProxy.isAllowedProxy(pool[0]));
         assertFalse(oldProxy.isAllowedProxy(DEX_ROUTER));
+
+        // Length invariant: started with {DEX_ROUTER, XBRIDGE} = 2, added pool[0..2] = +3 → 5,
+        // then removeProxies removed {pool[0], DEX_ROUTER} = -2 → 3.
+        assertEq(mirror.length, 3);
+
+        // Reverse-direction parity: every survivor on the proxy must also be on the mirror.
+        // (We can't iterate the proxy mapping, but we can pin specific known survivors.)
+        assertTrue(oldProxy.isAllowedProxy(XBRIDGE));
+        assertTrue(oldProxy.isAllowedProxy(pool[1]));
+        assertTrue(oldProxy.isAllowedProxy(pool[2]));
+        assertTrue(sm.whitelistContains(XBRIDGE));
+        assertTrue(sm.whitelistContains(pool[1]));
+        assertTrue(sm.whitelistContains(pool[2]));
+    }
+
+    function test_GetWhitelist_EmptyAfterRemoveAll() public {
+        address[] memory list = new address[](2);
+        list[0] = DEX_ROUTER;
+        list[1] = XBRIDGE;
+        vm.prank(MULTISIG);
+        sm.removeProxies(list);
+
+        assertEq(sm.whitelistLength(), 0);
+        assertEq(sm.getWhitelist().length, 0);
+        vm.expectRevert();
+        sm.whitelistAt(0);
     }
 
     function test_Empty_InitialWhitelist_Works() public {

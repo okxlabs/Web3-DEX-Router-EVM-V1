@@ -44,6 +44,8 @@ contract SecurityManager is AccessControl {
 
     function addProxy(address _proxy) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_proxy != address(0), "SM: zero address");
+        // No isAllowedProxy() pre-check needed: this call is what causes the proxy entry.
+        // Mirror-proxy parity holds by induction from the constructor's S4 invariant.
         require(_whitelist.add(_proxy), "SM: already in whitelist");
         tokenApproveProxy.addProxy(_proxy);
         emit ProxyAdded(_proxy);

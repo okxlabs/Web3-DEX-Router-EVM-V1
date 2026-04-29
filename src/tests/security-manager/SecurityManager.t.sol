@@ -86,7 +86,7 @@ contract SecurityManagerTest is Test {
 
     function test_AddProxy_EmitsEvent() public {
         address newProxy = address(0xD2);
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, false, false, true);
         emit ProxyAdded(newProxy);
         vm.prank(MULTISIG);
         sm.addProxy(newProxy);
@@ -100,6 +100,8 @@ contract SecurityManagerTest is Test {
     }
 
     function test_AddProxy_BySecurityRole_Reverts() public {
+        // Cache the role getter before vm.prank: the getter is the next external call
+        // and would otherwise consume the prank, leaving grantRole to run as the test contract.
         bytes32 securityRole = sm.SECURITY_ROLE();
         vm.prank(MULTISIG);
         sm.grantRole(securityRole, SECURITY_CO);

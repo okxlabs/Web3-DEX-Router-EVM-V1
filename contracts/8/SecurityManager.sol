@@ -86,4 +86,9 @@ contract SecurityManager is AccessControl {
     function setTokenApprove(address _tokenApprove) external onlyRole(DEFAULT_ADMIN_ROLE) {
         tokenApproveProxy.setTokenApprove(_tokenApprove);
     }
+
+    function transferTokenApproveProxyOwnership(address _newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_newOwner != address(0), "SM: zero address");
+        tokenApproveProxy.transferOwnership(_newOwner);
+    }
 }

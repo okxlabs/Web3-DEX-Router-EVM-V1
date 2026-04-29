@@ -305,4 +305,24 @@ contract SecurityManagerTest is Test {
         vm.prank(address(0xDEAD));
         sm.setTokenApprove(address(0xE3));
     }
+
+    function test_TransferProxyOwnership_ByAdmin() public {
+        address newOwner = address(0xF1);
+        vm.prank(MULTISIG);
+        sm.transferTokenApproveProxyOwnership(newOwner);
+        assertEq(oldProxy.owner(), newOwner);
+    }
+
+    function test_TransferProxyOwnership_BySecurityRole_Reverts() public {
+        _grantSecurityRole();
+        vm.expectRevert();
+        vm.prank(SECURITY_CO);
+        sm.transferTokenApproveProxyOwnership(address(0xF2));
+    }
+
+    function test_TransferProxyOwnership_ZeroAddress_Reverts() public {
+        vm.prank(MULTISIG);
+        vm.expectRevert(bytes("SM: zero address"));
+        sm.transferTokenApproveProxyOwnership(address(0));
+    }
 }

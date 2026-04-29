@@ -51,6 +51,14 @@ contract SecurityManager is AccessControl {
         return _whitelist.contains(_proxy);
     }
 
+    function getWhitelist() external view returns (address[] memory) {
+        return _whitelist.values();
+    }
+
+    function whitelistAt(uint256 _index) external view returns (address) {
+        return _whitelist.at(_index);
+    }
+
     function addProxy(address _proxy) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_proxy != address(0), "SM: zero address");
         // No isAllowedProxy() pre-check needed: this call is what causes the proxy entry.

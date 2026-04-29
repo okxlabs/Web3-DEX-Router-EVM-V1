@@ -264,4 +264,25 @@ contract SecurityManagerTest is Test {
         vm.prank(MULTISIG);
         sm.removeProxies(list);
     }
+
+    function test_GetWhitelist_ReturnsAll() public {
+        address[] memory list = sm.getWhitelist();
+        assertEq(list.length, 2);
+        // EnumerableSet 不保证顺序，使用 contains 校验
+        assertTrue(sm.whitelistContains(list[0]));
+        assertTrue(sm.whitelistContains(list[1]));
+    }
+
+    function test_WhitelistAt_ReturnsAddressByIndex() public {
+        address a0 = sm.whitelistAt(0);
+        address a1 = sm.whitelistAt(1);
+        assertTrue(a0 == DEX_ROUTER || a0 == XBRIDGE);
+        assertTrue(a1 == DEX_ROUTER || a1 == XBRIDGE);
+        assertTrue(a0 != a1);
+    }
+
+    function test_WhitelistAt_OutOfBounds_Reverts() public {
+        vm.expectRevert();
+        sm.whitelistAt(99);
+    }
 }

@@ -119,6 +119,8 @@ git commit -m "feat(security-manager): add ITokenApproveProxyAdmin interface"
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// solhint-disable func-name-mixedcase
+
 import "forge-std/Test.sol";
 import "@dex/SecurityManager.sol";
 import "@dex/TokenApproveProxy.sol";
@@ -162,14 +164,31 @@ contract SecurityManagerTest is Test {
 
     function test_Constructor_RevertsOnZeroProxy() public {
         address[] memory empty = new address[](0);
-        vm.expectRevert();
+        vm.expectRevert(bytes("SM: zero proxy"));
         new SecurityManager(address(0), MULTISIG, empty);
     }
 
     function test_Constructor_RevertsOnZeroAdmin() public {
         address[] memory empty = new address[](0);
-        vm.expectRevert();
+        vm.expectRevert(bytes("SM: zero admin"));
         new SecurityManager(address(oldProxy), address(0), empty);
+    }
+
+    function test_Constructor_RevertsOnZeroInInitialWhitelist() public {
+        address[] memory initial = new address[](2);
+        initial[0] = DEX_ROUTER;
+        initial[1] = address(0);
+        vm.expectRevert(bytes("SM: zero in initial"));
+        new SecurityManager(address(oldProxy), MULTISIG, initial);
+    }
+
+    function test_Constructor_RevertsIfNotAllowedOnProxy() public {
+        // 0xCAFE is on the proxy (added in setUp); 0xDEAD is not.
+        address[] memory initial = new address[](2);
+        initial[0] = DEX_ROUTER;
+        initial[1] = address(0xDEAD);
+        vm.expectRevert(bytes("SM: not allowed on proxy"));
+        new SecurityManager(address(oldProxy), MULTISIG, initial);
     }
 }
 ```
@@ -207,6 +226,12 @@ contract SecurityManager is AccessControl {
         tokenApproveProxy = ITokenApproveProxyAdmin(_tokenApproveProxy);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         for (uint256 i = 0; i < _initialWhitelist.length; i++) {
+            require(_initialWhitelist[i] != address(0), "SM: zero in initial");
+            // Use the local parameter, not the immutable state var (immutables are not readable in constructor).
+            require(
+                ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]),
+                "SM: not allowed on proxy"
+            );
             _whitelist.add(_initialWhitelist[i]);
         }
     }
@@ -224,7 +249,7 @@ contract SecurityManager is AccessControl {
 **Step 4: 跑测试，确认全部通过**
 
 Run: `FOUNDRY_PROFILE=security-manager forge test -vv`
-Expected: 5/5 PASS。
+Expected: 7/7 PASS。
 
 **Step 5: 提交**
 
@@ -232,6 +257,15 @@ Expected: 5/5 PASS。
 git add contracts/8/SecurityManager.sol src/tests/security-manager/SecurityManager.t.sol
 git commit -m "feat(security-manager): scaffold contract with constructor"
 ```
+
+**关于构造函数 invariant 的设计决策**
+
+构造函数对 `_initialWhitelist[]` 做两层校验：
+
+1. `require(_initialWhitelist[i] != address(0), ...)` — 与 Task 3 `addProxy` 的零地址校验对称，避免运行时入口比构造函数更严格的不一致状态。
+2. `require(ITokenApproveProxyAdmin(_tokenApproveProxy).isAllowedProxy(_initialWhitelist[i]), ...)` — 防止"幽灵镜像条目"：如果某个地址在 `_initialWhitelist` 但不在老 Proxy 上，SM 的 `removeProxy` 会因镜像存在而通过，但 `tokenApproveProxy.removeProxy()` 在老 Proxy 上是 no-op（mapping 本就是 false），导致 SM 的镜像与老 Proxy 实际状态分叉。
+
+这两个校验意味着 `initialWhitelist` 必须是「老 Proxy 现有白名单的子集」，没有冗余/前瞻空间。这是有意识的取舍：构造函数 fail-fast，避免部署后才发现配置错误。
 
 ---
 

@@ -9,7 +9,7 @@ module.exports = {
     investEntrance: "",
     limitOrder: "",
     protocolAdmin: "",
-    _FF_FACTORY: "0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000",
+    _FF_FACTORY: "0xff4B2ab38DBF28D31D467aA8993f6c2585981D68040000000000000000000000",
     _CACHED_DOMAIN_SEPARATOR: "",
     _HASHED_NAME: "",
     _HASHED_VERSION: "",

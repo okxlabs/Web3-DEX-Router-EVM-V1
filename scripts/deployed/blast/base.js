@@ -10,12 +10,12 @@ module.exports = {
     investEntrance: "0x7251FEbEABB01eC9dE53ECe7a96f1C951F886Dd2",
     limitOrder: "",
     protocolAdmin: "",
-    _FF_FACTORY: "",
+    _FF_FACTORY: "0xff792edAdE80af5fC680d96a2eD80A44247D2Cf6Fd0000000000000000000000",
     commisson: "",
     nftmarketplace: "",
     //p2pTrading: "",
     p2pTrading: "",
     proxyAdmin: "0xF7Dd3E6daB6aaf8a1e853bA00a3e57F60B79527b",
 
-    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
+    newImpl: "0x6F91349e4161068c1cA6BAAce1570621bb00FDeb",
 }

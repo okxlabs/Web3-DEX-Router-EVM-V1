@@ -153,7 +153,7 @@ library UnxswapExactOutRouter {
         );
 
         // Step 3: Handle commission from the source token if applicable.
-        ExactOutSwapHelper.afterSwap(
+        consumeAmount = ExactOutSwapHelper.afterSwap(
             IDexRouter.AfterSwapParams({
                 commissionInfo: extraData.commissionInfo,
                 consumeAmount: consumeAmount,

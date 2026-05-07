@@ -197,10 +197,21 @@ library SmartSwapRouter {
                     ++i;
                 }
             }
-            require(
-                totalBatchAmount <= baseRequest.fromTokenAmount,
-                "Route: total batch amount should be <= fromTokenAmount"
-            );
+            // payer == address(0) signals that fromTokenAmount has been transferred
+            // directly to the pool via permit2 signature. The unused portion cannot
+            // be refunded in this case (funds are already in the pool, where adapters
+            // settle by balanceOf), so require exact match to prevent silent over-swap.
+            if (payer == address(0)) {
+                require(
+                    totalBatchAmount == baseRequest.fromTokenAmount,
+                    "Route: total batch amount must equal fromTokenAmount"
+                );
+            } else {
+                require(
+                    totalBatchAmount <= baseRequest.fromTokenAmount,
+                    "Route: total batch amount should be <= fromTokenAmount"
+                );
+            }
         }
 
         // 4. execute batch

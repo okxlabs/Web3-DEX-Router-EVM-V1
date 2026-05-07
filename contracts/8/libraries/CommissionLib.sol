@@ -192,6 +192,14 @@ library CommissionLib {
                     0,
                     0x20
                 )
+                if and(
+                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
+                    success
+                ) {
+                    success := iszero(
+                        or(iszero(extcodesize(token)), returndatasize())
+                    )
+                }
                 if eq(success, 0) {
                     _revertWithReason(
                         0x0000001b207472616e7366657220746f6b656e20646972656374206661696c00,

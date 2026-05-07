@@ -47,6 +47,7 @@ sonic = "https://sonic-rpc.publicnode.com"
 unichain = "https://unichain.drpc.org"
 monad = "https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO"
 katana = "https://katana.drpc.org"
+pharos = "https://rpc.pharos.xyz"
 
 [fmt]
 line_length = 120

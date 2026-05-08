@@ -166,6 +166,9 @@ library UnxswapV3Router {
 
         returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
 
+        // Snapshot for OrderRecord only; not for swap math.
+        uint256 originalAmount = amount;
+
         uint256 fromTokenCommissionAmount;
         (
             swapCache.payer,
@@ -203,7 +206,7 @@ library UnxswapV3Router {
             srcToken,
             swapCache.toToken,
             tx.origin,
-            amount,
+            originalAmount,
             returnAmount
         );
     }

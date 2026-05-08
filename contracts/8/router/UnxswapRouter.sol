@@ -159,20 +159,19 @@ library UnxswapRouter {
             toToken: toToken
         });
         
+        // Snapshot for OrderRecord only; not for swap math.
+        uint256 originalAmount = amount;
+
         // Handle Permit2Signature mode and fromToken commission
         uint256 fromTokenCommissionAmount;
-        {
-            address onlyOneAssetTo = CommonLib.bytes32ToAddress(uint256(pools[0]));
-            
-            (swapCache.payer, amount, fromTokenCommissionAmount) = 
-                TransferLib.handlePermit2SigModeWithCommission(
-                    uint256(uint160(srcToken)) | mode,
-                    swapCache.payer,
-                    amount,
-                    onlyOneAssetTo,
-                    extraData
-                );
-        }
+        (swapCache.payer, amount, fromTokenCommissionAmount) =
+            TransferLib.handlePermit2SigModeWithCommission(
+                uint256(uint160(srcToken)) | mode,
+                swapCache.payer,
+                amount,
+                CommonLib.bytes32ToAddress(uint256(pools[0])), // onlyOneAssetTo
+                extraData
+            );
         
         _doUnxswap(
             swapCache,
@@ -199,7 +198,7 @@ library UnxswapRouter {
             srcToken,
             toToken,
             tx.origin,
-            amount,
+            originalAmount,
             returnAmount
         );
 

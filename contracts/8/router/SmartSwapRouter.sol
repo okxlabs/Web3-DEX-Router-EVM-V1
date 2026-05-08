@@ -84,6 +84,9 @@ library SmartSwapRouter {
 
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapCache.receiver);
 
+        // Snapshot for OrderRecord only; not for swap math.
+        uint256 originalFromTokenAmount = baseRequest.fromTokenAmount;
+
         uint256 fromTokenCommissionAmount;
         {
             address onlyOneAssetTo = (batches.length == 1 && batches[0][0].assetTo.length == 1)
@@ -117,8 +120,7 @@ library SmartSwapRouter {
                 baseRequest,
                 batchesAmount,
                 batches,
-                swapCache.payer,
-                swapCache.refundTo,
+                swapCache,
                 middleReceiver
             );
 
@@ -152,7 +154,7 @@ library SmartSwapRouter {
             CommonLib.bytes32ToAddress(baseRequest.fromToken),
             baseRequest.toToken,
             tx.origin,
-            baseRequest.fromTokenAmount,
+            originalFromTokenAmount,
             returnAmount
         );
     }
@@ -161,14 +163,13 @@ library SmartSwapRouter {
     /// @param baseRequest Basic swap details including tokens, amounts, and deadline.
     /// @param batchesAmount Amounts for each swap batch.
     /// @param batches Detailed swap paths for execution.
-    /// @param payer Address providing the tokens.
-    /// @param receiver Address receiving the swapped tokens.
+    /// @param swapCache Provides payer and refundTo; swapCache.receiver is unused here.
+    /// @param receiver Hop output recipient (middleReceiver when commission/trim is active).
     function _smartSwapInternal(
         IDexRouter.BaseRequest memory baseRequest,
         uint256[] memory batchesAmount,
         IDexRouter.RouterPath[][] memory batches,
-        address payer,
-        address refundTo,
+        IDexRouter.SwapCache memory swapCache,
         address receiver
     ) private {
         // 1. transfer from token in
@@ -181,7 +182,7 @@ library SmartSwapRouter {
                 value: baseRequest.fromTokenAmount
             }();
             require(CommonLib.bytes32ToAddress(batches[0][0].fromToken) == _WETH, "firstToken mismatch");
-            require(payer == address(this), "payer must be router");
+            require(swapCache.payer == address(this), "payer must be router");
         } else {
             require(CommonLib.bytes32ToAddress(batches[0][0].fromToken) == fromToken, "firstToken mismatch");
             require(msg.value == 0, "value must be 0");
@@ -201,7 +202,7 @@ library SmartSwapRouter {
             // directly to the pool via permit2 signature. The unused portion cannot
             // be refunded in this case (funds are already in the pool, where adapters
             // settle by balanceOf), so require exact match to prevent silent over-swap.
-            if (payer == address(0)) {
+            if (swapCache.payer == address(0)) {
                 require(
                     totalBatchAmount == baseRequest.fromTokenAmount,
                     "Route: total batch amount must equal fromTokenAmount"
@@ -221,11 +222,11 @@ library SmartSwapRouter {
             if (i > 0) {
                 require(batches[i][0].fromToken == batches[0][0].fromToken, "Inconsistent fromToken across batches");
             }
-            
+
             // execute hop, if the whole swap replacing by pmm fails, the funds will return to dexRouter
             _exeHop(
-                payer,
-                refundTo,
+                swapCache.payer,
+                swapCache.refundTo,
                 receiver,
                 baseRequest.toToken == _ETH,
                 batchesAmount[i],

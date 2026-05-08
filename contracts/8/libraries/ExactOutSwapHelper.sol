@@ -39,9 +39,10 @@ library ExactOutSwapHelper {
     // Only handle commission.
     function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal returns (uint256) {
         // Handle commission from the source token if applicable.
+        uint256 totalRate = CommissionLib.calculateTotalRate(afterSwapParams.commissionInfo);
         if (
             afterSwapParams.commissionInfo.isFromTokenCommission &&
-            afterSwapParams.commissionInfo.commissionRate > 0
+            totalRate > 0
         ) {
             CommissionLib.doCommissionFromToken(
                 afterSwapParams.commissionInfo,
@@ -66,7 +67,7 @@ library ExactOutSwapHelper {
         // Handle commission from the output token if applicable.
         if (
             afterSwapParams.commissionInfo.isToTokenCommission &&
-            afterSwapParams.commissionInfo.commissionRate > 0
+            totalRate > 0
         ) {
             IDexRouter.TrimInfo memory trimInfo;
             CommissionLib.doCommissionAndTrimToToken(

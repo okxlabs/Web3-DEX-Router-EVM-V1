@@ -469,11 +469,6 @@ library CommissionLib {
             }
             function _processCommission(commissionInfo_, toToken_, inputAmount) -> commissionAmount {
                 let referrerNum := mload(add(commissionInfo_, 0x80)) // commissionInfo.referrerNum
-                let totalRate := 0
-                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-                    let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                    totalRate := add(totalRate, rate)
-                }
                 commissionAmount := 0
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
@@ -500,20 +495,7 @@ library CommissionLib {
             function _processTrim(trimInfo_, toToken_, inputAmount) -> trimAmount {
                 let trimRate := mload(add(trimInfo_, 0x20)) // trimInfo.trimRate
                 let chargeRate := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeRate
-                // require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate");
-                if gt(trimRate, TRIM_RATE_LIMIT) {
-                    _revertWithReason(
-                        0x00000010206572726f72207472696d2072617465000000000000000000000000,
-                        0x54
-                    ) // "error trim rate"
-                }
-                // require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
-                if gt(chargeRate, TRIM_DENOMINATOR) {
-                    _revertWithReason(
-                        0x00000012206572726f7220636861726765207261746500000000000000000000,
-                        0x56
-                    ) // "error charge rate"
-                }
+
                 // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
                 let expectAmountOut := mload(add(trimInfo_, 0x80)) // trimInfo.expectAmountOut
                 trimAmount := sub(inputAmount, expectAmountOut)

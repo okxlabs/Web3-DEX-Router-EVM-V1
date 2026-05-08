@@ -35,8 +35,9 @@ library TransferLib {
         uint256 totalRate = 0;
         uint256 fromTokenCommissionAmount = 0;
 
-        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance according to agreement, and commission is not allowed.
+        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance according to agreement, and fromToken can not be ETH, commission is not allowed.
         if (mode == _MODE_BY_INVEST) {
+            require(token != _ETH, "Invalid source token");
             return (address(this), inputAmount, 0);
         }
 

@@ -60,6 +60,9 @@ library DagRouter {
             toToken: baseRequest.toToken
         });
 
+        // Snapshot for OrderRecord only; not for swap math.
+        uint256 originalFromTokenAmount = baseRequest.fromTokenAmount;
+
         uint256 fromTokenCommissionAmount;
         {
             address onlyOneAssetTo = paths[0].assetTo.length == 1 ? paths[0].assetTo[0] : address(0); // Output edge of node0 is only one
@@ -121,7 +124,7 @@ library DagRouter {
             CommonLib.bytes32ToAddress(baseRequest.fromToken),
             baseRequest.toToken,
             tx.origin,
-            baseRequest.fromTokenAmount,
+            originalFromTokenAmount,
             returnAmount
         );
     }

@@ -52,7 +52,7 @@ library UnxswapV3ExactOutRouter {
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param pools The list of pool identifiers to use for the swap path.
     /// @param extraData Additional data encoded in calldata.
-    /// @return consumeAmount The actual amount of source tokens consumed.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function uniswapV3SwapExactOutTo(
         uint256 receiver,
         uint256 amountOut,
@@ -96,7 +96,7 @@ library UnxswapV3ExactOutRouter {
     /// @param receiver The address to receive the output tokens.
     /// @param pools The list of pool identifiers to use for the swap path.
     /// @param extraData The extra data for the exact out swap.
-    /// @return consumeAmount The actual amount of source tokens consumed.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function _uniswapV3SwapExactOutTo(
         IDexRouter.ExactOutSwapCache memory swapCache,
         address receiver,

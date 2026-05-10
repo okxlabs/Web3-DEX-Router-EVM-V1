@@ -63,7 +63,7 @@ library CommissionLib {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                if gt(amount, 0) {
+                if and(gt(amount, 0), iszero(eq(to, address()))) {
                     let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
@@ -385,7 +385,7 @@ library CommissionLib {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                if gt(amount, 0) {
+                if and(gt(amount, 0), iszero(eq(to, address()))) {
                     let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
@@ -474,7 +474,7 @@ library CommissionLib {
                 case 1 { // commission token is ETH
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                        let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
+                        let amount := _mulDiv(inputAmount, rate, COMMISSION_DENOMINATOR_1E9)
                         let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                         _sendETH(referrer, amount)
                         _emitCommissionToToken(_ETH, amount, referrer, rate)
@@ -484,7 +484,7 @@ library CommissionLib {
                 default { // commission token is ERC20
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                        let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
+                        let amount := _mulDiv(inputAmount, rate, COMMISSION_DENOMINATOR_1E9)
                         let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                         _sendToken(toToken_, referrer, amount)
                         _emitCommissionToToken(toToken_, amount, referrer, rate)
@@ -499,16 +499,16 @@ library CommissionLib {
                 // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
                 let expectAmountOut := mload(add(trimInfo_, 0x80)) // trimInfo.expectAmountOut
                 trimAmount := sub(inputAmount, expectAmountOut)
-                // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR;
-                let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR)
+                // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR_1E3;
+                let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR_1E3)
                 // trimAmount = min(trimAmount, allowedMaxTrimAmount)
                 if gt(trimAmount, allowedMaxTrimAmount) {
                     trimAmount := allowedMaxTrimAmount
                 }
 
                 // send token and emit events
-                // actualChargeAmount = trimAmount * chargeRate / TRIM_DENOMINATOR
-                let actualChargeAmount := _mulDiv(trimAmount, chargeRate, TRIM_DENOMINATOR)
+                // actualChargeAmount = trimAmount * chargeRate / TRIM_DENOMINATOR_1E3
+                let actualChargeAmount := _mulDiv(trimAmount, chargeRate, TRIM_DENOMINATOR_1E3)
                 // actualTrimAmount = trimAmount - actualChargeAmount
                 let actualTrimAmount := sub(trimAmount, actualChargeAmount)
                 switch eq(toToken_, _ETH)

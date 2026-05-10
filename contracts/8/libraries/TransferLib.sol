@@ -43,7 +43,7 @@ library TransferLib {
 
         if (extraData.commissionInfo.isFromTokenCommission) {
             totalRate = CommissionLib.calculateTotalRate(extraData.commissionInfo);
-            fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
+            fromTokenCommissionAmount = inputAmount * totalRate / (COMMISSION_DENOMINATOR_1E9 - totalRate);
         }
 
         if (token == _ETH) {
@@ -250,10 +250,12 @@ library TransferLib {
     /// @dev Handles the refund of tokens to the refundTo address.
     function refundToken(address token, address refundTo) internal {
         if (token == _ETH) {
-            uint256 ethBal = address(this).balance;
-            if (ethBal > 0) {
-                (bool success, ) = payable(refundTo).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
-                require(success, "refund native token failed");
+            if (refundTo != address(this)) {
+                uint256 ethBal = address(this).balance;
+                if (ethBal > 0) {
+                    (bool success, ) = payable(refundTo).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
+                    require(success, "refund native token failed");
+                }
             }
         } else {
             uint256 bal = CommonLib.getBalanceOf(token, address(this));

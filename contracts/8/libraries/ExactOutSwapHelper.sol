@@ -25,7 +25,7 @@ library ExactOutSwapHelper {
             commissionInfo.isToTokenCommission &&
             totalRate > 0
         ) {
-            amountOut = (amountOut * DENOMINATOR) / (DENOMINATOR - totalRate);
+            amountOut = (amountOut * COMMISSION_DENOMINATOR_1E9) / (COMMISSION_DENOMINATOR_1E9 - totalRate);
             targetTokenBefore = CommonLib.getBalanceOf(
                 /// @notice commissionInfo.token ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
                 CommonLib.bytes32ToAddress(commissionInfo.tokenWithMode),

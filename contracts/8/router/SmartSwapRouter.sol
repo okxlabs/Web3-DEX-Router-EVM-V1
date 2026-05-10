@@ -82,6 +82,7 @@ library SmartSwapRouter {
             swapCache.refundTo = extraData.refundTo;
         }
 
+        // Stash the receiver's toToken balanceBefore in returnAmount; it is replaced by the actual delta after the swap.
         returnAmount = CommonLib.getBalanceOf(baseRequest.toToken, swapCache.receiver);
 
         // Snapshot for OrderRecord only; not for swap math.

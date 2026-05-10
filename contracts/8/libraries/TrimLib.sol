@@ -11,10 +11,10 @@ library TrimLib {
 
         // Validate trimRate and chargeRate
         require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate");
-        require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
+        require(trimInfo.chargeRate <= TRIM_DENOMINATOR_1E3, "error charge rate");
 
         // Validate trim/charge recipient addresses to prevent accidental burns.
-        if (trimInfo.chargeRate < TRIM_DENOMINATOR) { // Not all trim is charged, so trimAddress should not be zero
+        if (trimInfo.chargeRate < TRIM_DENOMINATOR_1E3) { // Not all trim is charged, so trimAddress should not be zero
             require(trimInfo.trimAddress != address(0), "Invalid trimAddress");
         }
         if (trimInfo.chargeRate > 0) {

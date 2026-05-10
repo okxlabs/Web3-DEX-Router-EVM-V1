@@ -115,9 +115,9 @@ library DagRouter {
             "Min return not reached"
         );
 
-        // Refund unused fromToken. If fromToken is not ETH, no need to refund cause all `fromTokenAmount` will be used.
-        if (fromToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > fromTokenAmount, the unused ETH will be refunded to refundTo
+        // Refund unused fromToken. If fromToken is not ETH or mode is not ByInvest, no need to refund cause all `fromTokenAmount` will be used.
+        if (fromToken == _ETH || mode == _MODE_BY_INVEST) {
+            TransferLib.refundToken(fromToken, swapCache.refundTo); // In case of msg.value > fromTokenAmount or actual transfer amount > fromTokenAmount in ByInvest mode, the unused fromToken will be refunded to refundTo
         }
 
         EventLib.emitOrderRecord(

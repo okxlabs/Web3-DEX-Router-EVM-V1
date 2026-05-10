@@ -27,6 +27,8 @@ library UnxswapRouter {
         0x70a082310dfe1681000000000000000000000000000000000000000000000000;
     uint256 private constant _BALANCEOF_TOKEN1_SELECTOR =
         0x70a08231d21220a7000000000000000000000000000000000000000000000000;
+    uint256 private constant _WITHDRAW_SELECTOR =
+        0x2e1a7d4d00000000000000000000000000000000000000000000000000000000;
 
     uint256 private constant _NUMERATOR_MASK =
         0x0000000000000000ffffffff0000000000000000000000000000000000000000;
@@ -182,9 +184,9 @@ library UnxswapRouter {
             fromTokenCommissionAmount
         );
 
-        // Refund unused fromToken
-        if (srcToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+        // Refund unused fromToken. If fromToken is not ETH or mode is not ByInvest, no need to refund cause all `fromTokenAmount` will be used.
+        if (srcToken == _ETH || mode == _MODE_BY_INVEST) {
+            TransferLib.refundToken(srcToken, swapCache.refundTo); // In case of msg.value > fromTokenAmount or actual transfer amount > fromTokenAmount in ByInvest mode, the unused fromToken will be refunded to refundTo
         }
 
         // check minReturnAmount
@@ -753,8 +755,7 @@ library UnxswapRouter {
                     shr(_NUMERATOR_OFFSET, and(rawPair, _NUMERATOR_MASK)),
                     receiver
                 )
-                switch lt(0x0, toToken)
-                case 1 {
+                if gt(toToken, 0x0) {
                     mstore(emptyPtr, _BALANCEOF_TOKEN0_SELECTOR)
                     mstore(add(0x04, emptyPtr), receiver)
                     if iszero(
@@ -766,26 +767,6 @@ library UnxswapRouter {
                         ) // "get balanceOf failed"
                     }
                     returnAmount := sub(mload(0), beforeAmount)
-                }
-                default {
-                    // set token0 addr for the non-safemoon token
-                    switch and(rawPair, _REVERSE_MASK)
-                    case 0 {
-                        // get token1
-                        toToken := _getTokenAddr(
-                            emptyPtr,
-                            and(rawPair, _ADDRESS_MASK),
-                            _BALANCEOF_TOKEN1_SELECTOR
-                        )
-                    }
-                    default {
-                        // get token0
-                        toToken := _getTokenAddr(
-                            emptyPtr,
-                            and(rawPair, _ADDRESS_MASK),
-                            _BALANCEOF_TOKEN0_SELECTOR
-                        )
-                    }
                 }
             }
             default {
@@ -802,8 +783,7 @@ library UnxswapRouter {
                 )
 
                 // Directly call WETH.withdraw(returnAmount) instead of using WNativeRelayer
-                // withdraw(uint256) selector: 0x2e1a7d4d
-                mstore(emptyPtr, 0x2e1a7d4d00000000000000000000000000000000000000000000000000000000)
+                mstore(emptyPtr, _WITHDRAW_SELECTOR)
                 mstore(add(emptyPtr, 0x04), returnAmount)
                 if iszero(
                     call(gas(), _WETH, 0, emptyPtr, 0x24, 0, 0)
@@ -814,12 +794,14 @@ library UnxswapRouter {
                     ) // "WETH withdraw failed"
                 }
                 
-                // Send ETH to receiver
-                if iszero(call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, receiver, returnAmount, 0, 0, 0, 0)) {
-                    revertWithReason(
-                        0x000000137472616e7366657220455448206661696c6564000000000000000000,
-                        0x57
-                    ) // "transfer ETH failed"
+                // Send ETH to receiver, skip when receiver is this contract.
+                if iszero(eq(receiver, address())) {
+                    if iszero(call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, receiver, returnAmount, 0, 0, 0, 0)) {
+                        revertWithReason(
+                            0x000000137472616e7366657220455448206661696c6564000000000000000000,
+                            0x57
+                        ) // "transfer ETH failed"
+                    }
                 }
             }
 

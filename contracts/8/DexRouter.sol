@@ -20,7 +20,7 @@ import "./router/UnxswapV3ExactOutRouter.sol";
 
 contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableModuleV2, ReentrancyGuard {
 
-    string public constant version = "v1.0.9-transfer-mode";
+    string public constant version = "v1.0.9-multi-funding-mode";
 
     constructor(address _owner) PausableModuleV2(_owner) ReentrancyGuard() {}
 

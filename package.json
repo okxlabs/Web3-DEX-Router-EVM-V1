@@ -8,8 +8,7 @@
     "compile5": "npx hardhat --config hardhat.config.5.js compile",
     "size": "hardhat size-contracts",
     "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/**/*.sol",
-    "removelogs": "yarn run hardhat remove-logs",
-    "test": "sh -c 'FOUNDRY_TEST=src/tests/jit-routing forge test --no-match-test test_AC15_winner_exec_revert_bubbles'"
+    "removelogs": "yarn run hardhat remove-logs"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

@@ -152,7 +152,9 @@ contract JitAdapterAttackTest is JitTestBase {
     //                AC-24 / S-19 / S-22 (gas griefing)
     // =======================================================================
 
-    /// AC-24: single candidate burns 500K gas. Legit candidate still wins.
+    /// AC-24: with two gas-burner candidates flanking a legit one, the legit candidate still wins —
+    ///        EVM's 63/64 forwarding rule reclaims enough gas after each burner. Hard per-call gas
+    ///        bounding is a Router-layer concern, not enforced inside JitAdapter.
     function test_AC24_gas_griefing_isolated() public {
         fromToken.mint(address(jit), AMOUNT_IN);
         JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](3);

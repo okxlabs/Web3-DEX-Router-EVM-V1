@@ -224,7 +224,8 @@ contract JitAdapterTest is JitTestBase {
         jit.sellBase(recipient, address(jit), data);
     }
 
-    /// AC-16: single candidate's dry-run burns all 500k — other candidate still processed; winner = other.
+    /// AC-16: a gas-burner candidate consumes the gas forwarded to its dry-run — survivor still wins
+    ///        thanks to EVM's 63/64 gas-forwarding rule (per-call gas limiting is a Router-layer concern).
     function test_AC16_gas_burner_isolated() public {
         fromToken.mint(address(jit), AMOUNT_IN);
         JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);

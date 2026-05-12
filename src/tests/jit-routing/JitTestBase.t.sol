@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import {IAdapter} from "@dex/interfaces/IAdapter.sol";
-import {JitAdapter} from "@dex/jit-routing/JitAdapter.sol";
+import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
 
 import {MockERC20} from "../common/mock/MockERC20.sol";
 import {MockFOTToken} from "./mocks/MockFOTToken.sol";

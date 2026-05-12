@@ -19,7 +19,6 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
     uint8 internal constant MODE_AUTO = 0;
     uint256 internal constant MIN_CANDIDATES = 2;
     uint256 internal constant MAX_CANDIDATES = 255;
-    uint256 internal constant PER_DRYRUN_GAS_LIMIT = 500_000;
 
     /// @dev Public for Stage 3 test assertability. TD §Phase 2 declared this `internal`; `public` adds
     ///      zero mutability surface (still a constant) but lets unit tests assert non-collision with
@@ -81,7 +80,9 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
 
     // =========================== Internal self-call entry ===========================
 
-    /// @dev External so `_dryRunSafe` can `this._dryRun{gas: PER_DRYRUN_GAS_LIMIT}(...)` self-call.
+    /// @dev External so `_dryRunSafe` can `this._dryRun(...)` self-call. Per-call gas forwarding is
+    ///      enforced at the Router layer, not here — JitAdapter intentionally does not partition gas
+    ///      between candidates.
     ///      Always terminates with a magic-prefixed revert; the normal return path is never taken.
     ///      `msg.sender == address(this)` guard prevents external callers from abusing this entrypoint.
     function _dryRun(
@@ -151,7 +152,7 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
         address refundTo,
         uint8 idx
     ) internal returns (uint256 amountOut) {
-        try this._dryRun{gas: PER_DRYRUN_GAS_LIMIT}(c, to, fromToken, toToken, amount, refundTo) {
+        try this._dryRun(c, to, fromToken, toToken, amount, refundTo) {
             // _dryRun always reverts with magic — this path is defensive only.
             return 0;
         } catch (bytes memory data) {

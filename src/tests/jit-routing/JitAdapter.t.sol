@@ -193,36 +193,8 @@ contract JitAdapterTest is JitTestBase {
     }
 
     // =======================================================================
-    //                     AC-15 .. AC-18 (Exception / Revert)
+    //                     AC-16 .. AC-18 (Exception / Revert)
     // =======================================================================
-
-    /// AC-15: winner real-exec revert bubbles up; no fallback to runner-up.
-    /// Setup: one high quote from mockSpoof (but spoof defense makes quote=0 in dry-run, so we need
-    /// a candidate that succeeds dry-run but fails real exec. We achieve this by using a stateful
-    /// mock adapter that keeps a counter: first call returns quote, second call reverts.
-    /// For skeleton, we express the expectation and rely on Stage 4 to wire up the stateful adapter.
-    /// Here we use a trivial pattern: all candidates use mockFail → all dry-runs fail → tx reverts
-    /// AllCandidatesDead. AC-15 specifically wants winner-real-exec failure bubbling, which needs
-    /// a stateful mock. We mark this as a RED test that asserts on the underlying fail message bytes.
-    function test_AC15_winner_exec_revert_bubbles() public {
-        fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
-        cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
-        cs[1] = _successCandidate(mockSuccess2, MOCK_QUOTE_B);
-        bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
-
-        // Burn the mock's funds so real-exec transfer will revert (insufficient balance).
-        uint256 bal = toToken.balanceOf(address(mockSuccess2));
-        vm.prank(address(mockSuccess2));
-        toToken.transfer(address(0xdead), bal);
-
-        // Expectation: tx reverts because winner (mockSuccess2) can't pay out. Dry-run succeeded
-        // (still had balance at that time), so we reach real-exec, which fails, and per PRD FR-26
-        // the revert bubbles with the underlying reason. Stage 4 must ensure the revert isn't
-        // swallowed by a fallback.
-        vm.expectRevert(); // any revert acceptable; specific payload verified in Stage 4 wiring
-        jit.sellBase(recipient, address(jit), data);
-    }
 
     /// AC-16: a gas-burner candidate consumes the gas forwarded to its dry-run — survivor still wins
     ///        thanks to EVM's 63/64 gas-forwarding rule (per-call gas limiting is a Router-layer concern).

@@ -25,15 +25,6 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
     ///      Error(string) / Panic(uint256) / IAdapter selectors. Safe.
     bytes4 public constant DRY_RUN_RESULT_MAGIC = bytes4(keccak256("JIT_DRY_RUN_RESULT"));
 
-    // =========================== Errors ===========================
-
-    error UnsupportedMode(uint8 mode);
-    error CandidatesOutOfRange(uint256 length);
-    error NativeEthNotAllowed();
-    error ZeroInput();
-    error OnlySelf();
-    error AllCandidatesDead();
-
     // =========================== Struct ===========================
 
     struct Candidate {
@@ -93,7 +84,7 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
         uint256 amount,
         address refundTo
     ) external {
-        if (msg.sender != address(this)) revert OnlySelf();
+        require(msg.sender == address(this), "JIT: only self");
 
         SafeERC20.safeTransfer(IERC20(fromToken), c.assetTo, amount);
 
@@ -117,14 +108,14 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
         (address fromToken, address toToken, uint8 mode, Candidate[] memory cs) =
             abi.decode(data, (address, address, uint8, Candidate[]));
 
-        if (mode != MODE_AUTO) revert UnsupportedMode(mode);
-        if (cs.length < MIN_CANDIDATES || cs.length > MAX_CANDIDATES) {
-            revert CandidatesOutOfRange(cs.length);
-        }
-        if (fromToken == _ETH || toToken == _ETH) revert NativeEthNotAllowed();
+        require(mode == MODE_AUTO, "JIT: unsupported mode");
+        require(
+            cs.length >= MIN_CANDIDATES && cs.length <= MAX_CANDIDATES, "JIT: candidates len out of range"
+        );
+        require(fromToken != _ETH && toToken != _ETH, "JIT: native ETH not allowed; use WETH");
 
         uint256 amount = IERC20(fromToken).balanceOf(address(this));
-        if (amount == 0) revert ZeroInput();
+        require(amount > 0, "JIT: zero input");
 
         address refundTo = _extractRefundTo();
 
@@ -134,7 +125,7 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
         }
 
         uint8 winner = _findMax(quotes);
-        if (quotes[winner] == 0) revert AllCandidatesDead();
+        require(quotes[winner] > 0, "JIT: all candidates dead");
 
         (bool reverseW, address poolW) = _decodeRawData(cs[winner].rawData);
         SafeERC20.safeTransfer(IERC20(fromToken), cs[winner].assetTo, amount);

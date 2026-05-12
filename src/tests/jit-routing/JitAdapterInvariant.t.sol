@@ -21,11 +21,11 @@ contract JitAdapterInvariantTest is JitTestBase {
         // EOA
         address eoa = address(0xE0A1);
         vm.prank(eoa);
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.OnlySelf.selector));
+        vm.expectRevert("JIT: only self");
         jit._dryRun(c, recipient, address(fromToken), address(toToken), AMOUNT_IN, refundToAddr);
 
         // Contract
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.OnlySelf.selector));
+        vm.expectRevert("JIT: only self");
         jit._dryRun(c, recipient, address(fromToken), address(toToken), AMOUNT_IN, refundToAddr);
     }
 
@@ -106,7 +106,7 @@ contract JitAdapterInvariantTest is JitTestBase {
         JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](1);
         cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.CandidatesOutOfRange.selector, uint256(1)));
+        vm.expectRevert("JIT: candidates len out of range");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -117,7 +117,7 @@ contract JitAdapterInvariantTest is JitTestBase {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         }
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.CandidatesOutOfRange.selector, uint256(256)));
+        vm.expectRevert("JIT: candidates len out of range");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -129,7 +129,7 @@ contract JitAdapterInvariantTest is JitTestBase {
         cs[1] = _shortRevertCandidate();
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.AllCandidatesDead.selector));
+        vm.expectRevert("JIT: all candidates dead");
         jit.sellBase(recipient, address(jit), data);
     }
 

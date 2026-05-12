@@ -109,7 +109,7 @@ contract JitAdapterTest is JitTestBase {
         cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.CandidatesOutOfRange.selector, uint256(1)));
+        vm.expectRevert("JIT: candidates len out of range");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -137,7 +137,7 @@ contract JitAdapterTest is JitTestBase {
         }
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.CandidatesOutOfRange.selector, uint256(256)));
+        vm.expectRevert("JIT: candidates len out of range");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -149,7 +149,7 @@ contract JitAdapterTest is JitTestBase {
         cs[1] = _shortRevertCandidate();
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.AllCandidatesDead.selector));
+        vm.expectRevert("JIT: all candidates dead");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -159,7 +159,7 @@ contract JitAdapterTest is JitTestBase {
         JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 1, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.UnsupportedMode.selector, uint8(1)));
+        vm.expectRevert("JIT: unsupported mode");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -168,7 +168,7 @@ contract JitAdapterTest is JitTestBase {
         JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(_ETH_SENTINEL, address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.NativeEthNotAllowed.selector));
+        vm.expectRevert("JIT: native ETH not allowed; use WETH");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -178,7 +178,7 @@ contract JitAdapterTest is JitTestBase {
         JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), _ETH_SENTINEL, 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.NativeEthNotAllowed.selector));
+        vm.expectRevert("JIT: native ETH not allowed; use WETH");
         jit.sellBase(recipient, address(jit), data);
     }
 
@@ -188,7 +188,7 @@ contract JitAdapterTest is JitTestBase {
         JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.ZeroInput.selector));
+        vm.expectRevert("JIT: zero input");
         jit.sellBase(recipient, address(jit), data);
     }
 

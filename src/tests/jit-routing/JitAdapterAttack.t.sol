@@ -71,7 +71,7 @@ contract JitAdapterAttackTest is JitTestBase {
     /// AC-21: external address calling _dryRun directly reverts OnlySelf.
     function test_AC21_dryRun_external_caller_rejected() public {
         JitAdapter.Candidate memory c = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
-        vm.expectRevert(abi.encodeWithSelector(JitAdapter.OnlySelf.selector));
+        vm.expectRevert("JIT: only self");
         jit._dryRun(c, recipient, address(fromToken), address(toToken), AMOUNT_IN, refundToAddr);
     }
 

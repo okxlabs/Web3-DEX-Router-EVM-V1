@@ -15,8 +15,6 @@ import "./router/DagRouter.sol";
 import "./router/UnxswapRouter.sol";
 import "./router/UnxswapV3Router.sol";
 import "./router/SwapWrapRouter.sol";
-import "./router/UnxswapExactOutRouter.sol";
-import "./router/UnxswapV3ExactOutRouter.sol";
 
 contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableModuleV2, ReentrancyGuard {
 
@@ -253,63 +251,6 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         return SwapWrapRouter.swapWrapToWithBaseRequest(orderId, receiver, baseRequest, extraData);
     }
 
-    /// ================================ unxswapExactOut related ==============================
-    /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling.
-    ///         The srcToken can be 0xEeee or address(0) for ETH.
-    /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
-    /// @param amount The target output amount to receive.
-    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
-    /// @param receiver The address to receive the output tokens.
-    /// @param pools The list of pool identifiers to use for the swap path.
-    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
-    function unxswapExactOutTo(
-        uint256 srcToken,
-        uint256 amount,
-        uint256 maxConsume,
-        address receiver,
-        bytes32[] calldata pools
-    ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, maxConsume, receiver, pools).length;
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
-        return UnxswapExactOutRouter.unxswapExactOutTo(srcToken, amount, maxConsume, receiver, pools, extraData);
-    }
-    
-    /// @notice Executes an exact output swap using the Unxswap protocol, including commission handling. The receiver is set to msg.sender.
-    ///         The srcToken can be 0xEeee or address(0) for ETH.
-    /// @param srcToken The source token as a uint256 (address encoded with order ID mask).
-    /// @param amount The target output amount to receive.
-    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
-    /// @param pools The list of pool identifiers to use for the swap path.
-    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
-    function unxswapExactOutToByOrderId(
-        uint256 srcToken,
-        uint256 amount,
-        uint256 maxConsume,
-        bytes32[] calldata pools
-    ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        uint256 swapDataLength = 4 + abi.encode(srcToken, amount, maxConsume, pools).length;
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
-        return UnxswapExactOutRouter.unxswapExactOutToByOrderID(srcToken, amount, maxConsume, pools, extraData);
-    }
-
-    /// ================================ uniswapV3ExactOut related ==============================
-    /// @notice Executes an exact output swap using the Uniswap V3 protocol, including commission handling.
-    /// @param receiver The address to receive the output tokens (encoded as uint256 with order ID mask).
-    /// @param amountOut The exact amount of output tokens to receive.
-    /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
-    /// @param pools The list of pool identifiers to use for the swap path.
-    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
-    function uniswapV3SwapExactOutTo(
-        uint256 receiver,
-        uint256 amountOut,
-        uint256 maxConsume,
-        uint256[] calldata pools
-    ) external payable nonReentrant whenNotPaused returns (uint256 consumeAmount) {
-        uint256 swapDataLength = 4 + abi.encode(receiver, amountOut, maxConsume, pools).length;
-        IDexRouter.ExtraData memory extraData = ExtraDataLib.getDecodedExtraData(swapDataLength);
-        return UnxswapV3ExactOutRouter.uniswapV3SwapExactOutTo(receiver, amountOut, maxConsume, pools, extraData);
-    }
-
     /// ================================ uniswapV3Callback ==============================
     /// @notice callback function for both UnxswapV3Router and UnxswapV3ExactOutRouter
     /// @dev The first 32 bytes of data is a flag to identify which router to call
@@ -322,8 +263,6 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
         bytes32 flag = bytes32(data[:32]);
         if (flag == V3_EXACT_IN_CALLBACK_FLAG) {
             UnxswapV3Router.uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
-        } else if (flag == V3_EXACT_OUT_CALLBACK_FLAG) {
-            UnxswapV3ExactOutRouter.uniswapV3SwapCallback(amount0Delta, amount1Delta, data);
         } else {
             revert("Unknown V3 callback flag");
         }

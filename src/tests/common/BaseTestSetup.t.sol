@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "@dex/DexRouter.sol";
+import {DexRouterExactOut} from "@dex-exactout/DexRouterExactOut.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
@@ -27,7 +27,7 @@ interface IUniswapV3MintCallback {
 }
 
 contract BaseTestSetup is Test, IUniswapV3MintCallback, EthReceiver {
-    DexRouter dexRouter;
+    DexRouterExactOut dexRouterExactOut;
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f);
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
     WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757));
@@ -392,13 +392,13 @@ contract BaseTestSetup is Test, IUniswapV3MintCallback, EthReceiver {
 
     function setUpOKContracts() internal {
         vm.startPrank(admin);
-        dexRouter = new DexRouter(address(admin));
+        dexRouterExactOut = new DexRouterExactOut(admin);
         vm.stopPrank();
         address tokenApproveProxyOwner = tokenApproveProxy.owner();
         vm.startPrank(tokenApproveProxyOwner);
-            tokenApproveProxy.addProxy(address(dexRouter));
+            tokenApproveProxy.addProxy(address(dexRouterExactOut));
             address[] memory whitelistedCallers = new address[](1);
-            whitelistedCallers[0] = address(dexRouter);
+            whitelistedCallers[0] = address(dexRouterExactOut);
             wNativeRelayer.setCallerOk(whitelistedCallers, true);
         vm.stopPrank();
     }

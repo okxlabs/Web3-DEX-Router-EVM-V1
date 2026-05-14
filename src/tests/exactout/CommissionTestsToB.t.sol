@@ -51,7 +51,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         // 3. 构建调用数据
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(address(tokens[sourceTokenIndex]))),
             amountOut,
             amountInMax,
@@ -65,7 +65,7 @@ contract CommissionToBTests is BaseTestSetup {
             tokens[sourceTokenIndex].approve(address(tokenApprove), UINT256_MAX);
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
-            (bool success, ) = address(dexRouter).call(data);
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -118,7 +118,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(address(tokens[sourceTokenIndex]))),
             amountOut,
             amountInMax,
@@ -131,7 +131,7 @@ contract CommissionToBTests is BaseTestSetup {
             tokens[sourceTokenIndex].approve(address(tokenApprove), UINT256_MAX);
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
-            (bool success, ) = address(dexRouter).call(data);
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -184,7 +184,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(ETH)),
             amountOut,
             amountInMax,
@@ -195,8 +195,8 @@ contract CommissionToBTests is BaseTestSetup {
         
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(data);
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -252,7 +252,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(address(tokens[sourceTokenIndex]))),
             amountOut,
             amountInMax,
@@ -266,8 +266,8 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
-            (bool success, ) = address(dexRouter).call(data);
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -321,7 +321,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(ETH)),
             amountOut,
             amountInMax,
@@ -332,8 +332,8 @@ contract CommissionToBTests is BaseTestSetup {
         
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(data);
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -386,7 +386,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(address(tokens[sourceTokenIndex]))),
             amountOut,
             amountInMax,
@@ -400,8 +400,8 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
-            (bool success, ) = address(dexRouter).call(data);
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -441,13 +441,13 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据，不使用中间变量
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(address(tokens[sourceTokenIndex]))),
                         amountOut,
                         amountInMax,
@@ -507,10 +507,10 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             
             // 直接构建并连接数据
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(address(tokens[sourceTokenIndex]))),
                         amountOut,
                         amountInMax,
@@ -566,13 +566,13 @@ contract CommissionToBTests is BaseTestSetup {
         // 内联构建调用数据
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(ETH)),
                         amountOut,
                         amountInMax,
@@ -628,13 +628,13 @@ contract CommissionToBTests is BaseTestSetup {
         // 内联构建调用数据
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(ETH)),
                         amountOut,
                         amountInMax,
@@ -694,13 +694,13 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(address(tokens[sourceTokenIndex]))),
                         amountOut,
                         amountInMax,
@@ -759,13 +759,13 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.unxswapExactOutTo.selector,
+                        dexRouterExactOut.unxswapExactOutTo.selector,
                         uint256(uint160(address(tokens[sourceTokenIndex]))),
                         amountOut,
                         amountInMax,
@@ -814,10 +814,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             tokens[1].approve(address(tokenApprove), 500e18);
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -865,10 +865,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             tokens[1].approve(address(tokenApprove), 500e18);
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -941,7 +941,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.uniswapV3SwapExactOutTo.selector,
+            DexRouterExactOut.uniswapV3SwapExactOutTo.selector,
             uint256(uint160(address(amy))),
             amountOut,
             amountInMax,
@@ -951,9 +951,9 @@ contract CommissionToBTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(data);
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank(); 
 
@@ -1009,7 +1009,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.uniswapV3SwapExactOutTo.selector,
+            DexRouterExactOut.uniswapV3SwapExactOutTo.selector,
             uint256(uint160(address(amy))),
             amountOut,
             amountInMax,
@@ -1022,9 +1022,9 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
-            (bool success, ) = address(dexRouter).call(data);
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank(); 
 
@@ -1078,7 +1078,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.uniswapV3SwapExactOutTo.selector,
+            DexRouterExactOut.uniswapV3SwapExactOutTo.selector,
             uint256(uint160(address(amy))),
             amountOut,
             amountInMax,
@@ -1088,9 +1088,9 @@ contract CommissionToBTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
-            (bool success, ) = address(dexRouter).call{value: amountInMax}(data);
+            (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank(); 
 
@@ -1144,7 +1144,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         // 构建调用数据并执行交易
         bytes memory pre_data = abi.encodeWithSelector(
-            DexRouter.uniswapV3SwapExactOutTo.selector,
+            DexRouterExactOut.uniswapV3SwapExactOutTo.selector,
             uint256(uint160(address(amy))),
             amountOut,
             amountInMax,
@@ -1157,9 +1157,9 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouter));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
-            (bool success, ) = address(dexRouter).call(data);
+            (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
 
@@ -1190,10 +1190,10 @@ contract CommissionToBTests is BaseTestSetup {
             tokens[1].approve(address(tokenApprove), type(uint256).max);
             
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -1242,10 +1242,10 @@ contract CommissionToBTests is BaseTestSetup {
             tokens[1].approve(address(tokenApprove), type(uint256).max);
             
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector(
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -1293,10 +1293,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call{value: 500e18}(
+            (bool success, ) = address(dexRouterExactOut).call{value: 500e18}(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -1344,10 +1344,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call{value: 500e18}(
+            (bool success, ) = address(dexRouterExactOut).call{value: 500e18}(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -1395,10 +1395,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             tokens[1].approve(address(tokenApprove), 500e18);
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,
@@ -1446,10 +1446,10 @@ contract CommissionToBTests is BaseTestSetup {
         vm.startPrank(amy); 
             tokens[1].approve(address(tokenApprove), 500e18);
             // 完全内联所有操作，减少栈使用
-            (bool success, ) = address(dexRouter).call(
+            (bool success, ) = address(dexRouterExactOut).call(
                 bytes.concat(
                     abi.encodeWithSelector( 
-                        dexRouter.uniswapV3SwapExactOutTo.selector,
+                        dexRouterExactOut.uniswapV3SwapExactOutTo.selector,
                         uint256(uint160(amy)),
                         400e18,
                         500e18,

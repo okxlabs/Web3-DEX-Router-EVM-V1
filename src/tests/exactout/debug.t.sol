@@ -34,7 +34,7 @@ contract debug is BaseTestSetup {
     //         console2.log("Approved tokenApprove:", address(tokenApprove));
     //         console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
     //         console2.log("Amy address:", amy);
-    //         console2.log("DexRouter address:", address(dexRouter));
+    //         console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
     //         bytes memory generated_commission = _buildCommissionInfoUnified(
     //             false, // 不从源代币收取
@@ -51,10 +51,10 @@ contract debug is BaseTestSetup {
     //         console2.logBytes(generated_commission);
 
     //         // 直接构建并连接数据
-    //         (bool success, ) = address(dexRouter).call(
+    //         (bool success, ) = address(dexRouterExactOut).call(
     //             bytes.concat(
     //                 abi.encodeWithSelector(
-    //                     dexRouter.unxswapExactOutTo.selector,
+    //                     dexRouterExactOut.unxswapExactOutTo.selector,
     //                     uint256(uint160(address(tokens[sourceTokenIndex]))),
     //                     amountOut,
     //                     amountInMax,

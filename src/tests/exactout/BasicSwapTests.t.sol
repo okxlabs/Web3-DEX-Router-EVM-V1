@@ -30,7 +30,7 @@ contract BasicSwapTests is BaseTestSetup {
         bytes32[] memory pools = new bytes32[](1);
         pools[0] = pool0;
 
-        dexRouter.unxswapExactOutTo(
+        dexRouterExactOut.unxswapExactOutTo(
             uint256(uint160(address(sourceToken))),
             amountOut,
             amountInMax,
@@ -63,7 +63,7 @@ contract BasicSwapTests is BaseTestSetup {
         pools[0] = pool0;
 
         vm.startPrank(amy);
-            dexRouter.unxswapExactOutTo{value: amountInMax}(
+            dexRouterExactOut.unxswapExactOutTo{value: amountInMax}(
                 uint256(uint160(ETH)),
                 amountOut,
                 amountInMax,
@@ -98,7 +98,7 @@ contract BasicSwapTests is BaseTestSetup {
 
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), amountInMax);
-            dexRouter.unxswapExactOutTo(
+            dexRouterExactOut.unxswapExactOutTo(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,
@@ -134,7 +134,7 @@ contract BasicSwapTests is BaseTestSetup {
         vm.startPrank(amy);
             // 确保足够的批准额度
             tokens[sourceTokenIndex].approve(address(tokenApprove), type(uint256).max);
-            dexRouter.uniswapV3SwapExactOutTo(
+            dexRouterExactOut.uniswapV3SwapExactOutTo(
                 uint256(uint160(amy)), // 将 amy 地址转换为 uint256 类型
                 amountOut,
                 amountInMax,
@@ -168,7 +168,7 @@ contract BasicSwapTests is BaseTestSetup {
         
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), type(uint256).max);
-            dexRouter.uniswapV3SwapExactOutTo{value: amountInMax}(
+            dexRouterExactOut.uniswapV3SwapExactOutTo{value: amountInMax}(
                 uint256(uint160(amy)),
                 amountOut,
                 amountInMax,
@@ -201,7 +201,7 @@ contract BasicSwapTests is BaseTestSetup {
 
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), type(uint256).max);
-            dexRouter.uniswapV3SwapExactOutTo(
+            dexRouterExactOut.uniswapV3SwapExactOutTo(
                 uint256(uint160(amy)),
                 amountOut,
                 amountInMax,

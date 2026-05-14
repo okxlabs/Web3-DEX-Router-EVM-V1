@@ -22,7 +22,7 @@ contract TaxTokenTests is BaseTestSetup {
 
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), amountInMax);
-            dexRouter.unxswapExactOutTo(
+            dexRouterExactOut.unxswapExactOutTo(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,
@@ -53,7 +53,7 @@ contract TaxTokenTests is BaseTestSetup {
 
         vm.startPrank(amy);
             tokens[sourceTokenIndex].approve(address(tokenApprove), amountInMax);
-            dexRouter.unxswapExactOutTo{value: 0}(
+            dexRouterExactOut.unxswapExactOutTo{value: 0}(
                 uint256(uint160(address(tokens[sourceTokenIndex]))),
                 amountOut,
                 amountInMax,

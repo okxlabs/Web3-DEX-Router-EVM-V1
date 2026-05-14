@@ -131,12 +131,12 @@ bytes32 constant V3_EXACT_OUT_CALLBACK_FLAG = 0xae25331d0e6e00000000000000000000
 uint256 constant MIN_COMMISSION_MULTIPLE_NUM = 3; // min referrer num for multiple commission
 uint256 constant MAX_COMMISSION_MULTIPLE_NUM = 8; // max referrer num for multiple commission
 uint256 constant COMMISSION_RATE_LIMIT = 30000000; // 3%
-uint256 constant DENOMINATOR = 10 ** 9;
+uint256 constant COMMISSION_DENOMINATOR_1E9 = 10 ** 9;
 uint256 constant NO_TO_B_MODE = 1; // value for no-toB commission and no-toB trim when related encoded calldata exists
 uint256 constant TO_B_MODE = 2; // value for toB commission and toB trim when related encoded calldata exists
-uint256 constant WAD = 1 * 10 ** 18;
+uint256 constant WAD = 10 ** 18;
 uint256 constant TRIM_RATE_LIMIT = 100;
-uint256 constant TRIM_DENOMINATOR = 1000;
+uint256 constant TRIM_DENOMINATOR_1E3 = 1000;
 uint256 constant NATIVE_TOKEN_TRANSFER_GAS_LIMIT = 100000; // NOTE: This value needs to be changed before deployment to different networks
 
 // =============================================================================

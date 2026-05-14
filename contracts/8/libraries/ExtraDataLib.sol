@@ -12,13 +12,17 @@ import "./EventLib.sol";
  * All extra data fields are optional and can be omitted if not needed.
  *
  * Calldata Layout (from left to right):
- * ┌────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┐
- * │   swapData     │   (memo)         │   refundTo       │   permit2Info    │   trimInfo       │  commissionInfo  │
- * │   N bytes      │   optional       │   0 or 32 bytes  │   0 or M bytes   │   0/64/96 bytes  │   0 or K bytes   │
- * └────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┘
- *                                      ←─────────────────────── Extra Data (parsed right to left) ───────────────→
+ * ┌──────────┬────────┬──────────┬────────────┬──────────┬────────────┬────────────┐
+ * │ swapData │ (memo) │ refundTo │ permit2Info│ trimInfo │ commission │ raw suffix │
+ * │ N bytes  │ opt.   │  0/32 B  │   0/M B    │ 0/64/96 B│   0/K B    │  (0..N B)  │
+ * └──────────┴────────┴──────────┴────────────┴──────────┴────────────┴────────────┘
+ *                      ←─── Extra Data (anchored at endPoints[0]) ───→↑            ↑
+ *                                                               endPoints[0]  calldatasize()
  *
- * Parsing Order (from right to left):
+ *   - `raw suffix` unstructured trailing bytes (e.g. ERC-8021 transaction-attribution data) that
+ *                  may be appended by wallets, aggregators, or front-ends. The scan ignores them.
+ *
+ * Parsing Order (from right to left, anchored at endPoints[0]):
  * 1. commissionInfo  - Commission/referrer fee configuration (0, 64, 96, or more bytes depending on referrer count)
  * 2. trimInfo        - Trim/surplus handling configuration (0, 64, or 96 bytes)
  * 3. permit2Info     - Permit2 signature data for token approval (0 or variable bytes)
@@ -32,18 +36,15 @@ library ExtraDataLib {
     /// @notice Decode extra data and get structs with swapData boundary check
     /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters)
     function getDecodedExtraData(uint256 swapDataLength) internal view returns (IDexRouter.ExtraData memory extraData) {
-        // ensure the calldata length is 4 + 32 * N bytes
-        uint256 calldataSize;
-        assembly {
-            calldataSize := calldatasize()
-        }
-        require((calldataSize - 4) % 32 == 0, "Calldata length must be 4+32*N bytes");
+        // calldatasize() may extend past the real ExtraData when an external suffix
+        // (e.g. ERC-8021 attribution data) has been appended. _getExtraDataEndPointAndLength
+        // performs a 32-byte aligned backward scan, bounded below by swapDataLength, to recover
+        // the true right edge and writes it into endPoints[0], which then anchors all subsequent
+        // parsing.
+        (uint256[] memory endPoints, uint256[] memory lengths) = _getExtraDataEndPointAndLength(swapDataLength);
 
-        // get endPoints and lengths of each extra calldata
-        (uint256[] memory endPoints, uint256[] memory lengths) = _getExtraDataEndPointAndLength();
-
-        // Validate extraData boundaries with swapData check
-        _validateExtraDataBoundaries(endPoints, lengths, swapDataLength, calldataSize);
+        // Validate extraData boundaries against the swapData lower bound.
+        _validateExtraDataBoundaries(endPoints, lengths, swapDataLength);
 
         extraData = IDexRouter.ExtraData({
             commissionInfo: _parseCommissionInfo(endPoints[0], lengths[0]),
@@ -56,8 +57,18 @@ library ExtraDataLib {
     }
 
     // ================================ Private Functions ================================
-    /// @notice Get endPoints and lengths of each extra calldata bytes32
-    function _getExtraDataEndPointAndLength() private pure returns (uint256[] memory endPoints, uint256[] memory lengths) {
+    /// @notice Get endPoints and lengths of each extra calldata bytes32.
+    /// @param swapDataLength Lower bound for the scan — anything before this offset is swapData
+    ///                       and cannot contain ExtraData, so the scan stops there.
+    /// @return endPoints The right edge (in calldata bytes) of each region, indexed by type.
+    ///                   endPoints[0] is the right edge of all ExtraData, located via a 32-byte
+    ///                   aligned backward flag scan; it equals calldatasize() when no trailing
+    ///                   suffix has been appended.
+    /// @return lengths   The number of 32-byte words occupied by each region.
+    function _getExtraDataEndPointAndLength(uint256 swapDataLength) private pure returns (
+        uint256[] memory endPoints,
+        uint256[] memory lengths
+    ) {
         endPoints = new uint256[](EXTRA_DATA_TYPE_NUM);
         lengths = new uint256[](EXTRA_DATA_TYPE_NUM);
         assembly ("memory-safe") {
@@ -74,8 +85,37 @@ library ExtraDataLib {
                 revert(0, len)
             }
 
-            // Get commission data bytes32 endPoint and length
-            let endPoint := calldatasize()
+            // Locate the right edge of ExtraData via backward 32-byte aligned flag scan, bounded
+            // below by swapDataLength — bytes before that are guaranteed swapData and cannot hold
+            // ExtraData, so flag-like patterns accidentally living in ABI params are never read.
+            // Initial value strips non-aligned trailing bytes (the external suffix);
+            // if no flag is found, parsing degenerates to "no ExtraData" (every length is 0).
+            let endPoint := sub(calldatasize(), mod(sub(calldatasize(), 4), 0x20))
+            for { let scanPos := endPoint } gt(scanPos, swapDataLength) { scanPos := sub(scanPos, 0x20) } {
+                // All four flag masks share the value 0xffffffffffff000…0, so one mask fits all.
+                let flagMasked := and(calldataload(sub(scanPos, 0x20)), _COMMISSION_FLAG_MASK)
+                if or(
+                    or(
+                        or(
+                            or(eq(flagMasked, FROM_TOKEN_COMMISSION), eq(flagMasked, TO_TOKEN_COMMISSION)),
+                            or(eq(flagMasked, FROM_TOKEN_COMMISSION_DUAL), eq(flagMasked, TO_TOKEN_COMMISSION_DUAL))
+                        ),
+                        or(
+                            or(eq(flagMasked, FROM_TOKEN_COMMISSION_MULTIPLE), eq(flagMasked, TO_TOKEN_COMMISSION_MULTIPLE)),
+                            or(eq(flagMasked, TRIM_FLAG), eq(flagMasked, TRIM_DUAL_FLAG))
+                        )
+                    ),
+                    or(
+                        or(eq(flagMasked, PERMIT2_INFO_SIG65_FLAG), eq(flagMasked, PERMIT2_INFO_SIG64_FLAG)),
+                        eq(flagMasked, REFUND_TO_ADDRESS_FLAG)
+                    )
+                ) {
+                    endPoint := scanPos
+                    break
+                }
+            }
+
+            // Get commission data bytes32 endPoint and length (anchor: endPoint)
             let commissionData := calldataload(sub(endPoint, 0x20))
             let flag := and(commissionData, _COMMISSION_FLAG_MASK)
             let referrerNum := 0
@@ -154,26 +194,24 @@ library ExtraDataLib {
         return (endPoints, lengths);
     }
 
-    /// @notice Validate extraData boundaries to ensure no overlap with swapData and between regions
-    /// @param endPoints Array of end points for each extraData region
-    /// @param lengths Array of lengths (in 32-byte units) for each extraData region
-    /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters)
-    /// @param calldataSize The size of calldata
+    /// @notice Validate extraData boundaries to ensure no overlap with swapData and between regions.
+    /// @param endPoints   Array of end points for each extraData region. endPoints[0] is the scan
+    ///                    anchor (right edge of all ExtraData) produced by the backward flag scan.
+    /// @param lengths     Array of lengths (in 32-byte units) for each extraData region.
+    /// @param swapDataLength The length of swapData (4 bytes selector + ABI encoded parameters).
+    /// @dev endPoints[0] is guaranteed (4 + 32*K)-aligned because it is either `aligned` (computed
+    ///      by stripping non-aligned trailing bytes) or the position of an aligned flag word.
     function _validateExtraDataBoundaries(
-        uint256[] memory endPoints, 
+        uint256[] memory endPoints,
         uint256[] memory lengths,
-        uint256 swapDataLength,
-        uint256 calldataSize
+        uint256 swapDataLength
     ) private pure {
-        // Check 1: First region (commissionInfo) endPoint must equal calldataSize
-        require(endPoints[0] == calldataSize, "First endPoint must equal calldataSize");
-
-        // Check 2: Each extraData region must be consecutive (no overlaps or gaps)
+        // Check 1: Each extraData region must be consecutive (no overlaps or gaps)
         for (uint256 i = 0; i < EXTRA_DATA_TYPE_NUM - 1; ++i) {
             require(endPoints[i + 1] == endPoints[i] - lengths[i] * 32, "ExtraData regions not consecutive");
         }
 
-        // Check 3: Last region's startPoint must be >= swapDataLength (no overlap with swapData)
+        // Check 2: Last region's startPoint must be >= swapDataLength (no overlap with swapData)
         require(endPoints[EXTRA_DATA_TYPE_NUM - 1] - lengths[EXTRA_DATA_TYPE_NUM - 1] * 32 >= swapDataLength, "ExtraData overlaps with swapData");
     }
 

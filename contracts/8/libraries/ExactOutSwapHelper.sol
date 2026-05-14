@@ -25,7 +25,7 @@ library ExactOutSwapHelper {
             commissionInfo.isToTokenCommission &&
             totalRate > 0
         ) {
-            amountOut = (amountOut * DENOMINATOR) / (DENOMINATOR - totalRate);
+            amountOut = (amountOut * COMMISSION_DENOMINATOR_1E9) / (COMMISSION_DENOMINATOR_1E9 - totalRate);
             targetTokenBefore = CommonLib.getBalanceOf(
                 /// @notice commissionInfo.token ETH address is 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
                 CommonLib.bytes32ToAddress(commissionInfo.tokenWithMode),
@@ -37,11 +37,12 @@ library ExactOutSwapHelper {
     }
 
     // Only handle commission.
-    function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal {
+    function afterSwap(IDexRouter.AfterSwapParams memory afterSwapParams) internal returns (uint256) {
         // Handle commission from the source token if applicable.
+        uint256 totalRate = CommissionLib.calculateTotalRate(afterSwapParams.commissionInfo);
         if (
             afterSwapParams.commissionInfo.isFromTokenCommission &&
-            afterSwapParams.commissionInfo.commissionRate > 0
+            totalRate > 0
         ) {
             CommissionLib.doCommissionFromToken(
                 afterSwapParams.commissionInfo,
@@ -66,7 +67,7 @@ library ExactOutSwapHelper {
         // Handle commission from the output token if applicable.
         if (
             afterSwapParams.commissionInfo.isToTokenCommission &&
-            afterSwapParams.commissionInfo.commissionRate > 0
+            totalRate > 0
         ) {
             IDexRouter.TrimInfo memory trimInfo;
             CommissionLib.doCommissionAndTrimToToken(
@@ -77,5 +78,7 @@ library ExactOutSwapHelper {
                 trimInfo
             );
         }
+
+        return afterSwapParams.consumeAmount;
     }
 }

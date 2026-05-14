@@ -63,7 +63,7 @@ library CommissionLib {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                if gt(amount, 0) {
+                if and(gt(amount, 0), iszero(eq(to, address()))) {
                     let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
@@ -192,6 +192,14 @@ library CommissionLib {
                     0,
                     0x20
                 )
+                if and(
+                    iszero(and(eq(mload(0), 1), gt(returndatasize(), 31))),
+                    success
+                ) {
+                    success := iszero(
+                        or(iszero(extcodesize(token)), returndatasize())
+                    )
+                }
                 if eq(success, 0) {
                     _revertWithReason(
                         0x0000001b207472616e7366657220746f6b656e20646972656374206661696c00,
@@ -377,7 +385,7 @@ library CommissionLib {
                 revert(0, len)
             }
             function _sendETH(to, amount) {
-                if gt(amount, 0) {
+                if and(gt(amount, 0), iszero(eq(to, address()))) {
                     let success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, to, amount, 0, 0, 0, 0)
                     if eq(success, 0) {
                         _revertWithReason(
@@ -461,17 +469,12 @@ library CommissionLib {
             }
             function _processCommission(commissionInfo_, toToken_, inputAmount) -> commissionAmount {
                 let referrerNum := mload(add(commissionInfo_, 0x80)) // commissionInfo.referrerNum
-                let totalRate := 0
-                for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
-                    let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                    totalRate := add(totalRate, rate)
-                }
                 commissionAmount := 0
                 switch eq(toToken_, _ETH)
                 case 1 { // commission token is ETH
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                        let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
+                        let amount := _mulDiv(inputAmount, rate, COMMISSION_DENOMINATOR_1E9)
                         let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                         _sendETH(referrer, amount)
                         _emitCommissionToToken(_ETH, amount, referrer, rate)
@@ -481,7 +484,7 @@ library CommissionLib {
                 default { // commission token is ERC20
                     for { let i := 0 } lt(i, referrerNum) { i := add(i, 1) } {
                         let rate := mload(add(commissionInfo_, add(0xa0, mul(i, 0x40))))
-                        let amount := _mulDiv(inputAmount, rate, DENOMINATOR)
+                        let amount := _mulDiv(inputAmount, rate, COMMISSION_DENOMINATOR_1E9)
                         let referrer := mload(add(commissionInfo_, add(0xc0, mul(i, 0x40))))
                         _sendToken(toToken_, referrer, amount)
                         _emitCommissionToToken(toToken_, amount, referrer, rate)
@@ -492,33 +495,20 @@ library CommissionLib {
             function _processTrim(trimInfo_, toToken_, inputAmount) -> trimAmount {
                 let trimRate := mload(add(trimInfo_, 0x20)) // trimInfo.trimRate
                 let chargeRate := mload(add(trimInfo_, 0xa0)) // trimInfo.chargeRate
-                // require(trimInfo.trimRate <= TRIM_RATE_LIMIT, "error trim rate");
-                if gt(trimRate, TRIM_RATE_LIMIT) {
-                    _revertWithReason(
-                        0x00000010206572726f72207472696d2072617465000000000000000000000000,
-                        0x54
-                    ) // "error trim rate"
-                }
-                // require(trimInfo.chargeRate <= TRIM_DENOMINATOR, "error charge rate");
-                if gt(chargeRate, TRIM_DENOMINATOR) {
-                    _revertWithReason(
-                        0x00000012206572726f7220636861726765207261746500000000000000000000,
-                        0x56
-                    ) // "error charge rate"
-                }
+
                 // uint256 trimAmount = inputAmount - trimInfo.expectAmountOut;
                 let expectAmountOut := mload(add(trimInfo_, 0x80)) // trimInfo.expectAmountOut
                 trimAmount := sub(inputAmount, expectAmountOut)
-                // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR;
-                let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR)
+                // uint256 allowedMaxTrimAmount = inputAmount * trimInfo.trimRate / TRIM_DENOMINATOR_1E3;
+                let allowedMaxTrimAmount := _mulDiv(inputAmount, trimRate, TRIM_DENOMINATOR_1E3)
                 // trimAmount = min(trimAmount, allowedMaxTrimAmount)
                 if gt(trimAmount, allowedMaxTrimAmount) {
                     trimAmount := allowedMaxTrimAmount
                 }
 
                 // send token and emit events
-                // actualChargeAmount = trimAmount * chargeRate / TRIM_DENOMINATOR
-                let actualChargeAmount := _mulDiv(trimAmount, chargeRate, TRIM_DENOMINATOR)
+                // actualChargeAmount = trimAmount * chargeRate / TRIM_DENOMINATOR_1E3
+                let actualChargeAmount := _mulDiv(trimAmount, chargeRate, TRIM_DENOMINATOR_1E3)
                 // actualTrimAmount = trimAmount - actualChargeAmount
                 let actualTrimAmount := sub(trimAmount, actualChargeAmount)
                 switch eq(toToken_, _ETH)

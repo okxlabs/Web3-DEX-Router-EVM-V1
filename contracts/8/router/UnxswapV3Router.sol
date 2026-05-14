@@ -166,6 +166,9 @@ library UnxswapV3Router {
 
         returnAmount = CommonLib.getBalanceOf(swapCache.toToken, swapCache.receiver);
 
+        // Snapshot for OrderRecord only; not for swap math.
+        uint256 originalAmount = amount;
+
         uint256 fromTokenCommissionAmount;
         (
             swapCache.payer,
@@ -194,16 +197,16 @@ library UnxswapV3Router {
             "Min return not reached"
         );
 
-        // Refund unused fromToken
-        if (srcToken == _ETH) {
-            TransferLib.refundToken(_ETH, swapCache.refundTo); // In case of  msg.value > amount, the unused ETH will be refunded to refundTo
+        // Refund unused fromToken. If fromToken is not ETH or mode is not ByInvest, no need to refund cause all `fromTokenAmount` will be used.
+        if (srcToken == _ETH || mode == _MODE_BY_INVEST) {
+            TransferLib.refundToken(srcToken, swapCache.refundTo); // In case of msg.value > fromTokenAmount or actual transfer amount > fromTokenAmount in ByInvest mode, the unused fromToken will be refunded to refundTo
         }
 
         EventLib.emitOrderRecord(
             srcToken,
             swapCache.toToken,
             tx.origin,
-            amount,
+            originalAmount,
             returnAmount
         );
     }
@@ -382,13 +385,15 @@ library UnxswapV3Router {
                         88
                     ) // withdraw weth failed
                 }
-                // send ETH to receiver
-                success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, _receiver, _amount, 0, 0, 0, 0)
-                if iszero(success) {
-                    _revertWithReason(
-                        0x0000001173656e64206574686572206661696c65640000000000000000000000,
-                        85
-                    ) // send ether failed
+                // send ETH to receiver, skip when target is this contract.
+                if iszero(eq(_receiver, address())) {
+                    success := call(NATIVE_TOKEN_TRANSFER_GAS_LIMIT, _receiver, _amount, 0, 0, 0, 0)
+                    if iszero(success) {
+                        _revertWithReason(
+                            0x0000001173656e64206574686572206661696c65640000000000000000000000,
+                            85
+                        ) // send ether failed
+                    }
                 }
             }
             function _token0(_pool) -> token0 {
@@ -451,7 +456,6 @@ library UnxswapV3Router {
                 }
             }
 
-            mstore(96, amount) // 96 is not override by _makeSwap, since it only use freePtr memory, and it is not override by unWrapWeth ethier
             for {
                 let i := firstPoolStart
             } lt(i, lastPoolStart) {

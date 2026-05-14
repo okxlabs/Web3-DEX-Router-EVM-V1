@@ -50,6 +50,7 @@ contract DagByInvestTest is Test, EthReceiver {
         batches[0].extraData = new bytes[](1);
         batches[0].extraData[0] = abi.encode(30);
         batches[0].fromToken = uint256(uint160(address(WETH))) | _MODE_BY_INVEST;
+        vm.expectRevert("Invalid source token");
         dexRouter.dagSwapTo{value: 1 ether}(uint(0), address(this), baseRequest, batches);
     }
     function test_dagByInvest_weth() public {

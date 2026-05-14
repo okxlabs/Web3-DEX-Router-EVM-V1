@@ -117,6 +117,7 @@ library SwapWrapRouter {
             );
 
         if (reversed) {
+            require(msg.value == 0, "value must be 0");
             TransferLib.transferInternal(
                 swapCache.payer,
                 address(this),

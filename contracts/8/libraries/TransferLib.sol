@@ -35,14 +35,15 @@ library TransferLib {
         uint256 totalRate = 0;
         uint256 fromTokenCommissionAmount = 0;
 
-        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance according to agreement, and commission is not allowed.
+        // For _MODE_BY_INVEST mode, the inputAmount is already the token balance according to agreement, and fromToken can not be ETH, commission is not allowed.
         if (mode == _MODE_BY_INVEST) {
+            require(token != _ETH, "Invalid source token");
             return (address(this), inputAmount, 0);
         }
 
         if (extraData.commissionInfo.isFromTokenCommission) {
             totalRate = CommissionLib.calculateTotalRate(extraData.commissionInfo);
-            fromTokenCommissionAmount = inputAmount * totalRate / (DENOMINATOR - totalRate);
+            fromTokenCommissionAmount = inputAmount * totalRate / (COMMISSION_DENOMINATOR_1E9 - totalRate);
         }
 
         if (token == _ETH) {
@@ -249,10 +250,12 @@ library TransferLib {
     /// @dev Handles the refund of tokens to the refundTo address.
     function refundToken(address token, address refundTo) internal {
         if (token == _ETH) {
-            uint256 ethBal = address(this).balance;
-            if (ethBal > 0) {
-                (bool success, ) = payable(refundTo).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
-                require(success, "refund native token failed");
+            if (refundTo != address(this)) {
+                uint256 ethBal = address(this).balance;
+                if (ethBal > 0) {
+                    (bool success, ) = payable(refundTo).call{value: ethBal, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
+                    require(success, "refund native token failed");
+                }
             }
         } else {
             uint256 bal = CommonLib.getBalanceOf(token, address(this));

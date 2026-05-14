@@ -26,6 +26,7 @@ library UniswapTokenInfoHelper {
         if (fromToken == _WETH && sendValue) {
             fromToken = _ETH;
         }
+        require(!sendValue || fromToken == _ETH, "msg.value should be zero");
 
         // get toToken
         bytes32 lastPool = pools[pools.length - 1];
@@ -53,6 +54,7 @@ library UniswapTokenInfoHelper {
         if (fromToken == _WETH && sendValue) {
             fromToken = _ETH;
         }
+        require(!sendValue || fromToken == _ETH, "msg.value should be zero");
 
         // get toToken
         uint256 lastPool = pools[pools.length - 1];

@@ -20,7 +20,7 @@ import "./router/UnxswapV3ExactOutRouter.sol";
 
 contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableModuleV2, ReentrancyGuard {
 
-    string public constant version = "v1.0.8-transfer-mode";
+    string public constant version = "v1.0.9-multi-funding-mode";
 
     constructor(address _owner) PausableModuleV2(_owner) ReentrancyGuard() {}
 
@@ -298,7 +298,7 @@ contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableM
     /// @param amountOut The exact amount of output tokens to receive.
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param pools The list of pool identifiers to use for the swap path.
-    /// @return consumeAmount The actual amount of source tokens consumed.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function uniswapV3SwapExactOutTo(
         uint256 receiver,
         uint256 amountOut,

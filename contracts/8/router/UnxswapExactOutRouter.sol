@@ -153,7 +153,7 @@ library UnxswapExactOutRouter {
         );
 
         // Step 3: Handle commission from the source token if applicable.
-        ExactOutSwapHelper.afterSwap(
+        consumeAmount = ExactOutSwapHelper.afterSwap(
             IDexRouter.AfterSwapParams({
                 commissionInfo: extraData.commissionInfo,
                 consumeAmount: consumeAmount,
@@ -229,7 +229,7 @@ library UnxswapExactOutRouter {
         }
         
         // Emit the swap event. amounts[pools.length] == swapCache.amountOut, use function to avoid stack too deep.
-        _emitSwap(address(srcToken), toToken, returnAmount, amounts[pools.length]);
+        _emitSwap(address(srcToken) == address(0) ? _ETH : address(srcToken), toToken, returnAmount, amounts[pools.length]);
 
         return (swapCache.payer, returnAmount, fromTokenCommissionAmount);
     }

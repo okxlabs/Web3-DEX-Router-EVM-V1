@@ -52,7 +52,7 @@ library UnxswapV3ExactOutRouter {
     /// @param maxConsume The maximum amount of source tokens to consume (slippage protection).
     /// @param pools The list of pool identifiers to use for the swap path.
     /// @param extraData Additional data encoded in calldata.
-    /// @return consumeAmount The actual amount of source tokens consumed.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function uniswapV3SwapExactOutTo(
         uint256 receiver,
         uint256 amountOut,
@@ -96,7 +96,7 @@ library UnxswapV3ExactOutRouter {
     /// @param receiver The address to receive the output tokens.
     /// @param pools The list of pool identifiers to use for the swap path.
     /// @param extraData The extra data for the exact out swap.
-    /// @return consumeAmount The actual amount of source tokens consumed.
+    /// @return consumeAmount The actual amount of source tokens consumed, including commission.
     function _uniswapV3SwapExactOutTo(
         IDexRouter.ExactOutSwapCache memory swapCache,
         address receiver,
@@ -144,7 +144,7 @@ library UnxswapV3ExactOutRouter {
         }
 
         // Step 5: Handle commission from the source token if applicable.
-        ExactOutSwapHelper.afterSwap(
+        consumeAmount = ExactOutSwapHelper.afterSwap(
             IDexRouter.AfterSwapParams({
                 commissionInfo: extraData.commissionInfo,
                 consumeAmount: consumeAmount,
@@ -184,27 +184,30 @@ library UnxswapV3ExactOutRouter {
     ) private returns (address, uint256, uint256) {
         require(pools.length > 0, "empty pools");
 
-        // Get the last pool in the path and check if WETH should be unwrapped to ETH after the swap.
-        uint256 lastPool = pools[pools.length - 1];
-        bool unwrapWeth = (lastPool & _WETH_UNWRAP_MASK) > 0;
-        // If WETH needs to be unwrapped, set the receiver to this contract temporarily.
-        address middleReceiver = unwrapWeth ? address(this) : receiver;
-        
-        // Start the recursive swap process.
-        IDexRouter.ExtraData memory extraData_;
-        extraData_.commissionInfo = extraData.commissionInfo;
-        extraData_.permit2Info = extraData.permit2Info;
-        _executeSwapRecursive(
-            payer,
-            middleReceiver,
-            amountOut,
-            mode,
-            pools,
-            extraData_
-        );
-        
+        {
+            IDexRouter.ExtraData memory extraData_;
+            extraData_.commissionInfo = extraData.commissionInfo;
+            extraData_.permit2Info = extraData.permit2Info;
+            (int256 amount0, int256 amount1) = _executeSwapRecursive(
+                payer,
+                (pools[pools.length - 1] & _WETH_UNWRAP_MASK) > 0 ? address(this) : receiver,
+                amountOut,
+                mode,
+                pools,
+                extraData_
+            );
+            // Guard against V3 partial fill: pick the output-side delta (amount1 when
+            // zeroForOne, else amount0; it is negative), negate to uint256, and require
+            // the receiver got at least amountOut.
+            require(
+                uint256(-((pools[pools.length - 1] & _ONE_FOR_ZERO_MASK) == 0 ? amount1 : amount0))
+                    >= amountOut,
+                "InsufficientOutputAmount"
+            );
+        }
+
         // If WETH needs to be unwrapped, unwrap and send ETH to the actual receiver.
-        if (unwrapWeth) {
+        if ((pools[pools.length - 1] & _WETH_UNWRAP_MASK) > 0) {
             _unwrapWETH(amountOut, receiver);
         }
         

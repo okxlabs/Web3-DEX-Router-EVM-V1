@@ -28,6 +28,10 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
     uint256 constant MAX_USDT_IN = 3000 * 10 ** 6;  // max input: 3000 USDT (for slippage)
     uint256 constant MAX_ETH_IN = 2 * 10 ** 18;     // max input: 2 ETH (for slippage)
 
+    function _swapTarget() internal view override returns (address) {
+        return address(dexRouterExactOut);
+    }
+
     // ============================================================================
     // WETH -> USDT -> USDC (ERC20 -> ERC20 -> ERC20, ExactOut)
     // ============================================================================
@@ -352,25 +356,25 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
 
     // Basic swap execution
     function _execSwap(bytes memory swapData) internal {
-        (bool success, ) = address(dexRouter).call(swapData);
+        (bool success, ) = address(dexRouterExactOut).call(swapData);
         require(success, "swap failed");
     }
 
     // Swap with ETH value
     function _execSwapWithValue(bytes memory swapData, uint256 value) internal {
-        (bool success, ) = address(dexRouter).call{value: value}(swapData);
+        (bool success, ) = address(dexRouterExactOut).call{value: value}(swapData);
         require(success, "swap failed");
     }
 
     // Swap + commission
     function _execSwapWithComm(bytes memory swapData, bytes memory commData) internal {
-        (bool success, ) = address(dexRouter).call(bytes.concat(swapData, commData));
+        (bool success, ) = address(dexRouterExactOut).call(bytes.concat(swapData, commData));
         require(success, "swap failed");
     }
 
     // Swap with value + commission
     function _execSwapWithValueComm(bytes memory swapData, uint256 value, bytes memory commData) internal {
-        (bool success, ) = address(dexRouter).call{value: value}(bytes.concat(swapData, commData));
+        (bool success, ) = address(dexRouterExactOut).call{value: value}(bytes.concat(swapData, commData));
         require(success, "swap failed");
     }
 
@@ -379,7 +383,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
         bytes memory permit2Info = _generatePermit2Info(token, amounts);
-        (bool success, ) = address(dexRouter).call(bytes.concat(swapData, permit2Info));
+        (bool success, ) = address(dexRouterExactOut).call(bytes.concat(swapData, permit2Info));
         require(success, "swap failed");
     }
 
@@ -388,7 +392,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
         bytes memory permit2Info = _generatePermit2Info(token, amounts);
-        (bool success, ) = address(dexRouter).call(bytes.concat(swapData, permit2Info, commData));
+        (bool success, ) = address(dexRouterExactOut).call(bytes.concat(swapData, permit2Info, commData));
         require(success, "swap failed");
     }
 
@@ -402,7 +406,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
             amounts[i + 1] = commAmountEach;
         }
         bytes memory permit2Info = _generatePermit2Info(token, amounts);
-        (bool success, ) = address(dexRouter).call(bytes.concat(swapData, permit2Info, commData));
+        (bool success, ) = address(dexRouterExactOut).call(bytes.concat(swapData, permit2Info, commData));
         require(success, "swap failed");
     }
 
@@ -416,7 +420,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
         // WETH -> USDT: token0 -> token1 (reversed=false), USDT -> USDC: token1 -> token0 (reversed=true)
         bytes32[] memory pools = _genPoolsDefault(WETH_USDT_UNIV2, USDC_USDT_UNIV2, false, true, false, transferMode);
         return abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(WETH)),  // srcToken
             USDC_OUT,                // amount (exact output)
             MAX_WETH_IN,             // maxConsume (slippage protection)
@@ -431,7 +435,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
         // srcToken high bits store orderId (123), low bits are 0 for ETH
         bytes32[] memory pools = _genPoolsDefault(WETH_USDT_UNIV2, USDC_USDT_UNIV2, false, true, false, _MODE_LEGACY);
         return abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             123 << 160,              // srcToken with orderId, address=0 for ETH
             USDC_OUT,                // amount (exact output)
             MAX_ETH_IN,              // maxConsume (slippage protection)
@@ -445,7 +449,7 @@ contract UnxswapExactOutTransferModeTest is TrimAndCommissionTestBase {
         // USDT -> USDC: token1 -> token0 (reversed=true), USDC -> WETH: token0 -> token1 (reversed=false), unwrap=true
         bytes32[] memory pools = _genPoolsDefault(USDC_USDT_UNIV2, USDC_WETH_UNIV2, true, false, true, transferMode);
         return abi.encodeWithSelector(
-            DexRouter.unxswapExactOutTo.selector,
+            DexRouterExactOut.unxswapExactOutTo.selector,
             uint256(uint160(USDT)),  // srcToken
             ETH_OUT,                 // amount (exact output: 0.5 ETH)
             MAX_USDT_IN,             // maxConsume (slippage protection)

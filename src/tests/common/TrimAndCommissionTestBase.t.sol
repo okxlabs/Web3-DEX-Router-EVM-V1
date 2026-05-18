@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "@dex/DexRouter.sol";
+import {DexRouterExactOut} from "@dex-exactout/DexRouterExactOut.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
@@ -72,6 +73,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
     
     // contracts
     DexRouter public dexRouter;
+    DexRouterExactOut public dexRouterExactOut;
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f); // ETH
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58); // ETH
     WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757)); // ETH
@@ -180,10 +182,10 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
             if (transferMode == _MODE_LEGACY) {
                 SafeERC20.safeApprove(IERC20(_fromToken), address(tokenApprove), _amount);
             } else if (transferMode == _MODE_DIRECT) {
-                SafeERC20.safeApprove(IERC20(_fromToken), address(dexRouter), _amount);
+                SafeERC20.safeApprove(IERC20(_fromToken), _swapTarget(), _amount);
             } else if (transferMode == _MODE_PERMIT2_ALLOWANCE) {
                 SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
-                IPermit2Approve(address(permit2)).approve(address(_fromToken), address(dexRouter), uint160(_amount), uint48(block.timestamp + 1000));
+                IPermit2Approve(address(permit2)).approve(address(_fromToken), _swapTarget(), uint160(_amount), uint48(block.timestamp + 1000));
             } else if (transferMode == _MODE_PERMIT2_SIGNATURE) {
                 SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
             }
@@ -323,12 +325,15 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
         vm.startPrank(admin);
         UniV2Adapter = address(new UniAdapter());
         dexRouter = new DexRouter(admin);
+        dexRouterExactOut = new DexRouterExactOut(admin);
         vm.stopPrank();
         address wNativeRelayerOwner = wNativeRelayer.owner();
         vm.startPrank(wNativeRelayerOwner);
         tokenApproveProxy.addProxy(address(dexRouter));
-        address[] memory whitelistedCallers = new address[](1);
+        tokenApproveProxy.addProxy(address(dexRouterExactOut));
+        address[] memory whitelistedCallers = new address[](2);
         whitelistedCallers[0] = address(dexRouter);
+        whitelistedCallers[1] = address(dexRouterExactOut);
         wNativeRelayer.setCallerOk(whitelistedCallers, true);
         vm.stopPrank();
         address safeMoonOwner = ISafeMoon(SAFEMOON).owner();
@@ -338,6 +343,11 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
         vm.stopPrank();
         // console2.log("safeMoon buy fees: %d", ISafeMoon(SAFEMOON).buyTotalFees());
         // console2.log("safeMoon sell fees: %d", ISafeMoon(SAFEMOON).sellTotalFees());
+    }
+
+    // Swap target for approvals / permit signing. Override in exact-out tests to point at dexRouterExactOut.
+    function _swapTarget() internal view virtual returns (address) {
+        return address(dexRouter);
     }
 
     // ==================== Internal Functions ====================
@@ -453,7 +463,7 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit
         bytes memory signature = getPermitBatchTransferSignature(
             permit,
             arnaudPrivateKey,
-            address(dexRouter),
+            _swapTarget(),
             Permit2EthDomainSeperator
         );
         bytes memory permit2Info = _buildPermit2InfoUnified(

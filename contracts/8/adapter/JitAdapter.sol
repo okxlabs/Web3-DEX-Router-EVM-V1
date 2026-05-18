@@ -119,6 +119,13 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
 
         address refundTo = _extractRefundTo();
 
+        // Baseline for post-execution output verification. Captured BEFORE any dry-run runs so
+        // that the comparison spans the full outer frame: real-exec delta MUST be >= the winner's
+        // dry-run quote, otherwise the tx reverts. This guarantees that no candidate can promise
+        // more in dry-run than it delivers in real-exec — even via gas side-channel tricks or any
+        // mechanism that lets it distinguish the two phases.
+        uint256 prevTo = IERC20(toToken).balanceOf(to);
+
         uint256[] memory quotes = new uint256[](cs.length);
         for (uint256 i; i < cs.length; ++i) {
             quotes[i] = _dryRunSafe(cs[i], to, fromToken, toToken, amount, refundTo, uint8(i));
@@ -127,9 +134,19 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
         uint8 winner = _findMax(quotes);
         require(quotes[winner] > 0, "JIT: all candidates dead");
 
-        (bool reverseW, address poolW) = _decodeRawData(cs[winner].rawData);
-        SafeERC20.safeTransfer(IERC20(fromToken), cs[winner].assetTo, amount);
-        _exeAdapter(reverseW, cs[winner].adapter, to, poolW, cs[winner].extraData, refundTo);
+        // Real execution. Scoped block so reverseW / poolW are released before the post-exec
+        // balance check, keeping _runJit under Solidity's stack-depth limit.
+        {
+            (bool reverseW, address poolW) = _decodeRawData(cs[winner].rawData);
+            SafeERC20.safeTransfer(IERC20(fromToken), cs[winner].assetTo, amount);
+            _exeAdapter(reverseW, cs[winner].adapter, to, poolW, cs[winner].extraData, refundTo);
+        }
+
+        // Post-execution output verification: lock the contract's trust model to EVM-observed
+        // balance delta instead of trusting the candidate adapter's behavior to stay consistent
+        // between dry-run and real-exec. `>=` permits over-delivery (rebase tokens, attacker
+        // over-paying) but blocks any "promise more than deliver" attack.
+        require(IERC20(toToken).balanceOf(to) - prevTo >= quotes[winner], "JIT: real exec below quote");
 
         emit JitWinnerSelected(winner, quotes, cs[winner].adapter);
     }

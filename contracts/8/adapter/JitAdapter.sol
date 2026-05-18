@@ -198,11 +198,26 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
     }
 
     /// @dev Returns data[4:]. Caller must pre-validate `data.length >= 4`.
+    /// @dev Uses 32-byte word-aligned memcpy via assembly for ~10x gas savings
+    ///      over byte-by-byte copy. May write up to 31 bytes past `newLen`
+    ///      within `inner`'s allocated region (safe because `new bytes(n)`
+    ///      rounds up to a 32-byte boundary), but `inner.length` is set
+    ///      correctly so downstream `abi.decode` reads only valid bytes.
+    ///      WARNING: output is only safe for `abi.decode`; do NOT hash or
+    ///      string-ify `inner` because trailing bytes are uninitialized.
     function _stripMagic(bytes memory data) internal pure returns (bytes memory inner) {
         uint256 newLen = data.length - 4;
         inner = new bytes(newLen);
-        for (uint256 i; i < newLen; ++i) {
-            inner[i] = data[i + 4];
+        /// @solidity memory-safe-assembly
+        assembly {
+            let src := add(data, 36)
+            let dst := add(inner, 32)
+            let end := add(dst, newLen)
+            for { } lt(dst, end) { } {
+                mstore(dst, mload(src))
+                dst := add(dst, 32)
+                src := add(src, 32)
+            }
         }
     }
 

@@ -9,8 +9,7 @@ import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
 import {IAdapter} from "@dex/interfaces/IAdapter.sol";
 
 import {MockERC20} from "../common/mock/MockERC20.sol";
-import {MockFailAdapter} from "./mocks/MockFailAdapter.sol";
-import {MockSuccessAdapter} from "./mocks/MockSuccessAdapter.sol";
+import {MockFailAdapter, MockSuccessAdapter} from "./mocks/MockAdapters.sol";
 
 interface ITokenApproveProxy {
     function owner() external view returns (address);

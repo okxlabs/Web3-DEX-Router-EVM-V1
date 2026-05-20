@@ -10,12 +10,14 @@ import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
 
 import {MockERC20} from "../common/mock/MockERC20.sol";
 import {MockFOTToken} from "./mocks/MockFOTToken.sol";
-import {MockFailAdapter} from "./mocks/MockFailAdapter.sol";
-import {MockGasBurnerAdapter} from "./mocks/MockGasBurnerAdapter.sol";
-import {MockMagicSpoofAdapter} from "./mocks/MockMagicSpoofAdapter.sol";
-import {MockReentrantAdapter} from "./mocks/MockReentrantAdapter.sol";
-import {MockShortRevertAdapter} from "./mocks/MockShortRevertAdapter.sol";
-import {MockSuccessAdapter} from "./mocks/MockSuccessAdapter.sol";
+import {
+    MockFailAdapter,
+    MockGasBurnerAdapter,
+    MockMagicSpoofAdapter,
+    MockReentrantAdapter,
+    MockShortRevertAdapter,
+    MockSuccessAdapter
+} from "./mocks/MockAdapters.sol";
 
 /// @title JitTestBase — shared setup for JIT routing test skeleton (RED).
 abstract contract JitTestBase is Test {

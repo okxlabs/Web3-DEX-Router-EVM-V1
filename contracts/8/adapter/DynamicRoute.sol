@@ -20,21 +20,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 ///         binding the trust model to EVM-observed delivery rather than to any
 ///         candidate's promise.
 ///
-///         If you are looking for a template to implement a new pool adapter,
-///         use `UniV3Adapter.sol` — NOT this file. The complexity, ReentrancyGuard
-///         state, assembly usage, and trust boundary here are categorically
-///         different from a normal adapter. Auditors should treat DynamicRoute
-///         with router-level scrutiny, not adapter-level scrutiny.
-///
-///         Conforms to `IAdapter` only for Router dispatch compatibility (so that
-///         `CommonLib._exeAdapter` can invoke it like any other adapter in a
-///         `DexRouter` / `DagRouter` path).
-///
-///         Solana counterpart: `Dex::DynamicRouteV1` in
-///         `programs/dex-solana-v3/src/adapters/dynamic_route.rs`. Naming and
-///         core semantics are aligned across chains; selection-mode coverage
-///         differs (EVM exposes Auto only; Solana exposes Auto / Forced / Hint).
-///
 /// @dev Immutable, no admin, no upgrade, no storage state (only ReentrancyGuard._status slot).
 contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
     // =========================== Constants ===========================

@@ -71,9 +71,16 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
 
     // =========================== Internal self-call entry ===========================
 
-    /// @dev External so `_dryRunSafe` can `this._dryRun(...)` self-call. Per-call gas forwarding is
-    ///      enforced at the Router layer, not here — JitAdapter intentionally does not partition gas
-    ///      between candidates.
+    /// @dev External so `_dryRunSafe` can `this._dryRun(...)` self-call. JitAdapter intentionally does
+    ///      NOT partition gas between candidates — each call forwards all remaining gas (subject to
+    ///      EIP-150's 63/64 rule), same as every other adapter going through CommonLib._exeAdapter.
+    ///      Rationale:
+    ///        (1) Candidates are supplied by the backend routing layer and are trusted — JitAdapter is
+    ///            not designed as a permissionless entry point for arbitrary adapter dispatch.
+    ///        (2) Per-hop gas usage varies widely across adapter families (RFQ/PMM signature recovery,
+    ///            multi-pool Curve hops, V3 with deep tick crossings, etc.); any conservative static
+    ///            per-candidate cap risks under-provisioning honest candidates and reverting the swap,
+    ///            and provides no meaningful defense against trusted candidates.
     ///      Always terminates with a magic-prefixed revert; the normal return path is never taken.
     ///      `msg.sender == address(this)` guard prevents external callers from abusing this entrypoint.
     function _dryRun(

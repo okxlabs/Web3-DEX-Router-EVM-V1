@@ -45,6 +45,7 @@ const plasma = require('./plasma')
 const xlayer_stg = require('./xlayer_stg')
 const monad = require('./monad')
 const hyperevm = require('./hyperevm')
+const pharos = require('./pharos')
 let config
 
 console.log('current network.name: ', network.name)
@@ -139,5 +140,7 @@ if (network.name === 'okc') {
     config = monad
 } else if (network.name == 'hyperevm') {
     config = hyperevm
+} else if (network.name == 'pharos') {
+    config = pharos
 }
 module.exports = config

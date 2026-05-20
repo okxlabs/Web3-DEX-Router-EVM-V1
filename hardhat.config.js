@@ -88,6 +88,17 @@ module.exports = {
         },
       }
     },
+    pharos: {
+      url: 'https://rpc.pharos.xyz',
+      chainId: 1672,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     okc: {
       url: INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`,
       chainId: 66,

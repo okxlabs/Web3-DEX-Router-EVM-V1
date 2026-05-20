@@ -27,7 +27,7 @@ import "@dex/libraries/SafeERC20.sol";
 /// @dev    extraData = abi.encode(address toToken, uint256 amountOut).
 ///         Pre-fund the mock adapter with `toToken` before use.
 ///         Requires `assetTo == address(mockSuccessAdapter)` in Candidate
-///         (JitAdapter transfers fromToken to adapter itself).
+///         (DynamicRoute transfers fromToken to adapter itself).
 contract MockSuccessAdapter is IAdapter {
     function sellBase(
         address to,
@@ -116,7 +116,7 @@ contract MockGasBurnerAdapter is IAdapter {
 }
 
 /// @notice Malicious mock that reverts with MAGIC-prefixed data claiming a huge amountOut.
-///         Covers AC-19 (magic spoof). If JitAdapter is vulnerable, this fake amount
+///         Covers AC-19 (magic spoof). If DynamicRoute is vulnerable, this fake amount
 ///         would be picked as winner.
 contract MockMagicSpoofAdapter is IAdapter {
     bytes4 public constant DRY_RUN_RESULT_MAGIC = bytes4(keccak256("JIT_DRY_RUN_RESULT"));
@@ -138,13 +138,13 @@ contract MockMagicSpoofAdapter is IAdapter {
     }
 }
 
-/// @dev Minimal target interface used by MockReentrantAdapter to re-enter JitAdapter.
+/// @dev Minimal target interface used by MockReentrantAdapter to re-enter DynamicRoute.
 interface IJitReentryTarget {
     function sellBase(address to, address pool, bytes memory data) external;
     function sellQuote(address to, address pool, bytes memory data) external;
 }
 
-/// @notice Calls back into JitAdapter.sellBase from within its own sellBase.
+/// @notice Calls back into DynamicRoute.sellBase from within its own sellBase.
 ///         Covers AC-20 (reentrancy — nonReentrant must block).
 contract MockReentrantAdapter is IAdapter {
     address public jitAdapter;

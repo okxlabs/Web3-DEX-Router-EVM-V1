@@ -4,9 +4,9 @@ pragma abicoder v2;
 
 import "./JitTestBase.t.sol";
 
-/// @title JitAdapterTest — main AC coverage.
+/// @title DynamicRouteTest — main AC coverage.
 /// @notice Covers AC-01 … AC-18, AC-25, AC-26, AC-28 plus MAGIC collision / constant value assertions.
-contract JitAdapterTest is JitTestBase {
+contract DynamicRouteTest is JitTestBase {
     // =======================================================================
     //                        AC-01 .. AC-06 (Happy Path)
     // =======================================================================
@@ -15,7 +15,7 @@ contract JitAdapterTest is JitTestBase {
     ///        Fork-level AC-01 (real UniV2 + UniV3) is deferred to Stage 4 fork suite; unit mirror retained here.
     function test_AC01_two_candidates_higher_wins() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         vm.expectEmit(true, true, true, true, address(jit));
@@ -29,7 +29,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-02: winner position can be either 0 or 1.
     function test_AC02_winner_is_zero() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_B, MOCK_QUOTE_A);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_B, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -39,7 +39,7 @@ contract JitAdapterTest is JitTestBase {
 
     function test_AC02_winner_is_one() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -50,7 +50,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-03: sellQuote (reverse path) mirrors sellBase.
     function test_AC03_sellQuote_path() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellQuoteWithRefund(data, refundToAddr);
@@ -61,7 +61,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-04: three candidates, PMM (here: success #2) wins.
     function test_AC04_three_candidates_pmm_wins() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](3);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](3);
         cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         cs[1] = _successCandidate(mockSuccess2, MOCK_QUOTE_C); // "PMM" highest
         // third: reuse success1 via fresh adapter to keep struct diverse
@@ -79,17 +79,17 @@ contract JitAdapterTest is JitTestBase {
     /// AC-05: candidates length exactly 2 (the lower bound) is legal.
     function test_AC05_boundary_two_candidates_ok() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
         assertTrue(ok, "AC-05: len==2 must succeed");
     }
 
-    /// AC-06: after a successful swap, JitAdapter has zero fromToken balance (no leakage).
+    /// AC-06: after a successful swap, DynamicRoute has zero fromToken balance (no leakage).
     function test_AC06_no_token_leftover_in_jit() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -105,7 +105,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-07: candidates length 1 reverts CandidatesOutOfRange(1).
     function test_AC07_revert_candidates_len_one() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](1);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](1);
         cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
@@ -116,7 +116,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-08: length 255 is legal; tx must not uint8-overflow on winner selection.
     function test_AC08_boundary_255_candidates_ok() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](255);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](255);
         for (uint256 i = 0; i < 255; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A + i);
         }
@@ -131,7 +131,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-09: length 256 reverts CandidatesOutOfRange(256).
     function test_AC09_revert_candidates_len_256() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](256);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](256);
         for (uint256 i = 0; i < 256; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         }
@@ -144,7 +144,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-10: all dry-runs fail → AllCandidatesDead revert.
     function test_AC10_all_dead_reverts() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _failCandidate();
         cs[1] = _shortRevertCandidate();
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -156,7 +156,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-11: mode != 0 reverts UnsupportedMode.
     function test_AC11_revert_mode_not_auto() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 1, cs);
 
         vm.expectRevert("JIT: unsupported mode");
@@ -165,7 +165,7 @@ contract JitAdapterTest is JitTestBase {
 
     /// AC-12: fromToken == _ETH reverts NativeEthNotAllowed.
     function test_AC12_revert_native_fromToken() public {
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(_ETH_SENTINEL, address(toToken), 0, cs);
 
         vm.expectRevert("JIT: native ETH not allowed; use WETH");
@@ -175,17 +175,17 @@ contract JitAdapterTest is JitTestBase {
     /// AC-13: toToken == _ETH reverts NativeEthNotAllowed.
     function test_AC13_revert_native_toToken() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), _ETH_SENTINEL, 0, cs);
 
         vm.expectRevert("JIT: native ETH not allowed; use WETH");
         jit.sellBase(recipient, address(jit), data);
     }
 
-    /// AC-14: JitAdapter has 0 fromToken balance → ZeroInput revert.
+    /// AC-14: DynamicRoute has 0 fromToken balance → ZeroInput revert.
     function test_AC14_revert_zero_input() public {
         // Intentionally not minting fromToken to jit
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         vm.expectRevert("JIT: zero input");
@@ -200,7 +200,7 @@ contract JitAdapterTest is JitTestBase {
     ///        thanks to EVM's 63/64 gas-forwarding rule (per-call gas limiting is a Router-layer concern).
     function test_AC16_gas_burner_isolated() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _gasBurnerCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -213,7 +213,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-17: underlying returns < 4-byte revert data → dry-run treats as quote=0, no magic decode.
     function test_AC17_short_revert_is_zero_quote() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _shortRevertCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -226,7 +226,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-18: Error(string) revert from underlying becomes underlyingReason in JitDryRunFailed event.
     function test_AC18_error_string_becomes_reason() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _failCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -249,7 +249,7 @@ contract JitAdapterTest is JitTestBase {
     /// assert the JitWinnerSelected quote equals the actual delta on recipient.
     function test_AC25_dry_equals_real_simple() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         uint256 balBefore = toToken.balanceOf(recipient);
@@ -263,7 +263,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-26: same as AC-06 for documentation coverage.
     function test_AC26_no_leftover_on_jit() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -274,7 +274,7 @@ contract JitAdapterTest is JitTestBase {
     /// AC-28: emitted quotes array length matches candidates.length; winnerAdapter matches cs[winnerIdx].
     function test_AC28_event_shape() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         uint256[] memory expectedQuotes = _quotesArr(MOCK_QUOTE_A, MOCK_QUOTE_B);

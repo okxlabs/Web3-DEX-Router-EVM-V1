@@ -8,12 +8,35 @@ import "../libraries/CommonLib.sol";
 import "../libraries/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-/// @title JitAdapter — Just-In-Time dynamic routing adapter
-/// @notice Implements IAdapter.sellBase / sellQuote. For each call, dry-runs every packed candidate via
-///         a magic-prefixed revert-with-data pattern, picks the candidate with the highest measured
-///         amountOut, then really executes that winner. No fallback: winner real-exec failure bubbles up.
+/// @title DynamicRoute — Just-In-Time (JIT) dynamic routing primitive.
+///
+/// @notice ⚠ NOT a standard adapter despite living in this folder and implementing
+///         `IAdapter`. Every sibling file in `adapter/` (UniV3Adapter, CurveAdapter,
+///         BalancerV2Adapter, …) is a thin wrapper over a single specific pool.
+///         DynamicRoute is categorically different: it dry-runs N user-supplied
+///         candidate adapters via a magic-prefixed revert-with-data sandbox, picks
+///         the highest-output winner, then really executes that winner. A
+///         post-execution balance check enforces `realDelta >= dryRunQuote`,
+///         binding the trust model to EVM-observed delivery rather than to any
+///         candidate's promise.
+///
+///         If you are looking for a template to implement a new pool adapter,
+///         use `UniV3Adapter.sol` — NOT this file. The complexity, ReentrancyGuard
+///         state, assembly usage, and trust boundary here are categorically
+///         different from a normal adapter. Auditors should treat DynamicRoute
+///         with router-level scrutiny, not adapter-level scrutiny.
+///
+///         Conforms to `IAdapter` only for Router dispatch compatibility (so that
+///         `CommonLib._exeAdapter` can invoke it like any other adapter in a
+///         `DexRouter` / `DagRouter` path).
+///
+///         Solana counterpart: `Dex::DynamicRouteV1` in
+///         `programs/dex-solana-v3/src/adapters/dynamic_route.rs`. Naming and
+///         core semantics are aligned across chains; selection-mode coverage
+///         differs (EVM exposes Auto only; Solana exposes Auto / Forced / Hint).
+///
 /// @dev Immutable, no admin, no upgrade, no storage state (only ReentrancyGuard._status slot).
-contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
+contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
     // =========================== Constants ===========================
 
     uint8 internal constant MODE_AUTO = 0;
@@ -71,11 +94,11 @@ contract JitAdapter is IAdapter, CommonLib, ReentrancyGuard {
 
     // =========================== Internal self-call entry ===========================
 
-    /// @dev External so `_dryRunSafe` can `this._dryRun(...)` self-call. JitAdapter intentionally does
+    /// @dev External so `_dryRunSafe` can `this._dryRun(...)` self-call. DynamicRoute intentionally does
     ///      NOT partition gas between candidates — each call forwards all remaining gas (subject to
     ///      EIP-150's 63/64 rule), same as every other adapter going through CommonLib._exeAdapter.
     ///      Rationale:
-    ///        (1) Candidates are supplied by the backend routing layer and are trusted — JitAdapter is
+    ///        (1) Candidates are supplied by the backend routing layer and are trusted — DynamicRoute is
     ///            not designed as a permissionless entry point for arbitrary adapter dispatch.
     ///        (2) Per-hop gas usage varies widely across adapter families (RFQ/PMM signature recovery,
     ///            multi-pool Curve hops, V3 with deep tick crossings, etc.); any conservative static

@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 import {IAdapter} from "@dex/interfaces/IAdapter.sol";
-import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
+import {DynamicRoute} from "@dex/adapter/DynamicRoute.sol";
 
 import {MockERC20} from "../common/mock/MockERC20.sol";
 import {MockFOTToken} from "./mocks/MockFOTToken.sol";
@@ -22,12 +22,12 @@ import {
 /// @title JitTestBase — shared setup for JIT routing test skeleton (RED).
 abstract contract JitTestBase is Test {
     // Re-declared here so `vm.expectEmit` can match against them.
-    // Signatures MUST stay in lock-step with JitAdapter.sol.
+    // Signatures MUST stay in lock-step with DynamicRoute.sol.
     event JitWinnerSelected(uint8 winnerIdx, uint256[] quotes, address winnerAdapter);
     event JitDryRunFailed(uint8 candidateIdx, address adapter, bytes reason);
 
     // -- Deployed under test --
-    JitAdapter internal jit;
+    DynamicRoute internal jit;
 
     // -- Mock tokens --
     MockERC20 internal fromToken;
@@ -58,7 +58,7 @@ abstract contract JitTestBase is Test {
     uint256 internal constant MOCK_QUOTE_C = 300 ether;
 
     function setUp() public virtual {
-        jit = new JitAdapter();
+        jit = new DynamicRoute();
 
         fromToken = new MockERC20("From", "FROM", 0);
         toToken = new MockERC20("To", "TO", 0);
@@ -86,16 +86,16 @@ abstract contract JitTestBase is Test {
     function _successCandidate(MockSuccessAdapter m, uint256 quote)
         internal
         view
-        returns (JitAdapter.Candidate memory)
+        returns (DynamicRoute.Candidate memory)
     {
         bytes memory extra = abi.encode(address(toToken), quote);
-        return JitAdapter.Candidate({
+        return DynamicRoute.Candidate({
             adapter: address(m), assetTo: address(m), rawData: _rawData(address(0), false), extraData: extra
         });
     }
 
-    function _spoofCandidate() internal view returns (JitAdapter.Candidate memory) {
-        return JitAdapter.Candidate({
+    function _spoofCandidate() internal view returns (DynamicRoute.Candidate memory) {
+        return DynamicRoute.Candidate({
             adapter: address(mockSpoof),
             assetTo: address(mockSpoof),
             rawData: _rawData(address(0), false),
@@ -103,20 +103,20 @@ abstract contract JitTestBase is Test {
         });
     }
 
-    function _gasBurnerCandidate() internal view returns (JitAdapter.Candidate memory) {
-        return JitAdapter.Candidate({
+    function _gasBurnerCandidate() internal view returns (DynamicRoute.Candidate memory) {
+        return DynamicRoute.Candidate({
             adapter: address(mockGas), assetTo: address(mockGas), rawData: _rawData(address(0), false), extraData: ""
         });
     }
 
-    function _failCandidate() internal view returns (JitAdapter.Candidate memory) {
-        return JitAdapter.Candidate({
+    function _failCandidate() internal view returns (DynamicRoute.Candidate memory) {
+        return DynamicRoute.Candidate({
             adapter: address(mockFail), assetTo: address(mockFail), rawData: _rawData(address(0), false), extraData: ""
         });
     }
 
-    function _shortRevertCandidate() internal view returns (JitAdapter.Candidate memory) {
-        return JitAdapter.Candidate({
+    function _shortRevertCandidate() internal view returns (DynamicRoute.Candidate memory) {
+        return DynamicRoute.Candidate({
             adapter: address(mockShort),
             assetTo: address(mockShort),
             rawData: _rawData(address(0), false),
@@ -126,7 +126,7 @@ abstract contract JitTestBase is Test {
 
     // --------------------------- ExtraData encoding ---------------------------
 
-    function _encode(address from_, address to_, uint8 mode, JitAdapter.Candidate[] memory cs)
+    function _encode(address from_, address to_, uint8 mode, DynamicRoute.Candidate[] memory cs)
         internal
         pure
         returns (bytes memory)
@@ -134,8 +134,8 @@ abstract contract JitTestBase is Test {
         return abi.encode(from_, to_, mode, cs);
     }
 
-    function _buildSimplePair(uint256 qA, uint256 qB) internal view returns (JitAdapter.Candidate[] memory cs) {
-        cs = new JitAdapter.Candidate[](2);
+    function _buildSimplePair(uint256 qA, uint256 qB) internal view returns (DynamicRoute.Candidate[] memory cs) {
+        cs = new DynamicRoute.Candidate[](2);
         cs[0] = _successCandidate(mockSuccess1, qA);
         cs[1] = _successCandidate(mockSuccess2, qB);
     }

@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "forge-std/Test.sol";
 
 import {DexRouter} from "@dex/DexRouter.sol";
-import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
+import {DynamicRoute} from "@dex/adapter/DynamicRoute.sol";
 import {IAdapter} from "@dex/interfaces/IAdapter.sol";
 
 import {MockERC20} from "../common/mock/MockERC20.sol";
@@ -16,11 +16,11 @@ interface ITokenApproveProxy {
     function addProxy(address proxy) external;
 }
 
-/// @title JitAdapterRouterTest — Router-level integration happy-path tests.
-/// @notice Verifies JitAdapter behaves correctly when invoked through DexRouter.dagSwapTo.
+/// @title DynamicRouteRouterTest — Router-level integration happy-path tests.
+/// @notice Verifies DynamicRoute behaves correctly when invoked through DexRouter.dagSwapTo.
 ///         Uses ETH mainnet fork to access the live TokenApproveProxy / TokenApprove infrastructure
 ///         (the same pattern as src/tests/transferMode/DagByInvest.t.sol).
-contract JitAdapterRouterTest is Test {
+contract DynamicRouteRouterTest is Test {
     // ---------------------------------------------------------------------
     // Mainnet infrastructure (mirrors CommonUtils.sol constants)
     // ---------------------------------------------------------------------
@@ -32,7 +32,7 @@ contract JitAdapterRouterTest is Test {
     // Under test
     // ---------------------------------------------------------------------
     DexRouter internal router;
-    JitAdapter internal jit;
+    DynamicRoute internal jit;
 
     // ---------------------------------------------------------------------
     // Mock tokens + candidate adapters
@@ -67,8 +67,8 @@ contract JitAdapterRouterTest is Test {
         vm.prank(tokenApproveProxy.owner());
         tokenApproveProxy.addProxy(address(router));
 
-        // Fresh JitAdapter.
-        jit = new JitAdapter();
+        // Fresh DynamicRoute.
+        jit = new DynamicRoute();
 
         // Mock tokens.
         fromToken = new MockERC20("From", "FROM", 0);
@@ -91,12 +91,12 @@ contract JitAdapterRouterTest is Test {
 
     // =========================================================================
     // Router-HP-01:
-    //   User → DexRouter.dagSwapTo → JitAdapter → 2 candidates dry-run → higher wins.
+    //   User → DexRouter.dagSwapTo → DynamicRoute → 2 candidates dry-run → higher wins.
     //   Verifies the entire end-to-end flow: token pull, piggyback assembly,
     //   JitWinnerSelected event, real-exec delivery to user, no leftover on jit/router.
     // =========================================================================
     function test_RouterHP01_two_candidates_higher_wins_via_router() public {
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _successCandidate(adapterA, QUOTE_A);
         cs[1] = _successCandidate(adapterB, QUOTE_B);
         bytes memory jitPayload = abi.encode(address(fromToken), address(toToken), uint8(0), cs);
@@ -140,7 +140,7 @@ contract JitAdapterRouterTest is Test {
     //   the surviving best candidate. Mirrors AC-18 / I-05 but via the Router entry.
     // =========================================================================
     function test_RouterHP02_failed_candidate_does_not_break_router() public {
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](3);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](3);
         cs[0] = _successCandidate(adapterA, QUOTE_A);  // 100
         cs[1] = _failCandidate(adapterFail);            // dry-run fails -> quote = 0
         cs[2] = _successCandidate(adapterC, QUOTE_C);  // 150 ← winner
@@ -203,10 +203,10 @@ contract JitAdapterRouterTest is Test {
     function _successCandidate(MockSuccessAdapter m, uint256 quote)
         internal
         view
-        returns (JitAdapter.Candidate memory)
+        returns (DynamicRoute.Candidate memory)
     {
         bytes memory extra = abi.encode(address(toToken), quote);
-        return JitAdapter.Candidate({
+        return DynamicRoute.Candidate({
             adapter: address(m),
             assetTo: address(m),
             rawData: 0, // Candidate-level rawData: no reverse, no pool (mock ignores both).
@@ -214,8 +214,8 @@ contract JitAdapterRouterTest is Test {
         });
     }
 
-    function _failCandidate(MockFailAdapter m) internal pure returns (JitAdapter.Candidate memory) {
-        return JitAdapter.Candidate({
+    function _failCandidate(MockFailAdapter m) internal pure returns (DynamicRoute.Candidate memory) {
+        return DynamicRoute.Candidate({
             adapter: address(m),
             assetTo: address(m),
             rawData: 0,

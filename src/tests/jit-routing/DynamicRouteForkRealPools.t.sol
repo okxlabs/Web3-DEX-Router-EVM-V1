@@ -5,14 +5,14 @@ pragma abicoder v2;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-import {JitAdapter} from "@dex/adapter/JitAdapter.sol";
+import {DynamicRoute} from "@dex/adapter/DynamicRoute.sol";
 import {UniV3Adapter} from "@dex/adapter/UniV3Adapter.sol";
 import {CurveStableNGAdapter} from "@dex/adapter/CurveStableNGAdapter.sol";
 import {IAdapter} from "@dex/interfaces/IAdapter.sol";
 import {IERC20} from "@dex/interfaces/IERC20.sol";
 
-/// @title JitAdapterForkRealPoolsTest
-/// @notice Fork-level audit gate: validates JitAdapter's core invariant
+/// @title DynamicRouteForkRealPoolsTest
+/// @notice Fork-level audit gate: validates DynamicRoute's core invariant
 ///         `dryRunQuote == realExecDelta` when candidates are REAL production
 ///         adapters (UniV3Adapter / CurveStableNGAdapter) pointing at REAL on-chain
 ///         pools. All prior tests use mocks whose dry-run and real-exec behavior
@@ -21,14 +21,14 @@ import {IERC20} from "@dex/interfaces/IERC20.sol";
 ///
 /// @dev    HOW TO RUN:
 ///           FOUNDRY_TEST=src/tests/jit-routing FOUNDRY_EVM_VERSION=cancun \
-///             forge test --match-path src/tests/jit-routing/JitAdapterForkRealPools.t.sol -vv
+///             forge test --match-path src/tests/jit-routing/DynamicRouteForkRealPools.t.sol -vv
 ///
 ///         The `cancun` EVM version is REQUIRED because the Curve Stableswap-NG
 ///         pool uses TSTORE/TLOAD opcodes (transient storage, Cancun-only).
 ///         The repo's default `evm_version = "london"` in foundry.toml fails with
 ///         `NotActivated EvmError` on `coins(uint256)` when running this test
 ///         without the override.
-contract JitAdapterForkRealPoolsTest is Test {
+contract DynamicRouteForkRealPoolsTest is Test {
     // --- Tokens ---
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
@@ -41,11 +41,11 @@ contract JitAdapterForkRealPoolsTest is Test {
     /// Curve Stableswap-NG WETH/USDT (N_COINS=2, coins[0]=WETH, coins[1]=USDT)
     address constant CURVE_SNG_POOL = 0x6FB1dca86AAA76af74e8532D764E6F8848010767;
 
-    // --- JitAdapter / candidate adapter / trailer constants ---
+    // --- DynamicRoute / candidate adapter / trailer constants ---
     uint256 constant ORIGIN_PAYER = 0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000;
 
     // --- Deployed under test ---
-    JitAdapter internal jit;
+    DynamicRoute internal jit;
     UniV3Adapter internal univ3Adapter; // serves both Uni V3 and Sushi V3
     CurveStableNGAdapter internal curveAdapter;
 
@@ -58,28 +58,28 @@ contract JitAdapterForkRealPoolsTest is Test {
     function setUp() public {
         vm.createSelectFork("eth");
 
-        jit = new JitAdapter();
+        jit = new DynamicRoute();
         univ3Adapter = new UniV3Adapter(payable(WETH));
         curveAdapter = new CurveStableNGAdapter();
     }
 
-    /// @notice Three real WETH/USDT pools as candidates. JitAdapter dry-runs all three,
+    /// @notice Three real WETH/USDT pools as candidates. DynamicRoute dry-runs all three,
     ///         picks the highest-quote winner, and executes the swap for real. We assert
     ///         the core invariant: `realDelta == quotes[winner]` (the post-exec check).
     function test_ForkRP01_three_real_WETH_USDT_pools() public {
         uint256 amountIn = 0.1 ether; // ~$210 — safe for the shallowest pool (Curve SNG)
 
-        // Pre-fund JitAdapter directly with WETH (skip Router for test isolation).
+        // Pre-fund DynamicRoute directly with WETH (skip Router for test isolation).
         deal(WETH, address(jit), amountIn);
 
         // Build three candidates pointing at the three real pools.
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](3);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](3);
 
         // C0: Uniswap V3 0.01% — adapter handles WETH/USDT swap via uniswapV3SwapCallback.
         //   extraData layout per UniV3Adapter.sellBase: (uint160 sqrtX96, bytes innerData)
         //   inner: (address fromToken, address toToken, uint24 fee)
         //   sqrtX96=0 means use TickMath limit (zeroForOne direction is auto-detected).
-        cs[0] = JitAdapter.Candidate({
+        cs[0] = DynamicRoute.Candidate({
             adapter: address(univ3Adapter),
             assetTo: address(univ3Adapter),
             rawData: uint256(uint160(UNIV3_POOL)),
@@ -87,7 +87,7 @@ contract JitAdapterForkRealPoolsTest is Test {
         });
 
         // C1: SushiSwap V3 0.05% — identical wire format to UniV3 (same callback selector).
-        cs[1] = JitAdapter.Candidate({
+        cs[1] = DynamicRoute.Candidate({
             adapter: address(univ3Adapter),
             assetTo: address(univ3Adapter),
             rawData: uint256(uint160(SUSHI_V3_POOL)),
@@ -97,7 +97,7 @@ contract JitAdapterForkRealPoolsTest is Test {
         // C2: Curve StableNG WETH(i=0) -> USDT(j=1).
         //   extraData layout per CurveStableNGAdapter._curveSwap:
         //   (address fromToken, address toToken, int128 i, int128 j)
-        cs[2] = JitAdapter.Candidate({
+        cs[2] = DynamicRoute.Candidate({
             adapter: address(curveAdapter),
             assetTo: address(curveAdapter),
             rawData: uint256(uint160(CURVE_SNG_POOL)),
@@ -148,7 +148,7 @@ contract JitAdapterForkRealPoolsTest is Test {
         assertGt(quotes[2], 0, "Curve quote > 0");
 
         // 2. THE invariant under audit: dry-run measured quote MUST equal real-exec
-        //    delivered delta for the winner. This is JitAdapter's L149 post-exec check
+        //    delivered delta for the winner. This is DynamicRoute's L149 post-exec check
         //    re-asserted from the test side. Failure here would mean the dry-run
         //    sandbox does NOT faithfully predict real-exec output.
         assertEq(realDelta, quotes[winnerIdx], "0-diff: real delta == winner dry-run quote");
@@ -159,7 +159,7 @@ contract JitAdapterForkRealPoolsTest is Test {
         }
         assertEq(winnerAdapter, cs[winnerIdx].adapter, "winnerAdapter == cs[winner].adapter");
 
-        // 4. JitAdapter must hold no residual fromToken / toToken after the swap.
+        // 4. DynamicRoute must hold no residual fromToken / toToken after the swap.
         //    (Closes the L-1 finding's negative space — verifies no stuck balance in
         //    the production happy path.)
         assertEq(IERC20(WETH).balanceOf(address(jit)), 0, "no WETH leftover on JIT");

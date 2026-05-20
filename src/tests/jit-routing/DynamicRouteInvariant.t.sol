@@ -4,19 +4,19 @@ pragma abicoder v2;
 
 import "./JitTestBase.t.sol";
 
-/// @title JitAdapterInvariantTest — 14 invariants I-01 .. I-14 + AC-27 + AC-29/30/31 regression.
+/// @title DynamicRouteInvariantTest — 14 invariants I-01 .. I-14 + AC-27 + AC-29/30/31 regression.
 /// @notice Many invariants are re-asserted via cross-scenario tests (not forge invariant fuzz, because
-///         JitAdapter is stateless — there is no handler state to mutate). We encode each invariant
+///         DynamicRoute is stateless — there is no handler state to mutate). We encode each invariant
 ///         as a deterministic multi-step assertion equivalent to a property-based check over the
 ///         finite set of allowed candidate shapes.
-contract JitAdapterInvariantTest is JitTestBase {
+contract DynamicRouteInvariantTest is JitTestBase {
     // =======================================================================
     //                            Invariants I-01 .. I-14
     // =======================================================================
 
     /// I-01: _dryRun is rejected unless msg.sender == address(this). Mirrors AC-21.
     function test_I01_dryRun_self_only() public {
-        JitAdapter.Candidate memory c = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
+        DynamicRoute.Candidate memory c = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
 
         // EOA
         address eoa = address(0xE0A1);
@@ -36,13 +36,13 @@ contract JitAdapterInvariantTest is JitTestBase {
     function test_I02_nonReentrant_active() public {
         fromToken.mint(address(jit), AMOUNT_IN);
 
-        JitAdapter.Candidate[] memory innerCs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory innerCs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory innerData = _encode(address(fromToken), address(toToken), 0, innerCs);
 
         MockReentrantAdapter mre = new MockReentrantAdapter(address(jit), innerData);
 
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
-        cs[0] = JitAdapter.Candidate({
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
+        cs[0] = DynamicRoute.Candidate({
             adapter: address(mre), assetTo: address(mre), rawData: _rawData(address(0), false), extraData: ""
         });
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
@@ -56,7 +56,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-03: magic spoof cannot land in amountOut slot. Mirrors AC-19.
     function test_I03_magic_spoof_not_amountOut() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _spoofCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -75,7 +75,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     function test_I04_catch_strict_validation() public {
         fromToken.mint(address(jit), AMOUNT_IN);
 
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](4);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](4);
         cs[0] = _shortRevertCandidate(); // < 4 bytes revert data
         cs[1] = _failCandidate(); // Error(string) selector (not MAGIC)
         cs[2] = _spoofCandidate(); // MAGIC-prefixed spoof
@@ -91,7 +91,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-05: single-candidate failure does not crash the whole tx.
     function test_I05_single_failure_isolated() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _failCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -103,7 +103,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-06: candidates length boundary — both sides.
     function test_I06_candidates_boundary_lower() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](1);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](1);
         cs[0] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
         vm.expectRevert("JIT: candidates len out of range");
@@ -112,7 +112,7 @@ contract JitAdapterInvariantTest is JitTestBase {
 
     function test_I06_candidates_boundary_upper() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](256);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](256);
         for (uint256 i = 0; i < 256; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         }
@@ -124,7 +124,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-07: quotes[winner] must be strictly > 0 to proceed.
     function test_I07_allDead_reverts() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _failCandidate();
         cs[1] = _shortRevertCandidate();
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -136,7 +136,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-08: dry-run amount == real execution amount (0 delta) — unit proxy.
     function test_I08_dry_equals_real_unit() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         uint256 before_ = toToken.balanceOf(recipient);
@@ -161,10 +161,10 @@ contract JitAdapterInvariantTest is JitTestBase {
         assertEq(realDelta, winnerQuote, "I-08: real delta equals emitted winner quote");
     }
 
-    /// I-09: JitAdapter fromToken balance == 0 post-tx.
+    /// I-09: DynamicRoute fromToken balance == 0 post-tx.
     function test_I09_no_leakage() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -178,7 +178,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// its transfer from jit→spoof is rolled back by revert atomicity; jit still has the fromToken.
     function test_I10_dryRun_atomic_rollback() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = new JitAdapter.Candidate[](2);
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](2);
         cs[0] = _spoofCandidate();
         cs[1] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -195,7 +195,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// Proxy check: recipient (NOT jit) receives toToken.
     function test_I11_to_passthrough() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
@@ -207,7 +207,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-12: refundTo == 0 when marker absent. Proxy check via AC-22.
     function test_I12_refundTo_marker_absent_means_zero() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         address fakeRefund = address(0xBA5EBA11);
@@ -221,7 +221,7 @@ contract JitAdapterInvariantTest is JitTestBase {
     /// I-13: event shape — quotes.length == candidates.length, winnerAdapter == cs[winnerIdx].adapter.
     function test_I13_event_shape() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         vm.recordLogs();
@@ -261,14 +261,14 @@ contract JitAdapterInvariantTest is JitTestBase {
         assertEq(IAdapter.sellQuote.selector, bytes4(keccak256("sellQuote(address,address,bytes)")));
     }
 
-    /// AC-31: underlying adapter sees msg.sender == JitAdapter. Positive assertion (design statement).
+    /// AC-31: underlying adapter sees msg.sender == DynamicRoute. Positive assertion (design statement).
     /// We assert this via a recorder mock that captures its own msg.sender.
     function test_AC31_underlying_sees_jit_as_msgsender() public {
         // skeleton note: this is a design statement rather than a bug to prevent.
         // We spy via the MockSuccessAdapter's transfer — after the call, we infer msg.sender from
         // the fact that the funds went from jit→mockSuccess2 (the assetTo in our candidate).
         fromToken.mint(address(jit), AMOUNT_IN);
-        JitAdapter.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         uint256 balBefore = fromToken.balanceOf(address(mockSuccess2));
@@ -277,7 +277,7 @@ contract JitAdapterInvariantTest is JitTestBase {
         assertEq(
             fromToken.balanceOf(address(mockSuccess2)) - balBefore,
             AMOUNT_IN,
-            "AC-31 (proxy): mockSuccess2 received tokens from JitAdapter (i.e. JIT was caller)"
+            "AC-31 (proxy): mockSuccess2 received tokens from DynamicRoute (i.e. JIT was caller)"
         );
     }
 }

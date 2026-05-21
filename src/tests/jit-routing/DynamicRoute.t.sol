@@ -113,26 +113,26 @@ contract DynamicRouteTest is JitTestBase {
         jit.sellBase(recipient, address(jit), data);
     }
 
-    /// AC-08: length 255 is legal; tx must not uint8-overflow on winner selection.
-    function test_AC08_boundary_255_candidates_ok() public {
+    /// AC-08: length 8 (MAX_CANDIDATES) is legal; winner selection on the upper boundary succeeds.
+    function test_AC08_boundary_max_candidates_ok() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](255);
-        for (uint256 i = 0; i < 255; i++) {
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](8);
+        for (uint256 i = 0; i < 8; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A + i);
         }
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
 
         (bool ok,) = _callSellBaseWithRefund(data, refundToAddr);
-        assertTrue(ok, "AC-08: 255 candidates must not uint8-overflow");
-        // winner index is 254 (highest quote)
-        assertEq(toToken.balanceOf(recipient), MOCK_QUOTE_A + 254, "AC-08: winner quote at idx 254");
+        assertTrue(ok, "AC-08: MAX_CANDIDATES on upper boundary must succeed");
+        // winner index is 7 (highest quote)
+        assertEq(toToken.balanceOf(recipient), MOCK_QUOTE_A + 7, "AC-08: winner quote at idx 7");
     }
 
-    /// AC-09: length 256 reverts CandidatesOutOfRange(256).
-    function test_AC09_revert_candidates_len_256() public {
+    /// AC-09: length MAX_CANDIDATES + 1 (= 9) reverts.
+    function test_AC09_revert_candidates_above_max() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](256);
-        for (uint256 i = 0; i < 256; i++) {
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](9);
+        for (uint256 i = 0; i < 9; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         }
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);
@@ -179,6 +179,17 @@ contract DynamicRouteTest is JitTestBase {
         bytes memory data = _encode(address(fromToken), _ETH_SENTINEL, 0, cs);
 
         vm.expectRevert("JIT: native ETH not allowed; use WETH");
+        jit.sellBase(recipient, address(jit), data);
+    }
+
+    /// fromToken == toToken reverts (defense-in-depth — Router-level CommissionLib already guards
+    /// most entrypoints, but the invest paths bypass it).
+    function test_revert_fromToken_equals_toToken() public {
+        fromToken.mint(address(jit), AMOUNT_IN);
+        DynamicRoute.Candidate[] memory cs = _buildSimplePair(MOCK_QUOTE_A, MOCK_QUOTE_B);
+        bytes memory data = _encode(address(fromToken), address(fromToken), 0, cs);
+
+        vm.expectRevert("JIT: fromToken == toToken");
         jit.sellBase(recipient, address(jit), data);
     }
 

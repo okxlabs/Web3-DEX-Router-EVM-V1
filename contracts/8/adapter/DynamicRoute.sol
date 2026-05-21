@@ -26,7 +26,7 @@ contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
 
     uint8 internal constant MODE_AUTO = 0;
     uint256 internal constant MIN_CANDIDATES = 2;
-    uint256 internal constant MAX_CANDIDATES = 255;
+    uint256 internal constant MAX_CANDIDATES = 8;
 
     /// @dev Public for Stage 3 test assertability. TD §Phase 2 declared this `internal`; `public` adds
     ///      zero mutability surface (still a constant) but lets unit tests assert non-collision with
@@ -128,6 +128,7 @@ contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
             cs.length >= MIN_CANDIDATES && cs.length <= MAX_CANDIDATES, "JIT: candidates len out of range"
         );
         require(fromToken != _ETH && toToken != _ETH, "JIT: native ETH not allowed; use WETH");
+        require(fromToken != toToken, "JIT: fromToken == toToken");
 
         uint256 amount = IERC20(fromToken).balanceOf(address(this));
         require(amount > 0, "JIT: zero input");

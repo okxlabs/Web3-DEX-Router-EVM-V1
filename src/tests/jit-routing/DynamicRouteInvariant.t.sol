@@ -112,8 +112,8 @@ contract DynamicRouteInvariantTest is JitTestBase {
 
     function test_I06_candidates_boundary_upper() public {
         fromToken.mint(address(jit), AMOUNT_IN);
-        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](256);
-        for (uint256 i = 0; i < 256; i++) {
+        DynamicRoute.Candidate[] memory cs = new DynamicRoute.Candidate[](9);
+        for (uint256 i = 0; i < 9; i++) {
             cs[i] = _successCandidate(mockSuccess1, MOCK_QUOTE_A);
         }
         bytes memory data = _encode(address(fromToken), address(toToken), 0, cs);

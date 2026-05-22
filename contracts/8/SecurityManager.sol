@@ -26,11 +26,13 @@ contract SecurityManager is AccessControl {
 
     /// @notice Emitted when a proxy is added to the whitelist (and to the underlying TokenApproveProxy).
     /// @param proxy The proxy address that was added.
-    event ProxyAdded(address indexed proxy);
+    /// @param operator The address that initiated the addition. Always a DEFAULT_ADMIN_ROLE holder. This field is what makes the SecurityManager event strictly more informative than the underlying TokenApproveProxy's AddNewProxy event, which only carries the proxy address.
+    event ProxyAdded(address indexed proxy, address indexed operator);
 
-    /// @notice Emitted when a proxy is removed from the whitelist (and from the underlying TokenApproveProxy).
+    /// @notice Emitted when a proxy is removed from the whitelist (and/or from the underlying TokenApproveProxy).
     /// @param proxy The proxy address that was removed.
-    event ProxyRemoved(address indexed proxy);
+    /// @param operator The address that initiated the removal. Either a DEFAULT_ADMIN_ROLE holder (planned cleanup) or a SECURITY_ROLE holder (emergency revocation). Audit dashboards subscribe to this field to attribute incident response.
+    event ProxyRemoved(address indexed proxy, address indexed operator);
 
     // --- Modifiers ---
 
@@ -107,7 +109,7 @@ contract SecurityManager is AccessControl {
         // Mirror-proxy parity holds by induction from the constructor's S4 invariant.
         require(_whitelist.add(_proxy), "SM: already in whitelist");
         tokenApproveProxy.addProxy(_proxy);
-        emit ProxyAdded(_proxy);
+        emit ProxyAdded(_proxy, msg.sender);
     }
 
     /// @notice Remove a proxy from the whitelist and/or from the underlying TokenApproveProxy.
@@ -120,7 +122,7 @@ contract SecurityManager is AccessControl {
         if (onProxy) {
             tokenApproveProxy.removeProxy(_proxy);
         }
-        emit ProxyRemoved(_proxy);
+        emit ProxyRemoved(_proxy, msg.sender);
     }
 
     /// @notice Batch-remove proxies from the whitelist and/or from the underlying TokenApproveProxy.
@@ -134,7 +136,7 @@ contract SecurityManager is AccessControl {
                 if (onProxy) {
                     tokenApproveProxy.removeProxy(_proxies[i]);
                 }
-                emit ProxyRemoved(_proxies[i]);
+                emit ProxyRemoved(_proxies[i], msg.sender);
             }
         }
     }

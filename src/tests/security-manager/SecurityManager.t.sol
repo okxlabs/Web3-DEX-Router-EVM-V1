@@ -8,8 +8,8 @@ import "@dex/SecurityManager.sol";
 import "@dex/TokenApproveProxy.sol";
 
 contract SecurityManagerTest is Test {
-    event ProxyAdded(address indexed proxy);
-    event ProxyRemoved(address indexed proxy);
+    event ProxyAdded(address indexed proxy, address indexed operator);
+    event ProxyRemoved(address indexed proxy, address indexed operator);
     event TokenApproveChanged(address newTokenApprove);
 
     TokenApproveProxy oldProxy;
@@ -97,8 +97,8 @@ contract SecurityManagerTest is Test {
 
     function test_AddProxy_EmitsEvent() public {
         address newProxy = address(0xD2);
-        vm.expectEmit(true, false, false, true);
-        emit ProxyAdded(newProxy);
+        vm.expectEmit(true, true, false, true);
+        emit ProxyAdded(newProxy, MULTISIG);
         vm.prank(MULTISIG);
         sm.addProxy(newProxy);
     }
@@ -158,9 +158,21 @@ contract SecurityManagerTest is Test {
     }
 
     function test_RemoveProxy_EmitsEvent() public {
-        vm.expectEmit(true, false, false, true);
-        emit ProxyRemoved(DEX_ROUTER);
+        vm.expectEmit(true, true, false, true);
+        emit ProxyRemoved(DEX_ROUTER, MULTISIG);
         vm.prank(MULTISIG);
+        sm.removeProxy(DEX_ROUTER);
+    }
+
+    function test_RemoveProxy_BySecurityRole_EmitsWithSecurityOperator() public {
+        // The operator field is the entire point of adding it to the event: it lets
+        // audit dashboards distinguish "planned admin cleanup" from "emergency security
+        // revocation". If this attribution is ever broken (e.g. someone hardcodes
+        // MULTISIG into the emit), this test catches it.
+        _grantSecurityRole();
+        vm.expectEmit(true, true, false, true);
+        emit ProxyRemoved(DEX_ROUTER, SECURITY_CO);
+        vm.prank(SECURITY_CO);
         sm.removeProxy(DEX_ROUTER);
     }
 
@@ -281,9 +293,10 @@ contract SecurityManagerTest is Test {
         assertEq(sm.whitelistLength(), 0);
 
         // Verify ONLY DEX_ROUTER and XBRIDGE produced ProxyRemoved events;
-        // address(0xDEAD) was skipped and must NOT appear.
+        // address(0xDEAD) was skipped and must NOT appear. Also verify the operator
+        // topic (topic[2]) is the actual caller, locking in the attribution semantics.
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        bytes32 sig = keccak256("ProxyRemoved(address)");
+        bytes32 sig = keccak256("ProxyRemoved(address,address)");
         uint256 emittedCount = 0;
         bool sawDexRouter = false;
         bool sawXbridge = false;
@@ -292,6 +305,8 @@ contract SecurityManagerTest is Test {
             if (entries[i].topics.length > 0 && entries[i].topics[0] == sig) {
                 emittedCount++;
                 address indexedAddr = address(uint160(uint256(entries[i].topics[1])));
+                address operator = address(uint160(uint256(entries[i].topics[2])));
+                assertEq(operator, MULTISIG, "operator topic must be the caller");
                 if (indexedAddr == DEX_ROUTER) sawDexRouter = true;
                 if (indexedAddr == XBRIDGE) sawXbridge = true;
                 if (indexedAddr == address(0xDEAD)) sawDead = true;
@@ -318,11 +333,12 @@ contract SecurityManagerTest is Test {
         list[1] = XBRIDGE;
 
         // Lock in the per-proxy event semantics. If a future change collapses these
-        // into a single batch event, this test will catch it.
-        vm.expectEmit(true, false, false, true);
-        emit ProxyRemoved(DEX_ROUTER);
-        vm.expectEmit(true, false, false, true);
-        emit ProxyRemoved(XBRIDGE);
+        // into a single batch event, this test will catch it. Also locks in the
+        // operator attribution: msg.sender on the entry call is propagated to each emit.
+        vm.expectEmit(true, true, false, true);
+        emit ProxyRemoved(DEX_ROUTER, MULTISIG);
+        vm.expectEmit(true, true, false, true);
+        emit ProxyRemoved(XBRIDGE, MULTISIG);
 
         vm.prank(MULTISIG);
         sm.removeProxies(list);

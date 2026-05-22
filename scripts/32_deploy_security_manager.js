@@ -1,45 +1,20 @@
-const { ethers, network } = require("hardhat");
-const fs = require("fs");
-const path = require("path");
+const { ethers } = require("hardhat");
+
+// Fill these before running. INITIAL_WHITELIST must match the baseline
+// whitelist on the target chain's TokenApproveProxy.
+const TOKEN_APPROVE_PROXY = "";
+const ADMIN = "";
+const INITIAL_WHITELIST = [];
 
 async function main() {
-  const configPath = path.join(__dirname, "security-manager-config.json");
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-
-  const chainConfig = config[network.name];
-  if (!chainConfig) {
-    throw new Error(`No config for network: ${network.name}`);
-  }
-
-  const { tokenApproveProxy, admin, initialWhitelist } = chainConfig;
-  if (!tokenApproveProxy || tokenApproveProxy.startsWith("<")) {
-    throw new Error(`tokenApproveProxy not configured for ${network.name}`);
-  }
-  if (!admin || admin.startsWith("<")) {
-    throw new Error(`admin not configured for ${network.name}`);
-  }
-  if (!Array.isArray(initialWhitelist) || initialWhitelist.length === 0) {
-    throw new Error(`initialWhitelist empty for ${network.name}; baseline audit required`);
-  }
-
-  console.log(`Deploying SecurityManager on ${network.name}`);
-  console.log(`  tokenApproveProxy: ${tokenApproveProxy}`);
-  console.log(`  admin (multisig):  ${admin}`);
-  console.log(`  initialWhitelist:  ${initialWhitelist.length} addresses`);
-
   const SecurityManager = await ethers.getContractFactory("SecurityManager");
-  const sm = await SecurityManager.deploy(tokenApproveProxy, admin, initialWhitelist);
+  const sm = await SecurityManager.deploy(TOKEN_APPROVE_PROXY, ADMIN, INITIAL_WHITELIST);
   await sm.deployed();
+  console.log("SecurityManager: " + sm.address);
 
-  console.log(`SecurityManager deployed at: ${sm.address}`);
-  console.log("");
-  console.log("=== Manual follow-up actions (via multisig) ===");
-  console.log(`1. ${tokenApproveProxy}.transferOwnership(${sm.address})`);
-  console.log(`2. ${sm.address}.grantRole(SECURITY_ROLE, <安全公司地址>)`);
-  console.log("");
-  console.log("=== Verification ===");
-  console.log(`Length:    ${(await sm.whitelistLength()).toString()}`);
-  console.log(`Whitelist: ${JSON.stringify(await sm.getWhitelist())}`);
+  console.log("Follow-up (via multisig):");
+  console.log(`  1. ${TOKEN_APPROVE_PROXY}.transferOwnership(${sm.address})`);
+  console.log(`  2. ${sm.address}.grantRole(SECURITY_ROLE, <security company>)`);
 }
 
 main()

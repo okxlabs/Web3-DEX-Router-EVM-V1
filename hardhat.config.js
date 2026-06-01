@@ -84,6 +84,17 @@ module.exports = {
         },
       }
     },
+    pharos: {
+      url: 'https://rpc.pharos.xyz',
+      chainId: 1672,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     okc: {
       url: INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`,
       chainId: 66,
@@ -593,6 +604,17 @@ module.exports = {
     },
     plasma: {
       url: 'https://rpc.plasma.to',
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
+    hyperevm: {
+      url: 'https://rpc.hyperliquid.xyz/evm',
+      chainId: 999,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {

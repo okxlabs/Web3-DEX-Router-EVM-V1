@@ -8,6 +8,6 @@ module.exports = {
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
 
-    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
+    newImpl: "0x25e7f77F33206d311A0130D4b5B881E5Db1181b1",
 
 }

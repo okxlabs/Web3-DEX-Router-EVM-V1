@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/ITokenApproveProxyAdmin.sol";
 
 /// @title SecurityManager — governance wrapper over TokenApproveProxy
 /// @notice Owns the underlying TokenApproveProxy and front-runs every privileged operation on it, splitting whitelist add (admin-only) from whitelist remove (admin OR security) so that an emergency-response role can revoke compromised proxies without holding full admin power.
 /// @dev SecurityManager keeps an on-chain mirror of the underlying proxy's allow-list in an EnumerableSet so it can be enumerated off-chain by the audit team. State changes are always written to BOTH the mirror and the underlying TokenApproveProxy in the same transaction; the constructor's invariants S3 (no zero address) and S4 (every initial whitelist entry must already be allowed on the underlying proxy) bootstrap the mirror-proxy parity, and every subsequent admin path preserves it. The contract is intentionally not upgradeable; if it needs replacement, use {transferTokenApproveProxyOwnership} as the escape hatch.
-contract SecurityManager is AccessControl {
+contract SecurityManager is AccessControlEnumerable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @notice Role that can REMOVE proxies from the whitelist (incident response). Cannot add proxies.

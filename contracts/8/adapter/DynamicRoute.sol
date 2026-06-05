@@ -180,7 +180,11 @@ contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
             // _dryRun always reverts with magic — this path is defensive only.
             return 0;
         } catch (bytes memory data) {
-            if (data.length < 4) return 0;
+            // Minimum well-formed payload = MAGIC(4) + abi.encode(uint256,bool,bytes-empty)(128) = 132.
+            // Anything shorter cannot be a valid _dryRun result; treat the candidate as dead (return 0)
+            // rather than proceeding to abi.decode, which would revert out-of-bounds and bubble up,
+            // tanking the whole swap. `< 132` also subsumes the `< 4` selector-read guard below.
+            if (data.length < 132) return 0;
             bytes4 sel;
             assembly {
                 sel := mload(add(data, 32))

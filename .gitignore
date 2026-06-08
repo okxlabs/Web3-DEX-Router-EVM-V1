@@ -35,6 +35,7 @@ artifacts/
 .qodo
 requirement
 .cursor
+.claude
 out/
 
 .npm-cache

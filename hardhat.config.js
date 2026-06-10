@@ -495,6 +495,17 @@ module.exports = {
         },
       }
     },
+    xlayer_test: {
+      url: 'https://testrpc.xlayer.tech',
+      chainId: 1952,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     blast: {
       url: 'https://rpc.blast.io',
       accounts: [`${PRIVATE_KEY}`],
@@ -675,6 +686,7 @@ module.exports = {
       linea: ETHERSCAN_API_KEY,
       mantle: ETHERSCAN_API_KEY,
       xlayer: XLAYERSCAN_API_KEY,
+      xlayer_test: XLAYERSCAN_API_KEY,
       mode: MODESCAN_API_KEY,
       manta: MANTASCAN_API_KEY,
       scroll: ETHERSCAN_API_KEY,
@@ -860,6 +872,11 @@ module.exports = {
         network: "xlayer",
         chainId: 196,
         urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER", browserURL: "https://www.oklink.com", }
+      },
+      {
+        network: "xlayer_test",
+        chainId: 1952,
+        urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET", browserURL: "https://www.oklink.com", }
       },
       {
         network: "scroll",

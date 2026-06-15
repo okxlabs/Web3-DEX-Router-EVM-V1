@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { CHAINS, resolveChain, ROUTER_LIBRARIES, contractNameToFieldName } = require('./verify_via_foundry');
+const { deployedPath, normalizeEnv } = require('./deployedEnv');
 
-const BROADCAST_DIR = path.join(__dirname, '../broadcast');
-const DEPLOYED_DIR = path.join(__dirname, 'deployed');
+const BROADCAST_DIR = path.join(__dirname, '..', '..', 'broadcast');
 
 /**
  * Update a field in base.js file
@@ -94,9 +94,9 @@ function extractAddresses(broadcast) {
   return addresses;
 }
 
-function updateBaseJs(chain, addresses) {
-  const basePath = path.join(DEPLOYED_DIR, chain, 'base.js');
-  
+function updateBaseJs(chain, addresses, env) {
+  const basePath = deployedPath(chain, env);
+
   if (!fs.existsSync(basePath)) {
     console.error(`Error: ${basePath} not found`);
     return false;
@@ -129,38 +129,19 @@ function extractConstructorArgs(broadcast) {
   return null;
 }
 
-function main() {
-  const args = process.argv.slice(2);
-
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log('Usage: node scripts/foundry_broadcast_record.js <chain>');
-    console.log('');
-    console.log('Reads DexRouter deployment data from broadcast/ and updates base.js');
-    console.log('');
-    console.log('Fields updated in base.js:');
-    console.log('  - newImpl: DexRouter contract address');
-    for (const contractName of ROUTER_LIBRARIES) {
-      const fieldName = contractNameToFieldName(contractName);
-      console.log(`  - ${fieldName}: ${contractName} library address`);
-    }
-    console.log('');
-    console.log('After updating base.js, run verify_via_foundry.js to verify contracts:');
-    console.log('  node scripts/verify_via_foundry.js <chain>');
-    console.log('');
-    console.log('Supported chains:');
-    console.log('  ' + Object.keys(CHAINS).join(', '));
-    process.exit(0);
-  }
-
-  const chainArg = args[0];
+/**
+ * Record a DexRouter deployment from foundry's broadcast/ output into base.js.
+ * Reusable by the foundry deploy engine; does not call process.exit.
+ * @param {string} chainArg - chain name or alias
+ * @returns {{success: boolean, chain?: string, addresses?: object, error?: string}}
+ */
+function recordDeployment(chainArg, env) {
   // Resolve chain name (supports aliases and case-insensitive lookup)
   const chain = resolveChain(chainArg);
-
   if (!chain) {
-    console.error(`Error: Unknown chain "${chainArg}"`);
-    console.error(`Supported chains: ${Object.keys(CHAINS).join(', ')}`);
-    process.exit(1);
+    return { success: false, error: `Unknown chain "${chainArg}". Supported: ${Object.keys(CHAINS).join(', ')}` };
   }
+  env = normalizeEnv(env);
 
   const chainConfig = CHAINS[chain];
   console.log(`Processing ${chain.toUpperCase()} (Chain ID: ${chainConfig.chainId})`);
@@ -168,11 +149,12 @@ function main() {
 
   // Read DexRouter deployment broadcast
   const broadcast = readBroadcast('DeployDexRouter.s.sol', chainConfig.chainId);
-  
   if (!broadcast) {
-    console.error(`Error: Broadcast file not found for DeployDexRouter.s.sol on chain ${chainConfig.chainId}`);
-    console.error(`Expected path: broadcast/DeployDexRouter.s.sol/${chainConfig.chainId}/run-latest.json`);
-    process.exit(1);
+    return {
+      success: false,
+      chain,
+      error: `Broadcast file not found: broadcast/DeployDexRouter.s.sol/${chainConfig.chainId}/run-latest.json`,
+    };
   }
 
   const addresses = extractAddresses(broadcast);
@@ -182,8 +164,8 @@ function main() {
   console.log(`  newImpl: ${addresses.newImpl || '(not found)'}`);
   if (constructorArg) {
     console.log(`  Constructor arg (owner): ${constructorArg}`);
-    // Also save the constructorArg to base.js for verify script to use
-    const basePath = path.join(DEPLOYED_DIR, chain, 'base.js');
+    // Also save the constructorArg to the env's addresses file for the verify script to use
+    const basePath = deployedPath(chain, env);
     if (fs.existsSync(basePath)) {
       updateBaseJsField(basePath, 'constructorArg', constructorArg);
     }
@@ -197,14 +179,51 @@ function main() {
   }
   console.log('');
 
-  // Update base.js
-  if (updateBaseJs(chain, addresses)) {
-    console.log(`✅ Updated scripts/deployed/${chain}/base.js`);
+  if (!updateBaseJs(chain, addresses, env)) {
+    return { success: false, chain, error: `addresses file not found for ${chain}/${env}` };
+  }
+
+  console.log(`✅ Updated ${deployedPath(chain, env)}`);
+  console.log('');
+  console.log('Next step: Run verification script');
+  console.log(`  node scripts/deploy/verify_via_foundry.js ${chain}`);
+  console.log('');
+  return { success: true, chain, addresses };
+}
+
+function main() {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+    console.log('Usage: node scripts/deploy/foundry_broadcast_record.js <chain>');
     console.log('');
-    console.log('Next step: Run verification script');
-    console.log(`  node scripts/verify_via_foundry.js ${chain}`);
+    console.log('Reads DexRouter deployment data from broadcast/ and updates base.js');
     console.log('');
+    console.log('Fields updated in base.js:');
+    console.log('  - newImpl: DexRouter contract address');
+    for (const contractName of ROUTER_LIBRARIES) {
+      const fieldName = contractNameToFieldName(contractName);
+      console.log(`  - ${fieldName}: ${contractName} library address`);
+    }
+    console.log('');
+    console.log('After updating base.js, run verify_via_foundry.js to verify contracts:');
+    console.log('  node scripts/deploy/verify_via_foundry.js <chain>');
+    console.log('');
+    console.log('Supported chains:');
+    console.log('  ' + Object.keys(CHAINS).join(', '));
+    process.exit(0);
+  }
+
+  const result = recordDeployment(args[0], args[1]);
+  if (!result.success) {
+    console.error(`Error: ${result.error}`);
+    process.exit(1);
   }
 }
 
-main();
+module.exports = { recordDeployment };
+
+// Run CLI if called directly
+if (require.main === module) {
+  main();
+}

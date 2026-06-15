@@ -17,7 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { CHAINS, ROUTER_LIBRARIES, contractNameToFieldName } = require('./verify_via_foundry');
+const { CHAINS, ROUTER_LIBRARIES, contractNameToFieldName } = require('./deploy/verify_via_foundry');
 
 const DEPLOYED_DIR = path.join(__dirname, 'deployed');
 const RECORD_DIR = path.join(__dirname, 'deployed_record');

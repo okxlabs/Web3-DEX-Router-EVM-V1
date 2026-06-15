@@ -2,14 +2,11 @@ const { network } = require('hardhat');
 
 const oec = require('./okc')
 const bsc = require('./bsc')
-const bsc_stg = require('./bsc_stg')
 const eth = require('./eth')
-const eth_stg = require('./eth_stg')
 const polygon = require('./polygon')
 const avax = require('./avax')
 const ftm = require('./ftm')
 const arb = require('./arb')
-const arb_stg = require('./arb_stg')
 const op = require('./op')
 const cro = require('./cro')
 const ethw = require('./ethw')
@@ -19,7 +16,6 @@ const flare = require('./flare')
 const linea = require('./linea')
 const mantle = require('./mantle')
 const base = require('./base')
-const base_stg = require('./base_stg')
 const scroll = require('./scroll')
 const canto = require('./canto')
 const manta = require('./manta')
@@ -42,7 +38,6 @@ const sonic = require('./sonic')
 const berachain = require('./berachain')
 const unichain = require('./unichain')
 const plasma = require('./plasma')
-const xlayer_stg = require('./xlayer_stg')
 const monad = require('./monad')
 const hyperevm = require('./hyperevm')
 const pharos = require('./pharos')
@@ -54,12 +49,8 @@ if (network.name === 'okc') {
     config = oec
 } else if (network.name === 'bsc') {
     config = bsc
-} else if (network.name === 'bsc_stg') {
-    config = bsc_stg
 } else if (network.name === 'eth') {
     config = eth
-} else if (network.name === 'eth_stg') {
-    config = eth_stg
 } else if (network.name === 'polygon') {
     config = polygon
 } else if (network.name === 'avax') {
@@ -68,8 +59,6 @@ if (network.name === 'okc') {
     config = ftm
 } else if (network.name === 'arb') {
     config = arb
-} else if (network.name === 'arb_stg') {
-    config = arb_stg
 } else if (network.name === 'op') {
     config = op
 } else if (network.name === 'cro') {
@@ -88,8 +77,6 @@ if (network.name === 'okc') {
     config = mantle
 } else if (network.name == 'base') {
     config = base
-} else if (network.name == 'base_stg') {
-    config = base_stg
 } else if (network.name == 'scroll') {
     config = scroll
 } else if (network.name == 'canto') {
@@ -134,8 +121,6 @@ if (network.name === 'okc') {
     config = unichain
 } else if (network.name == 'plasma') {
     config = plasma
-} else if (network.name == 'xlayer_stg') {
-    config = xlayer_stg
 } else if (network.name == 'monad') {
     config = monad
 } else if (network.name == 'hyperevm') {

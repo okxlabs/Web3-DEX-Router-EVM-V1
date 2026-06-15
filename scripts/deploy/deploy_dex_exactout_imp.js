@@ -1,8 +1,8 @@
 const hre = require("hardhat");
 const { ethers } = hre;
 const { Deployer } = require("@matterlabs/hardhat-zksync-deploy");
-const { isZkSyncNetwork, buildZkWallet } = require("./utils/zksync");
-const deployed = require('./deployed');
+const { isZkSyncNetwork, buildZkWallet } = require("../utils/zksync");
+const deployed = require('../deployed');
 
 const deployOnEvm = async () => {
     const DexRouter = await ethers.getContractFactory("DexRouterExactOut");

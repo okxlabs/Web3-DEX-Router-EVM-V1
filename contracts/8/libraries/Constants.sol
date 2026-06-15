@@ -1,6 +1,10 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// Per-chain constants are generated into ChainConfig.sol (gitignored) and
+// re-exported transitively to every importer of Constants.sol.
+import "./ChainConfig.sol";
+
 // =============================================================================
 // ============================ ETH Address Constants ==========================
 // =============================================================================
@@ -137,12 +141,9 @@ uint256 constant TO_B_MODE = 2; // value for toB commission and toB trim when re
 uint256 constant WAD = 10 ** 18;
 uint256 constant TRIM_RATE_LIMIT = 100;
 uint256 constant TRIM_DENOMINATOR_1E3 = 1000;
-uint256 constant NATIVE_TOKEN_TRANSFER_GAS_LIMIT = 100000; // NOTE: This value needs to be changed before deployment to different networks
-
 // =============================================================================
-// ==================== Network-Specific Addresses =============================
+// ==================== Network-Specific Constants =============================
 // =============================================================================
-// NOTE: These addresses need to be changed before deployment to different networks
-address constant _WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-address constant _APPROVE_PROXY = 0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58;
-address constant _PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+// NATIVE_TOKEN_TRANSFER_GAS_LIMIT, _WETH, _APPROVE_PROXY, _PERMIT2 and _FF_FACTORY
+// are per-chain values. They live in ChainConfig.sol (generated per deploy by
+// scripts/deploy/gen-chainconfig.js, gitignored) and are re-exported via the import above.

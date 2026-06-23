@@ -38,6 +38,8 @@ const sonic = require('./sonic')
 const berachain = require('./berachain')
 const unichain = require('./unichain')
 const plasma = require('./plasma')
+const xlayer_stg = require('./xlayer_stg')
+const xlayer_test = require('./xlayer_test')
 const monad = require('./monad')
 const hyperevm = require('./hyperevm')
 const pharos = require('./pharos')
@@ -121,6 +123,10 @@ if (network.name === 'okc') {
     config = unichain
 } else if (network.name == 'plasma') {
     config = plasma
+} else if (network.name == 'xlayer_stg') {
+    config = xlayer_stg
+} else if (network.name == 'xlayer_test') {
+    config = xlayer_test
 } else if (network.name == 'monad') {
     config = monad
 } else if (network.name == 'hyperevm') {

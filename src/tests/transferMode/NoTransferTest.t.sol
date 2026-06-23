@@ -6,7 +6,7 @@ import "@dex/adapter/FourMemeAdapter.sol";
 import "@dex/DexRouter.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/TokenApprove.sol";
-import "@dex/libraries/CommonUtils.sol";
+import "@dex/libraries/Constants.sol";
 import {PMMLib} from "@dex/libraries/PMMLib.sol";
 
 contract NoTransferTest is Test {
@@ -25,7 +25,7 @@ contract NoTransferTest is Test {
 
     function setUp() public {
         vm.createSelectFork("https://bsc-dataseed1.binance.org/");
-        dexRouter = new DexRouter();
+        dexRouter = new DexRouter(tokenApproveProxyAdmin);
         vm.startPrank(tokenApproveProxyAdmin);
         tokenApproveProxy.addProxy(address(dexRouter));
         vm.stopPrank();

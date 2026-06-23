@@ -37,8 +37,11 @@ requirement
 .cursor
 .claude
 out/
-
+zkout/
 .npm-cache
 .npm-home
 artifacts-zk
 cache-zk
+
+# Generated per-chain constants (seeded by scripts/deploy/ensure-chainconfig.js)
+contracts/8/libraries/ChainConfig.sol

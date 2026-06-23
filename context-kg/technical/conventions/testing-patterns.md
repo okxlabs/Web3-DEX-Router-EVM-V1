@@ -54,7 +54,7 @@ src/tests/
 
 ### Hardhat 脚本
 
-- 位置: `scripts/deploy_dex_imp.js`, `scripts/adapter/*.js`
+- 位置: `scripts/deploy/deploy_dex_imp.js`, `scripts/adapter/*.js`
 - 链配置: `scripts/deployed/<chain>/base.js`
 - 记录保存: `scripts/deployed_record/all_in_one_record.json`
 

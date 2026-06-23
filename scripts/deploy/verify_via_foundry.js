@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { deployedPath, normalizeEnv } = require('./deployedEnv');
 
-const DEPLOYED_DIR = path.join(__dirname, 'deployed');
-const PROJECT_ROOT = path.join(__dirname, '..');
+const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const ENV_FILE = path.join(PROJECT_ROOT, '.env');
 
 // Chain configurations (with optional aliases field for alternative names)
@@ -42,12 +42,9 @@ const CHAINS = {
   metis: { chainId: 1088, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
-  // test environments (same chainId as mainnet, separate deployment directories)
-  eth_stg: { chainId: 1, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=1', verifier: 'etherscan' },
-  arb_stg: { chainId: 42161, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=42161', verifier: 'etherscan' },
-  bsc_stg: { chainId: 56, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=56', verifier: 'etherscan' },
-  base_stg: { chainId: 8453, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=8453', verifier: 'etherscan' },
-  xlayer_stg: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
+  // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
+  // same chain (same chainId/rpc/verifier) and only uses a different address set
+  // (deployed/<chain>/stg.js). So there are no *_stg entries here.
 };
 
 /**
@@ -118,14 +115,17 @@ function readEnvFile() {
 const ENV_VARS = readEnvFile();
 
 // Router library contract names
+// Router libraries linked into the contracts/8 DexRouter (and recorded/verified with it).
+// NOTE: UnxswapExactOutRouter / UnxswapV3ExactOutRouter are NOT here — they belong to the
+// separate DexRouterExactOut deploy under contracts/exactout/ (different module/flow). Listing
+// them caused verify to look for contracts/8/router/UnxswapExactOutRouter.sol (which doesn't
+// exist) and fail. The exactout flow maintains its own list.
 const ROUTER_LIBRARIES = [
   'SmartSwapRouter',
   'DagRouter',
   'UnxswapRouter',
   'UnxswapV3Router',
   'SwapWrapRouter',
-  'UnxswapExactOutRouter',
-  'UnxswapV3ExactOutRouter',
 ];
 
 /**
@@ -154,11 +154,11 @@ function fieldNameToContractName(fieldName) {
  * @param {string} chain - Chain name
  * @returns {Object} - Object containing addresses
  */
-function readBaseJs(chain) {
-  const basePath = path.join(DEPLOYED_DIR, chain, 'base.js');
-  
+function readBaseJs(chain, env) {
+  const basePath = deployedPath(chain, env);
+
   if (!fs.existsSync(basePath)) {
-    throw new Error(`base.js not found for chain: ${chain}`);
+    throw new Error(`addresses file not found for ${chain}/${normalizeEnv(env)}`);
   }
   
   // Clear require cache to ensure fresh read
@@ -407,7 +407,7 @@ function flattenContracts(chain, addresses) {
  * @returns {Object} - Result object
  */
 async function verifyContracts(chainArg, options = {}) {
-  const { dryRun = false } = options;
+  const { dryRun = false, env = 'prod' } = options;
   
   // Resolve chain name (supports aliases and case-insensitive lookup)
   const chain = resolveChain(chainArg);
@@ -421,8 +421,8 @@ async function verifyContracts(chainArg, options = {}) {
   console.log(`Verifier: ${chainConfig.verifier}`);
   console.log(`Verifier URL: ${chainConfig.verifierUrl}`);
   
-  // Read addresses from base.js
-  const addresses = readBaseJs(chain);
+  // Read addresses from the env's addresses file
+  const addresses = readBaseJs(chain, env);
   
   console.log('\nFound addresses:');
   console.log(`  newImpl: ${addresses.newImpl || '(not found)'}`);
@@ -541,12 +541,13 @@ function main() {
   const args = process.argv.slice(2);
   
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log('Usage: node scripts/verify_via_foundry.js <chain> [options]');
+    console.log('Usage: node scripts/deploy/verify_via_foundry.js <chain> [options]');
     console.log('');
     console.log('Reads contract addresses from base.js and verifies contracts on block explorers.');
     console.log('');
     console.log('Options:');
     console.log('  --dry-run    Generate commands without executing them');
+    console.log('  --env <e>    Target environment: prod (default) | stg');
     console.log('');
     console.log('Verifier types:');
     console.log('  - etherscan: Generates and executes forge verify-contract commands');
@@ -564,8 +565,10 @@ function main() {
   
   const chainArg = args[0];
   const dryRun = args.includes('--dry-run');
-  
-  verifyContracts(chainArg, { dryRun })
+  const envIdx = args.indexOf('--env');
+  const env = envIdx !== -1 ? args[envIdx + 1] : 'prod';
+
+  verifyContracts(chainArg, { dryRun, env })
     .then(result => {
       process.exit(result.success ? 0 : 1);
     })

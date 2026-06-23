@@ -2,7 +2,7 @@
 
 NETWORK=${1}
 
-# Files that will be modified by ureplace.js
+# Generates the per-chain ChainConfig.sol for the target network (gen-chainconfig.js)
 FILES_TO_TRACK="contracts/8/libraries/CommonUtils.sol contracts/8/UnxswapV3Router.sol contracts/8/UnxswapV3ExactOutRouter.sol"
 
 echo "Saving file states before modifications..."
@@ -11,7 +11,7 @@ git stash push --include-untracked -- ${FILES_TO_TRACK} > /dev/null 2>&1
 
 # Run the checks
 echo "Running contract replacement for network: ${NETWORK}"
-npx hardhat run scripts/tools/ureplace.js --network ${NETWORK}
+npx hardhat run scripts/deploy/gen-chainconfig.js --network ${NETWORK}
 
 echo "Compiling contracts..."
 npx hardhat compile
@@ -21,7 +21,7 @@ npx hardhat run scripts/24_checkImpl.js --network ${NETWORK}
 
 # Reset contract constants back to Ethereum values
 echo "Resetting back to original values..."
-npx hardhat run scripts/tools/ureplace.js --network eth
+npx hardhat run scripts/deploy/gen-chainconfig.js --network eth
 
 # Restore the original files from git stash
 echo "Restoring original files from git..."

@@ -16,7 +16,7 @@ library UnxswapV3Router {
 
     bytes32 private constant _POOL_INIT_CODE_HASH =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54; // Pool init code hash
-    bytes32 private constant _FF_FACTORY = 0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000; // Factory address
+    // _FF_FACTORY is maintained centrally in Constants.sol (injected per-chain by gen-chainconfig).
     // concatenation of token0(), token1() fee(), transfer() and claimTokens() selectors
     bytes32 private constant _SELECTORS =
         0x0dfe1681d21220a7ddca3f43a9059cbb0a5ea466000000000000000000000000;

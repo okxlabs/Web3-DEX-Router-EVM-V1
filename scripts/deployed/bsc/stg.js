@@ -26,14 +26,14 @@ module.exports = {
     newExactOutImpl: "0xEe4199FC21Df7F6c09FD7Bbf598016b3C2bBf635",
     preDexRouterExactOut: "0x5f73fafF23dD542BD4Ef4ec67D7849f31B6662eB",
 
-    newImpl: "0x7afb22e2a2794b42171ef739fa546dc5789d9bc8",
+    newImpl: "0xc6dec856318e88b659bc0e837d4485991630906e",
 
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x437192Ceea87607D3a672b36137212D061d76e66",
-    smartSwapRouterLibrary: "0xE89602d8132Dc7A0e20A494Fb0F637E72dD6Cf69",
-    swapWrapRouterLibrary: "0x9daEF93e77a09f2d8b7cbe8eEE9e5e77aD1DAaDa",
+    dagRouterLibrary: "0xB8C2a8b198D2F0aE36ee2fB20d9Cb60f42832B4a",
+    smartSwapRouterLibrary: "0xd3b058C7e4060a281d50470c6101d0f6c38A7A59",
+    swapWrapRouterLibrary: "0x295Dc709728e99b51CB47b5C6bb2AAD7C0004d54",
     unxswapExactOutRouterLibrary: "0x1D8F9F3AF4Dc657D85e71863Fa9a47199Af2c3EB",
-    unxswapRouterLibrary: "0x590C8389a3E655c75eB2A4001f39a22FC99AfACD",
+    unxswapRouterLibrary: "0x751369B7e09F2e9eC194af9112E15E085D064618",
     unxswapV3ExactOutRouterLibrary: "0x916A1928e20ac6396c96Da50F837AED61a3b2044",
-    unxswapV3RouterLibrary: "0x069Ac8013d1Cb7ABc4F08e627251155E42E3E054",
+    unxswapV3RouterLibrary: "0xaBD2F4AFF72a2c47261416BED6D755A9513977Ef",
 }

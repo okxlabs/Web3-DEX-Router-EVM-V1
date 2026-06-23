@@ -7,6 +7,10 @@ libs = ["node_modules", "lib"]
 optimizer = true
 optimizer_runs = 200
 # via_ir = true
+
+# CREATE2 deployer used for `new X{salt:...}()` in forge scripts (overrides the
+# default 0x4e59b44847b379578588920cA78FbF26c0B4956C). Must exist on each target chain.
+# create2_deployer = "0xFaC897544659Fb136C064d5428947f5BC9cC1Fa2" (this is okx owner deployed)
 remappings = [
     "@ensdomains/=node_modules/@ensdomains/",
     "@openzeppelin/=node_modules/@openzeppelin/",
@@ -37,31 +41,33 @@ metadata = true
 metadata_hash = "none"
 use_literal_content = true
 
+# RPC URLs are sourced from environment variables (.env), not hardcoded here.
+# Each value is the full node URL including any provider key. See .env.sample.
 [rpc_endpoints]
-arb = "https://arb1.lava.build"
-avax = "https://avax-mainnet.g.alchemy.com/v2/Vi9EBxKbLyTvKM3I2LXvsOV8f6fWsbrj"
-base = "https://mainnet.base.org"
-bsc = "https://site1.moralis-nodes.com/bsc/ca1462af506243baa6d81ceef01176b9"
-conflux = "https://evm.confluxrpc.com"
-cro = "https://cronos-evm-rpc.publicnode.com"
-eth = "https://eth-mainnet.g.alchemy.com/v2/aMbWrR8EcmCGpF6rCSNk0P24wTZbbG7R"
-ethw = "https://mainnet.ethereumpow.org"
-flare = "https://flare-api.flare.network/ext/C/rpc"
-ftm = "https://rpc.ankr.com/fantom"
-linea = "https://linea-mainnet.infura.io/v3/13a28cf2840044cda0912560a2336725"
-mantle = "https://rpc.mantle.xyz"
-okc = "http://35.72.176.238:26659"
-op = "https://optimism.drpc.org"
-polygon = "https://polygon-mainnet.g.alchemy.com/v2/aMbWrR8EcmCGpF6rCSNk0P24wTZbbG7R"
-polyzkevm = "https://zkevm-rpc.com"
-scroll = "https://rpc.scroll.io"
-xlayer = "https://rpc.xlayer.tech"
-sonic = "https://sonic-rpc.publicnode.com"
-unichain = "https://unichain.drpc.org"
-monad = "https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO"
-katana = "https://katana.drpc.org"
-hyperevm = "https://rpc.hyperliquid.xyz/evm"
-pharos = "https://rpc.pharos.xyz"
+arb = "${ARB_RPC_URL}"
+avax = "${AVAX_RPC_URL}"
+base = "${BASE_RPC_URL}"
+bsc = "${BSC_RPC_URL}"
+conflux = "${CONFLUX_RPC_URL}"
+cro = "${CRO_RPC_URL}"
+eth = "${ETH_RPC_URL}"
+ethw = "${ETHW_RPC_URL}"
+flare = "${FLARE_RPC_URL}"
+ftm = "${FTM_RPC_URL}"
+linea = "${LINEA_RPC_URL}"
+mantle = "${MANTLE_RPC_URL}"
+okc = "${OKC_RPC_URL}"
+op = "${OP_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+polyzkevm = "${POLYZKEVM_RPC_URL}"
+scroll = "${SCROLL_RPC_URL}"
+xlayer = "${XLAYER_RPC_URL}"
+sonic = "${SONIC_RPC_URL}"
+unichain = "${UNICHAIN_RPC_URL}"
+monad = "${MONAD_RPC_URL}"
+katana = "${KATANA_RPC_URL}"
+hyperevm = "${HYPEREVM_RPC_URL}"
+pharos = "${PHAROS_RPC_URL}"
 
 [fmt]
 line_length = 120

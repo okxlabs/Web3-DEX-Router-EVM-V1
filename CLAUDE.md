@@ -144,6 +144,8 @@ npx hardhat deploy-and-verify --network arb --env stg --broadcast # staging 部�
 
 > 一句话:**stg 换实现靠升级 proxy(地址不变);prod 换实现靠新地址 + 白名单(无 proxy)。**
 
+> ⚠️ **已知问题:stg 现存代理的管理面(owner/pause)已损坏,暂不修复(见 issue #220)。** 这些 stg 代理曾从旧 OZ 布局(`owner`@slot51)原地升级到 `PausableModuleV2` 布局(`owner`@slot0),`owner` 被旧存储残留错位污染成 `0x000…0001`(xlayer 为 0)。后果:**所有 `onlyOwner`(`transferOwnership`/`setReporter`/`pause`/`unpause`)失效、合约无法暂停(fail-open)**;swap 不受影响,故功能正常。**不要在这些 stg 代理上验证 owner/pause 流程**——要测管理函数请另部一个非代理实例(`new DexRouter(owner)`,构造函数正确设 owner)或用 Foundry 测试。**prod 不受影响**(非代理、构造函数直设 owner)。
+
 ### 特权操作经 OKX Boss 系统托管(不在本地脚本执行)
 
 **本仓库只负责"产出并校验实现"——所有触及链上权限/资金的特权操作都不在本地脚本完成,而是通过 OKX 内部的 Boss 系统托管执行(多签/审批/审计齐全)。** 包括但不限于:

@@ -186,6 +186,25 @@ per-chain 常量(`_WETH`/`_APPROVE_PROXY`/`_PERMIT2`/`_FF_FACTORY`/gas limit)**�
 - **stg**:生效靠 `ProxyAdmin.upgrade`/`upgradeAndCall` 挂载到既有 proxy(见上方"stg 与 prod 的架构差异"),不走 `addProxy` 白名单这条 prod 闸门;同样**经 Boss 系统执行**。
 - 真实网络缺 `PRIVATE_KEY` 时 hardhat/zksync **fail-fast**(不回退公开测试私钥)——签名广播特权交易由 Boss 托管,本地无私钥。
 
+## 开发约定 (Development Conventions)
+
+### 可升级兼容性 —— 引入有状态组件的硬性要求
+
+stg 的 DexRouter/ExactOut 是**可升级代理**(prod 非代理,见"部署"章节)。可升级代理的存储是持久且跨实现共享的,而实现的存储布局是一份**没有编译期/部署期强制校验的隐式契约**——升级即"用新 struct 重新解释旧字节"。一旦布局错位,新代码会**静默误读**旧存储(真实案例:`owner` 从 OZ slot51 挪到 slot0 后读到残留 `0x01`,管理面全废,见 issue #220)。
+
+因此,**任何要进入可升级合约(proxy 后端)的有状态组件——尤其是被继承的 base 模块/mixin——在引入时必须证明可升级兼容,作为合并前的硬性评审项**。三条漂移轴各有对应要求:
+
+- **来源(provenance)**:凡 proxy 场景需设置的状态,**必须用带守护的 `initialize()` 写入,严禁只依赖构造函数**(构造函数只写 impl 存储,proxy 永远读不到)。组件要么有 initializer,要么完全无状态(仅 `constant`)。
+- **位置(position)**:布局必须 **append-only**。优先 **命名空间存储(ERC-7201,`keccak` 派生独立 slot)**,使存储与继承顺序解耦、天生抗碰撞;若用顺序布局,必须预留 `__gap` 且**禁止重排/改类型/换基类继承顺序**。
+- **位置域(locus)**:**价值/路由相关配置一律 `constant`/`immutable`,不得放进可变存储**。这维持核心不变量——swap 价值/路由路径只读 calldata + 常量 + 外部调用、**零依赖可变存储**,从而保证任何布局漂移最多只伤控制面(owner/pause/reporter/重入锁),**绝不改变资金去向**(最坏是阻断/DoS/锁死管理面,可再升级恢复)。
+
+### 升级闸门(防复发)
+
+- 每个可升级合约提交 `forge inspect <contract> storageLayout` 快照入库,PR 自动 diff。
+- 闸门校验的**不是**"布局是否相同",而是上述**核心不变量是否仍成立**(swap 入口除受控重入锁外不触碰可变存储、价值配置保持常量)。布局可漂移,爆炸半径必须锁在控制面。
+- **storage layout 视为接口**,与 ABI 同等纳入评审/审计;新组件准入清单不满足则不得用于可升级合约(可改走 prod 的非代理直部署模式)。
+- 一句话:**"能不能放进可升级合约"必须在引入时回答清楚,而不是部署后靠运气。**
+
 ## 依赖
 
 - OpenZeppelin Contracts v4.5.0/v4.7.0（可升级版）

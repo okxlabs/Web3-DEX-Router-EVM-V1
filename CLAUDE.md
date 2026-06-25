@@ -135,6 +135,29 @@ npx hardhat deploy-and-verify --network arb --env stg --broadcast # staging 部�
 - **为某条链加 staging = 新建 `deployed/<chain>/stg.js` 一个文件**,零配置复制。
 - 解析器:`scripts/deploy/deployedEnv.js`(`ENV_FILE = {prod: base.js, stg: stg.js}`,大小写无关目录解析)。
 
+### stg 与 prod 的架构差异(重要)
+
+`deploy-and-verify` 的**部署流程对 stg/prod 完全相同**(同样 4 步、同样 engine,只换地址集),但**链上合约架构刻意不同**:
+
+- **stg —— 可升级(代理)架构,为方便后端调试**:stg 跑的是 `Proxy + ProxyAdmin + impl` 的可升级结构。部署 `deploy-and-verify` 只产出**新的 impl**;让它生效是用 `ProxyAdmin.upgradeAndCall`/`upgrade` 把 impl **挂载到既有 DexRouter proxy**(`scripts/23_upgrade.js` 仅示意调用形态,**实际由 Boss 系统执行**,见下方"特权操作")。**proxy 地址不变**,后端无需换地址即可迭代。stg 的 `deployed/<chain>/stg.js` 里因此带有 `dexRouter`(proxy)、`newImpl`、`proxyAdmin` 等代理相关字段。
+- **prod —— 不可升级架构,为合规**:prod 出于合规考量**不使用代理**,DexRouter 就是 impl 本身,调用方**直接与 impl 交互**。因此每次升级都是一个**全新地址的新实现**,生效方式不是 proxy upgrade,而是把新 impl **加入 `TokenApproveProxy` 白名单(`addProxy`)**(见下方"安全闸门")。
+
+> 一句话:**stg 换实现靠升级 proxy(地址不变);prod 换实现靠新地址 + 白名单(无 proxy)。**
+
+### 特权操作经 OKX Boss 系统托管(不在本地脚本执行)
+
+**本仓库只负责"产出并校验实现"——所有触及链上权限/资金的特权操作都不在本地脚本完成,而是通过 OKX 内部的 Boss 系统托管执行(多签/审批/审计齐全)。** 包括但不限于:
+
+- **代理升级**:`ProxyAdmin.upgrade` / `upgradeAndCall`(stg 挂载新 impl)。
+- **白名单配置**:`TokenApproveProxy.addProxy` / `removeProxy`(prod 上线闸门)。
+- **所有权与角色**:`transferOwnership`、`setReporter`、`pause`/`unpause` 等 `onlyOwner` 操作。
+- **其它管理面**:approve-proxy 绑定、owner 迁移等(对应 `scripts/` 下 `03`–`23` 等运维脚本所代表的动作)。
+
+**对仓库与协作的影响:**
+- `scripts/` 下那些运维脚本(`23_upgrade.js`、`04_set_dex_approve_proxy.js`、`*_approve_proxy.js` 等)是**调用形态的参考实现 / 历史产物,不是当前的执行路径**。请勿假设"跑这个脚本"就能完成升级或配白名单;真正的执行入口在 Boss 系统。
+- 因此 **不要在 MR 里附带"代跑特权操作"的脚本**作为落地手段;落地步骤应描述为"在 Boss 系统对 `<proxy>` 执行 `<调用>`,签名者为 ProxyAdmin owner",并给出调用所需参数(目标地址、selector、calldata、目标 owner 等)。
+- 真实网络私钥也不在本地——本地缺 `PRIVATE_KEY` 时 `deploy-and-verify` 仅能做 impl 部署/校验,签名广播特权交易由 Boss 托管。
+
 ### 部署引擎(engine)抽象
 
 `deploy_dex_imp.js` 是薄分发器:按链查 `scripts/deploy/deploy.config.js` 选 engine。
@@ -157,8 +180,9 @@ per-chain 常量(`_WETH`/`_APPROVE_PROXY`/`_PERMIT2`/`_FF_FACTORY`/gas limit)**�
 
 ### 安全闸门
 
-- 部署的是**全新不可升级实现**,部署 ≠ 上线;真正生效靠把它加入 **`TokenApproveProxy` 白名单(`addProxy`)**——这才是资金闸门,务必复核后再操作。
-- 真实网络缺 `PRIVATE_KEY` 时 hardhat/zksync **fail-fast**(不回退公开测试私钥)。
+- **prod**:部署的是**全新不可升级实现**,部署 ≠ 上线;真正生效靠把它加入 **`TokenApproveProxy` 白名单(`addProxy`)**——这才是资金闸门。该操作**经 Boss 系统托管执行**(见上方"特权操作"),务必复核后再操作。
+- **stg**:生效靠 `ProxyAdmin.upgrade`/`upgradeAndCall` 挂载到既有 proxy(见上方"stg 与 prod 的架构差异"),不走 `addProxy` 白名单这条 prod 闸门;同样**经 Boss 系统执行**。
+- 真实网络缺 `PRIVATE_KEY` 时 hardhat/zksync **fail-fast**(不回退公开测试私钥)——签名广播特权交易由 Boss 托管,本地无私钥。
 
 ## 依赖
 

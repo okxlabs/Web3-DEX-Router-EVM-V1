@@ -21,9 +21,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 ///         candidate's promise.
 ///
 /// @dev Immutable, no admin, no upgrade, no storage state (only ReentrancyGuard._status slot).
-contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
+contract DynamicRoute is IAdapter, ReentrancyGuard {
     // =========================== Constants ===========================
 
+    uint256 internal constant ORIGIN_PAYER =
+        0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000;
     uint8 internal constant MODE_AUTO = 0;
     uint256 internal constant MIN_CANDIDATES = 2;
     uint256 internal constant MAX_CANDIDATES = 8;
@@ -155,7 +157,7 @@ contract DynamicRoute is IAdapter, CommonLib, ReentrancyGuard {
         {
             (bool reverseW, address poolW) = _decodeRawData(cs[winner].rawData);
             SafeERC20.safeTransfer(IERC20(fromToken), cs[winner].assetTo, amount);
-            _exeAdapter(reverseW, cs[winner].adapter, to, poolW, cs[winner].extraData, refundTo);
+            CommonLib.exeAdapter(reverseW, cs[winner].adapter, to, poolW, cs[winner].extraData, refundTo);
         }
 
         // Post-execution output verification: lock the contract's trust model to EVM-observed

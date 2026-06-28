@@ -28,6 +28,8 @@ const DEPLOY_CONFIG = {
   iotex: { engine: 'foundry', forgeArgs: ['--legacy'] },
   // polyzkevm: RPC rejects EIP-1559 fee estimation (unsupported feature: eip1559)
   polyzkevm: { engine: 'foundry', forgeArgs: ['--legacy'] },
+  // zeta: RPC rejects EIP-1559 fee estimation (eth_gasPrice not available), needs legacy
+  zeta: { engine: 'foundry', forgeArgs: ['--legacy'] },
 
   // --- Hardhat (zkSync) engine ---
   // Standard `forge` cannot produce zkSync bytecode (needs zksolc), so zkSync deploys

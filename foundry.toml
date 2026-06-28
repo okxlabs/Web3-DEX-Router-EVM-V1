@@ -68,6 +68,16 @@ monad = "${MONAD_RPC_URL}"
 katana = "${KATANA_RPC_URL}"
 hyperevm = "${HYPEREVM_RPC_URL}"
 pharos = "${PHAROS_RPC_URL}"
+manta = "${MANTA_RPC_URL}"
+mode = "${MODE_RPC_URL}"
+zeta = "${ZETA_RPC_URL}"
+metis = "${METIS_RPC_URL}"
+merlin = "${MERLIN_RPC_URL}"
+blast = "${BLAST_RPC_URL}"
+sei = "${SEI_RPC_URL}"
+apechain = "${APECHAIN_RPC_URL}"
+iotex = "${IOTEX_RPC_URL}"
+plasma = "${PLASMA_RPC_URL}"
 
 [fmt]
 line_length = 120

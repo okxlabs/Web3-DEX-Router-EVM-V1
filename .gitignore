@@ -45,3 +45,6 @@ cache-zk
 
 # Generated per-chain constants (seeded by scripts/deploy/ensure-chainconfig.js)
 contracts/8/libraries/ChainConfig.sol
+
+# Per-chain logs from the parallel deploy orchestrator (deploy-and-verify-many)
+deploy-logs/

@@ -22,10 +22,12 @@ const DEPLOY_CONFIG = {
   // --- Foundry engine, with chain-specific forge args ---
   // conflux: gas estimation is unreliable, bump the multiplier
   conflux: { engine: 'foundry', forgeArgs: ['--gas-estimate-multiplier', '500'] },
-  // metis / merlin / iotex: require legacy (pre-EIP-1559) transactions
+  // metis / merlin / iotex / polyzkevm: require legacy (pre-EIP-1559) transactions
   metis: { engine: 'foundry', forgeArgs: ['--legacy'] },
   merlin: { engine: 'foundry', forgeArgs: ['--legacy'] },
   iotex: { engine: 'foundry', forgeArgs: ['--legacy'] },
+  // polyzkevm: RPC rejects EIP-1559 fee estimation (unsupported feature: eip1559)
+  polyzkevm: { engine: 'foundry', forgeArgs: ['--legacy'] },
 
   // --- Hardhat (zkSync) engine ---
   // Standard `forge` cannot produce zkSync bytecode (needs zksolc), so zkSync deploys

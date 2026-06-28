@@ -42,6 +42,8 @@ const CHAINS = {
   metis: { chainId: 1088, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
+  pharos: { chainId: 1672, verifier: 'manual' },
+  hyperevm: { chainId: 999, verifier: 'manual' },
   // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
   // same chain (same chainId/rpc/verifier) and only uses a different address set
   // (deployed/<chain>/stg.js). So there are no *_stg entries here.

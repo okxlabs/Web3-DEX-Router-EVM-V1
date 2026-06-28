@@ -9,6 +9,7 @@ require("@openzeppelin/hardhat-upgrades");
 require('dotenv').config();
 require("./scripts/multichain.js");
 require("./tasks/deploy-and-verify");
+require("./tasks/deploy-and-verify-many");
 require("./tasks/check-impl");
 
 // Deployer/signer key. On local networks (hardhat/localhost, or no --network) we fall back

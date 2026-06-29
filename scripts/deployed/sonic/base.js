@@ -14,7 +14,7 @@ module.exports = {
     _HASHED_NAME: '',
     _HASHED_VERSION: '',
     _TYPE_HASH: '',
-    _CACHED_CHAIN_ID: 1329,
+    _CACHED_CHAIN_ID: 146,
     _FF_FACTORY: "",
     commisson: "",
     p2pTrading: "",

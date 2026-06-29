@@ -82,6 +82,28 @@ task("deploy-and-verify", "Deploy the DexRouter implementation, record addresses
         throw new Error(`ChainConfig generation failed: ${e.message}`);
       }
 
+      // Step 1b: Verify the just-generated ChainConfig addresses are real & correct
+      // BEFORE deploying. Catches typo'd-but-valid addresses (wrong WETH / permit2 /
+      // approveProxy) that the shape-only validator misses and that no getter can
+      // surface post-deploy. Errors abort; on-chain checks degrade to a warning when
+      // the RPC is unreachable. See scripts/deploy/verify-chainconfig.js.
+      console.log("\n[Step 1b/4] Verifying ChainConfig addresses (offline + on-chain identity)...");
+      {
+        const { rpcUrlFor } = require('../scripts/deploy/rpc');
+        const { verifyChainConfig } = require('../scripts/deploy/verify-chainconfig');
+        const rpcUrl = rpcUrlFor(chain, hre, CHAINS);
+        const res = await verifyChainConfig(chain, env, { rpcUrl });
+        for (const w of res.warnings) console.log(`  ⚠️  ${w}`);
+        if (res.onchainSkipped) {
+          console.log("  ⚠️  On-chain identity checks SKIPPED (RPC unreachable) — only offline cross-checks ran.");
+        }
+        if (res.errors.length) {
+          for (const e of res.errors) console.error(`  ❌ ${e}`);
+          throw new Error(`ChainConfig verification failed (${res.errors.length} error(s)) — aborting before deploy.`);
+        }
+        console.log("  ✅ ChainConfig addresses verified");
+      }
+
       // Step 2: Deploy via the chain's engine
       console.log("\n[Step 2/4] Deploying DexRouter...");
       const deployResult = await deployDexRouter(chain, { broadcast, dryRun });

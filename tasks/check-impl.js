@@ -22,20 +22,7 @@ const { task } = require("hardhat/config");
 const path = require("path");
 const { ethers } = require("ethers");
 const { loadDeployed, normalizeEnv } = require("../scripts/deploy/deployedEnv");
-
-// RPC url for a chain: prefer env <CHAIN>_RPC_URL (incl. aliases), then hardhat network config.
-function rpcUrlFor(chain, hre, CHAINS) {
-  const aliases = (CHAINS[chain] && CHAINS[chain].aliases) || [];
-  for (const c of [chain, ...aliases]) {
-    const env = process.env[`${c.toUpperCase()}_RPC_URL`];
-    if (env) return env;
-  }
-  for (const c of [chain, ...aliases]) {
-    const net = hre.config.networks[c];
-    if (net && net.url) return net.url;
-  }
-  return null;
-}
+const { rpcUrlFor } = require("../scripts/deploy/rpc");
 
 async function checkBytecode(chain, hre, CHAINS, env) {
   const { generate } = require("../scripts/deploy/gen-chainconfig");

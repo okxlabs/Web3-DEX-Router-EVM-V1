@@ -6,6 +6,7 @@ broadcast
 cache
 artifacts
 .env
+.env.bak*
 abi/
 *.xml
 *.iml

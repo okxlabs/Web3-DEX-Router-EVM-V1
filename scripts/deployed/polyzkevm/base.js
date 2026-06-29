@@ -10,7 +10,11 @@ module.exports = {
     investEntrance: "0x7251FEbEABB01eC9dE53ECe7a96f1C951F886Dd2",
     limitOrder: "",
     protocolAdmin: "0x06C95a3934d94d5ae5bf54731bD2840ceFee6F87",
-    _FF_FACTORY: "0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000",
+    // Disabled: the canonical UniV3 factory (0x1F98..984) is NOT deployed on Polygon zkEVM,
+    // so the UnxswapV3 CREATE2 fast-path can never find pools here. zkEVM's actual UniV3 is a
+    // GFX Labs deploy at 0xff83c3c800Fec21de45C5Ec30B69ddd5Ee60DFC2 (front-end DEPRECATED); not
+    // wired in since the pool init code hash would also need verifying. Empty => zero bytes32.
+    _FF_FACTORY: "",
     _CACHED_DOMAIN_SEPARATOR: "0xb37f5ff433f9eedcedff7b8ec82d49abd0e3102a3d97b7d7a645ce600f6919cb",
     _HASHED_NAME: "0x9569cad29571f225e7f2c73ecd677d78be383da74efd13f4af2bade05dc1a8de",
     _HASHED_VERSION: "0xe6bbd6277e1bf288eed5e8d1780f9a50b239e86b153736bceebccf4ea79d90b3",

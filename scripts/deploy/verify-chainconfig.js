@@ -166,8 +166,20 @@ async function verifyChainConfig(chain, env, opts = {}) {
   for (const [label, addr] of [["_WETH", weth], ["_APPROVE_PROXY", approveProxy]]) {
     if (ADDR_RE.test(addr || "")) await checkCode(label, addr, "has no code on-chain (not a contract)");
   }
-  for (const [label, addr] of [["_PERMIT2", isZero(permit2) ? null : permit2], ["_FF_FACTORY factory", ffEmbedded]]) {
-    if (addr) await checkCode(label, addr, "is configured but has no code on-chain");
+  // _PERMIT2: configured-but-no-code is a real error.
+  if (!isZero(permit2)) await checkCode("_PERMIT2", permit2, "is configured but has no code on-chain");
+  // _FF_FACTORY: the codebase uses the canonical Uniswap V3 factory address chain-wide
+  // (ChainConfig default + hardcoded in UnxswapV3ExactOutRouter). On chains with no UniV3
+  // deploy at that address it legitimately has no code — the UnxswapV3 CREATE2 fast-path
+  // is simply unusable there and the router routes around it. So this is a WARNING, not an
+  // error (e.g. polyzkevm: 0x1F98…984 has no code on chain 1101).
+  if (ffEmbedded) {
+    try {
+      const code = await withTimeout(provider.getCode(ffEmbedded), timeoutMs, `getCode(${ffEmbedded})`);
+      if (!code || code === "0x") warnings.push(`_FF_FACTORY ${ffEmbedded} has no code on ${chain} — UniV3 fast-path unusable here (ok if the chain has no Uniswap V3 at the canonical factory)`);
+    } catch (e) {
+      warnings.push(`could not fetch code for _FF_FACTORY ${ffEmbedded} (${shortErr(e)}) — unverified`);
+    }
   }
 
   // Fund-gate cross-check: the configured TokenApproveProxy must report the configured

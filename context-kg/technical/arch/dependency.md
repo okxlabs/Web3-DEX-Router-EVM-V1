@@ -16,12 +16,17 @@ description: "DexRouter 模块与外部依赖方向规则"
 | 路由库 | EventLib | 库函数调用 | 事件发出 |
 | DexRouter | ExtraDataLib | 库函数调用 | calldata 解析 |
 | CommonLib | IAdapter | 外部调用 | 执行具体 DEX 协议交换 |
-| TransferLib | IApproveProxy | 外部调用 | 传统授权模式代币转移 |
+| TransferLib | IApproveProxy | 外部调用 | 传统授权模式代币转移（runtime claim 平面） |
 | TransferLib | IPermit2 | 外部调用 | Permit2 模式代币转移 |
+| DynamicRoute (JIT) | CommonLib | 库函数调用 | 试运行择优后执行赢家适配器 |
+| DynamicRoute (JIT) | IAdapter | 外部调用 | dry-run / 真实执行候选适配器 |
+| SecurityManager | ITokenApproveProxyAdmin | 外部调用 | 治理底层 TokenApproveProxy（管理平面，与 runtime claim 平面分离） |
 
 - [Rule] 禁止反向调用：适配器 → 路由库、支撑库 → 路由库
 - [Rule] 禁止循环依赖：库之间 **must** 保持单向调用
 - [Rule] 适配器 **never** 直接访问 DexRouter 存储
+- [Rule] SecurityManager **must** 仅经 `ITokenApproveProxyAdmin`（管理平面）访问 TokenApproveProxy，**never** 引入 `IApproveProxy`（runtime claim 平面）
+- [Rule] DynamicRoute（JIT）虽实现 IAdapter，但属路由层原语，候选适配器 **must** 由可信后端提供，**never** 作为任意适配器分发的无许可入口
 
 ---
 

@@ -17,5 +17,11 @@ module.exports = {
     _TYPE_HASH: "",
     nftmarketplace: "",
 
-    newImpl: "0x722db4f285F8bD91ef7AF6DA397e83f7fA4E80a7",
+    newImpl: "0x450a428daab37aa6c492de565c41072e164fa3f7",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xdB67fA11cE48920285D2d15eF36D9149fc97cDAc",
+    smartSwapRouterLibrary: "0xa4e6AF4683F38B13B78c5d0B3F46c80417A8c4C0",
+    swapWrapRouterLibrary: "0x88e331344F4f03f81327f8ec8C7D5A650b4aF69a",
+    unxswapRouterLibrary: "0xe8C9d1dD48dd8E26a0Cd95cbB05bc3cc203833a1",
+    unxswapV3RouterLibrary: "0x573Ce2798e233A4159Ab6Dd0539E0a450930aa29",
 }

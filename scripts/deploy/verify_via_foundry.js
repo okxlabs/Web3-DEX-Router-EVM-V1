@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { deployedPath, normalizeEnv } = require('./deployedEnv');
+// NB: gen-chainconfig is required lazily inside verifyContracts, not here — it require()s this
+// module back (for CHAINS/resolveChain), so a top-level require hits the circular-dependency
+// partial-exports trap and `generate` comes back undefined.
 
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const ENV_FILE = path.join(PROJECT_ROOT, '.env');
@@ -464,7 +467,14 @@ async function verifyContracts(chainArg, options = {}) {
   
   // Read addresses from the env's addresses file
   const addresses = readBaseJs(chain, env);
-  
+
+  // Regenerate ChainConfig.sol for THIS chain BEFORE flattening/compiling. Otherwise we verify
+  // against whatever ChainConfig.sol is checked in (a stale per-chain seed), which publishes the
+  // wrong constants on the explorer — e.g. eth's _WETH/_FF_FACTORY and _EXPECTED_CHAIN_ID=1 for a
+  // non-eth chain. Mirrors deploy-and-verify Step 1 so the verified source matches on-chain bytecode.
+  console.log(`\nRegenerating ChainConfig.sol for ${chain}/${normalizeEnv(env)} (match deployed bytecode) ...`);
+  require('./gen-chainconfig').generate(chain, env); // lazy require — see note by the imports
+
   console.log('\nFound addresses:');
   console.log(`  newImpl: ${addresses.newImpl || '(not found)'}`);
   if (addresses.constructorArg) {

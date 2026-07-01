@@ -51,6 +51,15 @@ const CHAINS = {
   // verifier: blockscout (no API key required)
   // cro: Cronos explorer's Etherscan-compatible API is at /mainnet/api/v2 (NOT /mainnet/api) and is
   // key-gated — uses the etherscan verifier with CROSCAN_API_KEY (passed as ?apikey=).
+  // ⚠️ KNOWN ISSUE — Cloudflare blocks automated verification: explorer-api.cronos.org sits behind
+  // Cloudflare bot-management. GET/read requests pass, but the verifysourcecode POST is challenged.
+  //   - forge's (reqwest) POST is always CF-blocked (returns an HTML challenge → "Failed to
+  //     deserialize response"). So `verify_via_foundry.js cro` cannot complete via forge.
+  //   - A node fetch POST bypasses CF for SMALL bodies (verified UnxswapRouter/UnxswapV3Router that
+  //     way), but CF's WAF still blocks the LARGE standard-json bodies (DexRouter + the big libs),
+  //     deterministically — browser-like headers/retries don't help.
+  // => The large contracts (DexRouter, SmartSwapRouter, DagRouter, SwapWrapRouter) must be verified
+  //    via the Cronos web UI in a real browser, or Cronos must relax the CF WAF for verification.
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/v2', verifier: 'etherscan', apiKeyEnv: 'CROSCAN_API_KEY' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   zeta: { chainId: 7000, verifierUrl: 'https://explorer.zetachain.com/api/', verifier: 'blockscout' },

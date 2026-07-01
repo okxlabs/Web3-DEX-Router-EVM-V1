@@ -34,10 +34,11 @@ const CHAINS = {
   polyzkevm: { chainId: 1101, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/polyzkevm', verifier: 'oklink' },
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
+  // verifier: blockscout (no API key required)
+  cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/', verifier: 'blockscout' },
   // verifier: manual (flatten contracts for web verification)
   mode: { chainId: 34443, verifier: 'manual' },
   zeta: { chainId: 7000, verifier: 'manual' },
-  cro: { chainId: 25, verifier: 'manual' },
   conflux: { chainId: 1030, verifier: 'manual' },
   metis: { chainId: 1088, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
@@ -218,6 +219,28 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     
     cmd += ` \\\n  ${contractAddress}`;
     cmd += ` \\\n  ${contractPath}`;
+  } else if (chainConfig.verifier === 'blockscout') {
+    // Blockscout needs no API key; it uses the host's /api/ endpoint. Like sourcify, forge
+    // will hijack this to etherscan if ETHERSCAN_API_KEY is set — executeCommand blanks it.
+    cmd += ` \\\n  ${contractAddress}`;
+    cmd += ` \\\n  ${contractPath}`;
+    cmd += ` \\\n  --verifier blockscout`;
+    cmd += ` \\\n  --verifier-url "${chainConfig.verifierUrl}"`;
+    cmd += ` \\\n  --num-of-optimizations 200`;
+    cmd += ` \\\n  --compiler-version v0.8.17+commit.8df45f5f`;
+
+    if (constructorArgs) {
+      cmd += ` \\\n  --constructor-args $(cast abi-encode "constructor(address)" ${constructorArgs})`;
+    }
+
+    if (libraries && Object.keys(libraries).length > 0) {
+      for (const [libField, libAddr] of Object.entries(libraries)) {
+        const contractName = fieldNameToContractName(libField);
+        cmd += ` \\\n  --libraries contracts/8/router/${contractName}.sol:${contractName}:${libAddr}`;
+      }
+    }
+
+    cmd += ` \\\n  --watch`;
   } else if (chainConfig.verifier === 'oklink') {
     cmd += ` \\\n  ${contractAddress}`;
     cmd += ` \\\n  ${contractPath}`;
@@ -322,13 +345,13 @@ function executeCommand(command, name) {
   const singleLineCmd = command.replace(/\s*\\\n\s*/g, ' ');
 
   // forge auto-selects the etherscan verifier whenever ETHERSCAN_API_KEY is present — this
-  // silently overrides an explicit `--verifier sourcify` and then fails because the sourcify
-  // host-only URL isn't a valid etherscan API endpoint (e.g. monad). Blank the key for sourcify
-  // verifications so forge honors the requested verifier.
+  // silently overrides an explicit `--verifier sourcify|blockscout` and then fails because the
+  // host-only URL isn't a valid etherscan API endpoint (e.g. monad sourcify, cronos blockscout).
+  // Blank the key for those verifications so forge honors the requested verifier.
   // NB: must set to '' (not delete) — forge auto-loads .env from the project root, so a deleted
   // var is re-populated from .env; an explicit empty value in the child env is NOT overridden.
   const env = { ...process.env };
-  if (/--verifier\s+sourcify\b/.test(singleLineCmd)) {
+  if (/--verifier\s+(sourcify|blockscout)\b/.test(singleLineCmd)) {
     env.ETHERSCAN_API_KEY = '';
   }
 

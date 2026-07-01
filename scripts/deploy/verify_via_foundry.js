@@ -202,8 +202,8 @@ function readBaseJs(chain, env) {
  * @returns {string} - Verify command
  */
 function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain, options = {}) {
-  const { constructorArgs, libraries } = options;
-  
+  const { constructorArgs, libraries, force } = options;
+
   let cmd = 'forge verify-contract';
   
   if (chainConfig.verifier === 'sourcify' || chainConfig.verifier === 'custom') {
@@ -296,7 +296,14 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     
     cmd += ` \\\n  --watch`;
   }
-  
+
+  // --force: re-submit even if the explorer already reports the contract verified. Needed to
+  // OVERWRITE a previously-published wrong source (e.g. a lenient verifier like OKLink that
+  // accepted mismatched source), which forge would otherwise skip via its is-verified pre-check.
+  if (force) {
+    cmd += ` \\\n  --skip-is-verified-check`;
+  }
+
   return cmd;
 }
 
@@ -307,9 +314,10 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
  * @param {Object} chainConfig - Chain configuration
  * @returns {Array} - Array of command objects {name, command}
  */
-function generateVerifyCommands(chain, addresses, chainConfig) {
+function generateVerifyCommands(chain, addresses, chainConfig, opts = {}) {
   const commands = [];
-  
+  const { force = false } = opts;
+
   // Verify DexRouter
   if (addresses.newImpl) {
     const cmd = generateVerifyCommand(
@@ -320,17 +328,18 @@ function generateVerifyCommands(chain, addresses, chainConfig) {
       {
         constructorArgs: addresses.constructorArg,
         libraries: addresses.libraries,
+        force,
       }
     );
     commands.push({ name: 'DexRouter', command: cmd });
   }
-  
+
   // Verify each library contract
   for (const [libField, libAddr] of Object.entries(addresses.libraries)) {
     const contractName = fieldNameToContractName(libField);
     const contractPath = `contracts/8/router/${contractName}.sol:${contractName}`;
-    
-    const cmd = generateVerifyCommand(libAddr, contractPath, chainConfig, chain, {});
+
+    const cmd = generateVerifyCommand(libAddr, contractPath, chainConfig, chain, { force });
     commands.push({ name: contractName, command: cmd });
   }
   
@@ -451,7 +460,7 @@ function flattenContracts(chain, addresses) {
  * @returns {Object} - Result object
  */
 async function verifyContracts(chainArg, options = {}) {
-  const { dryRun = false, env = 'prod' } = options;
+  const { dryRun = false, env = 'prod', force = false } = options;
   
   // Resolve chain name (supports aliases and case-insensitive lookup)
   const chain = resolveChain(chainArg);
@@ -519,7 +528,7 @@ async function verifyContracts(chainArg, options = {}) {
   }
   
   // Generate verify commands for etherscan/oklink/sourcify
-  const commands = generateVerifyCommands(chain, addresses, chainConfig);
+  const commands = generateVerifyCommands(chain, addresses, chainConfig, { force });
   result.commands = commands;
   
   if (dryRun) {
@@ -599,6 +608,7 @@ function main() {
     console.log('Options:');
     console.log('  --dry-run    Generate commands without executing them');
     console.log('  --env <e>    Target environment: prod (default) | stg');
+    console.log('  --force,-f   Re-submit even if already verified (overwrite wrong published source)');
     console.log('');
     console.log('Verifier types:');
     console.log('  - etherscan: Generates and executes forge verify-contract commands');
@@ -616,10 +626,11 @@ function main() {
   
   const chainArg = args[0];
   const dryRun = args.includes('--dry-run');
+  const force = args.includes('--force') || args.includes('-f');
   const envIdx = args.indexOf('--env');
   const env = envIdx !== -1 ? args[envIdx + 1] : 'prod';
 
-  verifyContracts(chainArg, { dryRun, env })
+  verifyContracts(chainArg, { dryRun, env, force })
     .then(result => {
       process.exit(result.success ? 0 : 1);
     })

@@ -53,7 +53,7 @@ const CHAINS = {
   // key-gated — uses the etherscan verifier with CROSCAN_API_KEY (passed as ?apikey=).
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/v2', verifier: 'etherscan', apiKeyEnv: 'CROSCAN_API_KEY' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
-  zeta: { chainId: 7000, verifierUrl: 'https://zetachain.blockscout.com/api/', verifier: 'blockscout' },
+  zeta: { chainId: 7000, verifierUrl: 'https://explorer.zetachain.com/api/', verifier: 'blockscout' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
   // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
   // ETHERSCAN_API_KEY value works as a dummy key.

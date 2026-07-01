@@ -39,8 +39,10 @@ const CHAINS = {
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   zeta: { chainId: 7000, verifierUrl: 'https://zetachain.blockscout.com/api/', verifier: 'blockscout' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
+  // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
+  // ETHERSCAN_API_KEY value works as a dummy key.
+  conflux: { chainId: 1030, verifierUrl: 'https://evmapi.confluxscan.org/api/', verifier: 'custom' },
   // verifier: manual (flatten contracts for web verification)
-  conflux: { chainId: 1030, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
   pharos: { chainId: 1672, verifier: 'manual' },

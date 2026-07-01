@@ -32,6 +32,15 @@ const CHAINS = {
   monad: { chainId: 143, verifierUrl: 'https://sourcify-api-monad.blockvision.org/', verifier: 'sourcify' },
   zksyncEra: { chainId: 324, verifierUrl: 'https://block-explorer-api.mainnet.zksync.io/api', verifier: 'custom', aliases: ['zksync'] },
   // verifier: oklink
+  // ⚠️ OKLink is a LENIENT verifier: it does NOT recompile-and-bytecode-match the submitted source
+  // (proven — it published eth-config source for a polyzkevm contract whose on-chain bytecode
+  // differs at 60 config positions), and it LOCKS a contract once verified (re-submission, even with
+  // forge --skip-is-verified-check, returns success but does NOT overwrite the stored source).
+  // Consequences: (1) correctness relies entirely on submitting the RIGHT source — always let this
+  // script regenerate ChainConfig per-chain first (it now does); (2) a wrong source already published
+  // can only be corrected OKLink-side (un-verify/re-verify), not via this tool. ftm & polyzkevm are
+  // currently in this bad state (see their base.js). OKLink chain slug must match OKLink's naming
+  // (e.g. Polygon zkEVM is `polygon_zkevm`, not the repo key `polyzkevm`).
   manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
   ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
   // OKLink's chain slug for Polygon zkEVM is `polygon_zkevm`, not the repo chain key `polyzkevm`

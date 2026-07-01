@@ -26,5 +26,11 @@ module.exports = {
     // Recovered on-chain: prod deploy broadcast succeeded (ONCHAIN EXECUTION COMPLETE) but the
     // record step didn't run, so this was resolved via deployer CREATE nonce-5 address (code 13322,
     // matches sibling chains deployed at the same nonce). Libraries are at CREATE2 addresses.
+    // ⚠️ OKLink source verification: published source on OKLink is WRONG (shows eth's ChainConfig —
+    // _WETH 0xC02a, chainid 1) from a since-fixed verify tool bug. On-chain bytecode is correct
+    // (polyzkevm config, proven: at all 60 config-differing byte positions on-chain matches
+    // polyzkevm 60/60, eth 0/60). OKLink accepted the mismatched source (no strict match) and LOCKS
+    // verified contracts, so it can't be overwritten via API/forge — needs OKLink-side re-verify.
+    // See verify_via_foundry.js OKLink note.
     newImpl: "0x61e7E4936E546910658F9458Ddfd785B44EC91Ae",
 }

@@ -10,6 +10,7 @@ module.exports = {
     limitOrder: "",
     protocolAdmin: "0x06C95a3934d94d5ae5bf54731bD2840ceFee6F87",
     _FF_FACTORY: "0xff70C62C8b8e801124A4Aa81ce07b637A3e83cb9190000000000000000000000",
+    // human checked wnative and wnative relayer and tokenApprove and _FF_FACTORY is correct
     _CACHED_DOMAIN_SEPARATOR: "",
     _HASHED_NAME: "",
     _HASHED_VERSION: "",

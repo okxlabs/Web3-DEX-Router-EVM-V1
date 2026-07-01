@@ -4,6 +4,11 @@ module.exports = {
     tokenApprove: "0x70cbb871e8f30fc8ce23609e9e0ea87b6b222f58",
     tokenApproveProxy: "0xE9BBD6eC0c9Ca71d3DcCD1282EE9de4F811E50aF",
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    // human checked wnative and wnative relayer and tokenApprove is correct
+    // Disabled: the canonical UniV3 factory (0x1F98..984) is NOT deployed on Cro,
+    // so the UnxswapV3 CREATE2 fast-path can never find pools here. not
+    // wired in since the pool init code hash would also need verifying. Empty => zero bytes32.
+    _FF_FACTORY: "",
     dexRouter: "0xf332761c673b59B21fF6dfa8adA44d78c12dEF09",
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",

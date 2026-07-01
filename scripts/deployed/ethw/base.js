@@ -3,6 +3,8 @@ module.exports = {
     wNativeRelayer: "0x4D8d82F269A2704867b6cAf58d6e8389e3066eC9",
     tokenApprove: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
     tokenApproveProxy: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
+    _FF_FACTORY: "", // uniswap v3 factory not deployed on ETHW
+    // human checked wnative and wnative relayer and tokenApprove and _FF_FACTORY is correct
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0x51B6812B030a19cF801be8C4B41748488A7e1D60",
     xbridge: "0xFc99f58A8974A4bc36e60E2d490Bb8D72899ee9f",

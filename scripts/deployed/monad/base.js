@@ -7,7 +7,7 @@ module.exports = {
     dexRouter: "0xb1E4E25b1938c78Ec0b21cCb2D6a0Be60aA7E63f",
     xbridge: "",
     investEntrance: "",
-    _FF_FACTORY: "0xff204faca1764b154221e35c0d20abb3c5257104980000000000000000000000",
+    _FF_FACTORY: "0xff204faca1764b154221e35c0d20abb3c5257104980000000000000000000000", // uniswap v3 fork, not the canonical UniV3 factory
     _CACHED_CHAIN_ID: 143,
     commisson: "",
     newImpl: "0x7A7AD9aa93cd0A2D0255326E5Fb145CEc14997FF",

@@ -38,8 +38,8 @@ const CHAINS = {
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/', verifier: 'blockscout' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   zeta: { chainId: 7000, verifierUrl: 'https://zetachain.blockscout.com/api/', verifier: 'blockscout' },
+  mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
   // verifier: manual (flatten contracts for web verification)
-  mode: { chainId: 34443, verifier: 'manual' },
   conflux: { chainId: 1030, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },

@@ -31,7 +31,9 @@ const CHAINS = {
   // verifier: oklink
   manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
   ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
-  polyzkevm: { chainId: 1101, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/polyzkevm', verifier: 'oklink' },
+  // OKLink's chain slug for Polygon zkEVM is `polygon_zkevm`, not the repo chain key `polyzkevm`
+  // (a wrong slug makes forge's getabi pre-check return an undeserializable response).
+  polyzkevm: { chainId: 1101, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/polygon_zkevm', verifier: 'oklink' },
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: blockscout (no API key required)

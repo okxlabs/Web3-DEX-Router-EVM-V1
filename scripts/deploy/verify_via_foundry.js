@@ -16,7 +16,7 @@ const CHAINS = {
   avax: { chainId: 43114, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=43114', verifier: 'etherscan' },
   op: { chainId: 10, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=10', verifier: 'etherscan' },
   polygon: { chainId: 137, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=137', verifier: 'etherscan' },
-  scroll: { chainId: 534352, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=534352', verifier: 'etherscan' },
+  scroll: { chainId: 534352, verifierUrl: 'https://blockscout.scroll.io/api/', verifier: 'blockscout' },
   sonic: { chainId: 146, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=146', verifier: 'etherscan' },
   unichain: { chainId: 130, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=130', verifier: 'etherscan' },
   linea: { chainId: 59144, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=59144', verifier: 'etherscan' },
@@ -37,9 +37,9 @@ const CHAINS = {
   // verifier: blockscout (no API key required)
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/', verifier: 'blockscout' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
+  zeta: { chainId: 7000, verifierUrl: 'https://zetachain.blockscout.com/api/', verifier: 'blockscout' },
   // verifier: manual (flatten contracts for web verification)
   mode: { chainId: 34443, verifier: 'manual' },
-  zeta: { chainId: 7000, verifier: 'manual' },
   conflux: { chainId: 1030, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },

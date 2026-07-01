@@ -42,11 +42,12 @@ const CHAINS = {
   // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
   // ETHERSCAN_API_KEY value works as a dummy key.
   conflux: { chainId: 1030, verifierUrl: 'https://evmapi.confluxscan.org/api/', verifier: 'custom' },
+  // hyperevm: HyperEVMScan is an Etherscan-family explorer on the Etherscan V2 multichain API.
+  hyperevm: { chainId: 999, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=999', verifier: 'etherscan' },
   // verifier: manual (flatten contracts for web verification)
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
   pharos: { chainId: 1672, verifier: 'manual' },
-  hyperevm: { chainId: 999, verifier: 'manual' },
   // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
   // same chain (same chainId/rpc/verifier) and only uses a different address set
   // (deployed/<chain>/stg.js). So there are no *_stg entries here.

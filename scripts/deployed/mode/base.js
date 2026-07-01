@@ -17,5 +17,11 @@ module.exports = {
     //p2pTrading: "",
     p2pTrading: "",
     proxyAdmin: "0x2E86f54943faFD2cB62958c3deed36C879e3E944",
-    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
+    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x2b84029B685590e6a7e716966cAC210367bfF82E",
+    smartSwapRouterLibrary: "0x04AeC15203Cc88e59133F3351F7151e89192c34d",
+    swapWrapRouterLibrary: "0x66DfC7e96F0BF9Db331b86f3a2757A8924D41143",
+    unxswapRouterLibrary: "0x5FDeA8dBe66F8ba5177fC8e3a521F054A6a28d93",
+    unxswapV3RouterLibrary: "0x1869E7C91d73DEc5a82bb1697B2DA9fD47F5ad0f",
 }

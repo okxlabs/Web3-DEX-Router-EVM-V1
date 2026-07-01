@@ -20,5 +20,11 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     // p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
-    newImpl: "0x2E1Dee213BA8d7af0934C49a23187BabEACa8764",
+    newImpl: "0x8d44d0ab0eeba9923850a864d8c6f85b84fb02bb",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xABD172C4B040821fB7F3F67067e8B5f9530544e4",
+    smartSwapRouterLibrary: "0x5a1F1D86745a524F8AFba765cc0B4769FB9Ff245",
+    swapWrapRouterLibrary: "0x7AAc65523263752AbFfF5327415d5606D78Ac8a3",
+    unxswapRouterLibrary: "0x4527490d5a5F5ff960C1d45a486b5e3b0CB6b701",
+    unxswapV3RouterLibrary: "0x853d9f839Ad87556C8Ef23A2eD8f66ff7799c6d2",
 }

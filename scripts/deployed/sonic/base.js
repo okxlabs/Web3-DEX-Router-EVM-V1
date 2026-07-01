@@ -18,5 +18,11 @@ module.exports = {
     _FF_FACTORY: "",
     commisson: "",
     p2pTrading: "",
-    newImpl: "0x79f7C6C6dc16Ed3154E85A8ef9c1Ef31CEFaEB19",
+    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xff905991ff9b636012002a6019BFB878aa522590",
+    smartSwapRouterLibrary: "0x2b74df73B1A9dB369C46F32Bf341A4609ED28885",
+    swapWrapRouterLibrary: "0x6C46E02D92A7dE09CcCB0AbD0C09650D615Ef1Ce",
+    unxswapRouterLibrary: "0x8988dB1DD080c31AF9c5e50C05fca7B616A68816",
+    unxswapV3RouterLibrary: "0x1533c4418073C74A366CcdfD6B02ccDBf56e89E1",
 }

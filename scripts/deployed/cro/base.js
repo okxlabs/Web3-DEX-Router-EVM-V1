@@ -13,6 +13,12 @@ module.exports = {
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
 
-    newImpl: "0x25e7f77F33206d311A0130D4b5B881E5Db1181b1",
+    newImpl: "0xd72f9af181a0eb1b8550a00124ecdb71bb758c89",
 
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x34dff2Edf043fCB34bBBb72d3E8C97c7eE1bE03e",
+    smartSwapRouterLibrary: "0xfB9900ff1aF0cBD0c79eCe9d41C78142243f83b8",
+    swapWrapRouterLibrary: "0xE005b21AA648Fe7E4fea7Da50371a7c3501E1cb2",
+    unxswapRouterLibrary: "0xf339b4D079FCEA34414E60b6176f64980666d5f3",
+    unxswapV3RouterLibrary: "0xd1FeA1A5eFE9C22050e8528a2545D73325484499",
 }

@@ -23,5 +23,8 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     proxyAdmin: "0xc6d8e2e0E5c25ACecff66BE60F257884D0e9DF50",
-    newImpl: "0x6f7c20464258c732577c87a9B467619e03e5C158",
+    // Recovered on-chain: prod deploy broadcast succeeded (ONCHAIN EXECUTION COMPLETE) but the
+    // record step didn't run, so this was resolved via deployer CREATE nonce-5 address (code 13322,
+    // matches sibling chains deployed at the same nonce). Libraries are at CREATE2 addresses.
+    newImpl: "0x61e7E4936E546910658F9458Ddfd785B44EC91Ae",
 }

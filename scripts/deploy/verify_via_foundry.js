@@ -49,7 +49,9 @@ const CHAINS = {
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: blockscout (no API key required)
-  cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/', verifier: 'blockscout' },
+  // cro: Cronos explorer's Etherscan-compatible API is at /mainnet/api/v2 (NOT /mainnet/api) and is
+  // key-gated — uses the etherscan verifier with CROSCAN_API_KEY (passed as ?apikey=).
+  cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/v2', verifier: 'etherscan', apiKeyEnv: 'CROSCAN_API_KEY' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   zeta: { chainId: 7000, verifierUrl: 'https://zetachain.blockscout.com/api/', verifier: 'blockscout' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
@@ -245,6 +247,13 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     cmd += ` \\\n  --verifier-url "${chainConfig.verifierUrl}"`;
     cmd += ` \\\n  --num-of-optimizations 200`;
     cmd += ` \\\n  --compiler-version v0.8.17+commit.8df45f5f`;
+    // Some Blockscout instances are key-gated (e.g. Cronos explorer-api). If the chain config names
+    // an API-key env var and it's set, pass it — forge includes it in the requests. executeCommand
+    // still blanks the ambient ETHERSCAN_API_KEY so forge honors `--verifier blockscout`.
+    if (chainConfig.apiKeyEnv) {
+      const k = ENV_VARS[chainConfig.apiKeyEnv] || process.env[chainConfig.apiKeyEnv] || '';
+      if (k) cmd += ` \\\n  --etherscan-api-key ${k}`;
+    }
 
     if (constructorArgs) {
       cmd += ` \\\n  --constructor-args $(cast abi-encode "constructor(address)" ${constructorArgs})`;
@@ -284,9 +293,12 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     cmd += ` \\\n  ${contractPath}`;
     cmd += ` \\\n  --verifier etherscan`;
     cmd += ` \\\n  --verifier-url "${chainConfig.verifierUrl}"`;
-    const apiKey = ENV_VARS.ETHERSCAN_API_KEY || process.env.ETHERSCAN_API_KEY || '';
+    // Most etherscan-family explorers share the unified ETHERSCAN_API_KEY; a few key-gated ones
+    // (e.g. Cronos explorer-api) need their own key — chainConfig.apiKeyEnv names that env var.
+    const keyVar = chainConfig.apiKeyEnv || 'ETHERSCAN_API_KEY';
+    const apiKey = ENV_VARS[keyVar] || process.env[keyVar] || '';
     if (!apiKey) {
-      console.warn('⚠️  Warning: ETHERSCAN_API_KEY not found in .env file or environment');
+      console.warn(`⚠️  Warning: ${keyVar} not found in .env file or environment`);
     }
     cmd += ` \\\n  --etherscan-api-key ${apiKey}`;
     cmd += ` \\\n  --num-of-optimizations 200`;
@@ -387,6 +399,9 @@ function executeCommand(command, name) {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
       env,
+      // Standard-json verifications (e.g. Cronos) echo the whole source; the default 1MB capture
+      // buffer overflows with `spawnSync /bin/sh ENOBUFS`. Give it plenty of room.
+      maxBuffer: 256 * 1024 * 1024,
     });
     
     console.log(`✅ ${name} verification submitted successfully`);

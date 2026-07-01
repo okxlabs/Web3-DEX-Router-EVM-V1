@@ -36,11 +36,11 @@ const CHAINS = {
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: blockscout (no API key required)
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/', verifier: 'blockscout' },
+  metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   // verifier: manual (flatten contracts for web verification)
   mode: { chainId: 34443, verifier: 'manual' },
   zeta: { chainId: 7000, verifier: 'manual' },
   conflux: { chainId: 1030, verifier: 'manual' },
-  metis: { chainId: 1088, verifier: 'manual' },
   merlin: { chainId: 4200, verifier: 'manual' },
   iotex: { chainId: 4689, verifier: 'manual' },
   pharos: { chainId: 1672, verifier: 'manual' },

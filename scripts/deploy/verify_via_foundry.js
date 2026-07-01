@@ -320,13 +320,24 @@ function executeCommand(command, name) {
   
   // Convert multiline command to single line for execution
   const singleLineCmd = command.replace(/\s*\\\n\s*/g, ' ');
-  
+
+  // forge auto-selects the etherscan verifier whenever ETHERSCAN_API_KEY is present — this
+  // silently overrides an explicit `--verifier sourcify` and then fails because the sourcify
+  // host-only URL isn't a valid etherscan API endpoint (e.g. monad). Blank the key for sourcify
+  // verifications so forge honors the requested verifier.
+  // NB: must set to '' (not delete) — forge auto-loads .env from the project root, so a deleted
+  // var is re-populated from .env; an explicit empty value in the child env is NOT overridden.
+  const env = { ...process.env };
+  if (/--verifier\s+sourcify\b/.test(singleLineCmd)) {
+    env.ETHERSCAN_API_KEY = '';
+  }
+
   try {
     const output = execSync(singleLineCmd, {
       cwd: PROJECT_ROOT,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env,
     });
     
     console.log(`✅ ${name} verification submitted successfully`);

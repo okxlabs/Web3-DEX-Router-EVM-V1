@@ -13,5 +13,8 @@ module.exports = {
     marketMaker: "0x55b35bF627944396f9950dD6BDdaDb5218110c76",
     pmmAdapter: "0x19440199101Fb45882d06Ee432437eC89f406248",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
-    newImpl: "0xD1b8997AaC08c619d40Be2e4284c9C72cAB33954"
+    // Recovered on-chain: prod deploy (new RPC) succeeded but record step didn't run.
+    // newImpl = deployer CREATE nonce-6 address (code 13322). NOTE: a prior killed run left a
+    // stale impl at nonce-5 (0x61e7E4936E546910658F9458Ddfd785B44EC91Ae) — use THIS (nonce-6) for go-live.
+    newImpl: "0x9A93a99ae01e1907dF6cb94dac122ae29E02f095"
 }

@@ -62,7 +62,11 @@ const CHAINS = {
   //    via the Cronos web UI in a real browser, or Cronos must relax the CF WAF for verification.
   cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/v2', verifier: 'etherscan', apiKeyEnv: 'CROSCAN_API_KEY' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
-  zeta: { chainId: 7000, verifierUrl: 'https://explorer.zetachain.com/api/', verifier: 'blockscout' },
+  // zeta: explorer moved — explorer.zetachain.com now 301-redirects everything to zetascan.com
+  // (forge does not re-POST across 301, so verification against the old host silently fails).
+  // NOTE (2026-07-02): zetascan.com is network-blocked from the local dev environment (reachable
+  // via the corporate proxy only) — run this verification from an unblocked network (e.g. CI).
+  zeta: { chainId: 7000, verifierUrl: 'https://zetascan.com/api/', verifier: 'blockscout' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
   // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
   // ETHERSCAN_API_KEY value works as a dummy key.
@@ -70,8 +74,15 @@ const CHAINS = {
   // hyperevm: HyperEVMScan is an Etherscan-family explorer on the Etherscan V2 multichain API.
   hyperevm: { chainId: 999, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=999', verifier: 'etherscan' },
   // verifier: manual (flatten contracts for web verification)
-  merlin: { chainId: 4200, verifier: 'manual' },
-  iotex: { chainId: 4689, verifier: 'manual' },
+  // merlin: L2scan explorer — Etherscan-style verification API (POST /api, solidity-standard-json-input),
+  // no API key required. Docs: https://unifra.readme.io/reference/contract-verification-api
+  merlin: { chainId: 4200, verifierUrl: 'https://scan.merlinchain.io/api', verifier: 'custom' },
+  // iotex: verified via Sourcify (officially supports chainId 4689). IoTeXscan's own APIs are
+  // dead ends (2026-07-02): the documented https://iotexscan.io/api → 404 + Cloudflare 403 to
+  // non-browser clients; the sample repo's index.iotexscan.io no longer resolves in DNS.
+  // IoTeXscan imports Sourcify matches, and manual UI upload (verify/iotex/ flattened sources)
+  // remains the fallback.
+  iotex: { chainId: 4689, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify' },
   pharos: { chainId: 1672, verifier: 'manual' },
   // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
   // same chain (same chainId/rpc/verifier) and only uses a different address set
@@ -245,6 +256,13 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
       }
     }
     
+    // custom (etherscan-compatible) explorers like merlin's L2scan answer the "already
+    // verified?" pre-check (getabi) for UNVERIFIED contracts with status=1 + empty result,
+    // which forge fails to parse and aborts before ever submitting. Always skip the pre-check.
+    if (chainConfig.verifier === 'custom') {
+      cmd += ` \\\n  --skip-is-verified-check`;
+    }
+
     cmd += ` \\\n  ${contractAddress}`;
     cmd += ` \\\n  ${contractPath}`;
   } else if (chainConfig.verifier === 'blockscout') {
@@ -261,7 +279,9 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     // still blanks the ambient ETHERSCAN_API_KEY so forge honors `--verifier blockscout`.
     if (chainConfig.apiKeyEnv) {
       const k = ENV_VARS[chainConfig.apiKeyEnv] || process.env[chainConfig.apiKeyEnv] || '';
-      if (k) cmd += ` \\\n  --etherscan-api-key ${k}`;
+      // Shell env reference, not the literal key — executeCommand injects the value into the
+      // child env, so the secret never appears in logs, saved files, or `ps` output.
+      if (k) cmd += ` \\\n  --etherscan-api-key "$${chainConfig.apiKeyEnv}"`;
     }
 
     if (constructorArgs) {
@@ -309,7 +329,9 @@ function generateVerifyCommand(contractAddress, contractPath, chainConfig, chain
     if (!apiKey) {
       console.warn(`⚠️  Warning: ${keyVar} not found in .env file or environment`);
     }
-    cmd += ` \\\n  --etherscan-api-key ${apiKey}`;
+    // Shell env reference, not the literal key — executeCommand injects the value into the
+    // child env, so the secret never appears in logs, saved files, or `ps` output.
+    cmd += ` \\\n  --etherscan-api-key "$${keyVar}"`;
     cmd += ` \\\n  --num-of-optimizations 200`;
     cmd += ` \\\n  --compiler-version v0.8.17+commit.8df45f5f`;
     
@@ -376,6 +398,15 @@ function generateVerifyCommands(chain, addresses, chainConfig, opts = {}) {
   return commands;
 }
 
+// Secrets must never reach logs or generated files: mask explorer API key values wherever a
+// constructed forge command is printed or persisted (the key still goes to forge unmasked).
+const API_KEY_ARG_RE = /(--etherscan-api-key[=\s]+)(\S+)/g;
+function maskApiKeys(text) {
+  // "$VAR" env references carry no secret — leave them readable; mask only literal values.
+  return text == null ? text : String(text).replace(API_KEY_ARG_RE, (m, pre, val) =>
+    /^["']?\$/.test(val) ? m : `${pre}***`);
+}
+
 /**
  * Execute a command and return the result
  * @param {string} command - Command to execute
@@ -386,7 +417,7 @@ function executeCommand(command, name) {
   console.log(`\n${'='.repeat(60)}`);
   console.log(`Verifying ${name}...`);
   console.log(`${'='.repeat(60)}`);
-  console.log(`Command:\n${command}\n`);
+  console.log(`Command:\n${maskApiKeys(command)}\n`);
   
   // Convert multiline command to single line for execution
   const singleLineCmd = command.replace(/\s*\\\n\s*/g, ' ');
@@ -398,6 +429,11 @@ function executeCommand(command, name) {
   // NB: must set to '' (not delete) — forge auto-loads .env from the project root, so a deleted
   // var is re-populated from .env; an explicit empty value in the child env is NOT overridden.
   const env = { ...process.env };
+  // Commands reference explorer keys as "$<VAR>" shell expansions (never literals) — inject
+  // the values from .env into the child env so the shell resolves them at exec time.
+  for (const [k, v] of Object.entries(ENV_VARS)) {
+    if (/_API_KEY$/.test(k) && env[k] === undefined) env[k] = v;
+  }
   if (/--verifier\s+(sourcify|blockscout)\b/.test(singleLineCmd)) {
     env.ETHERSCAN_API_KEY = '';
   }
@@ -411,17 +447,29 @@ function executeCommand(command, name) {
       // Standard-json verifications (e.g. Cronos) echo the whole source; the default 1MB capture
       // buffer overflows with `spawnSync /bin/sh ENOBUFS`. Give it plenty of room.
       maxBuffer: 256 * 1024 * 1024,
+      // `forge verify-contract --watch` polls until a terminal state and can hang forever when
+      // the explorer's indexer lags behind a fresh deploy (observed: 37min silent hang on
+      // hyperevm). Cap each contract; a timeout surfaces as a normal failure and the loop
+      // moves on — re-run verification later once the explorer has indexed the deploy.
+      timeout: 10 * 60 * 1000,
+      killSignal: 'SIGKILL',
     });
     
     console.log(`✅ ${name} verification submitted successfully`);
-    console.log('Output:', output);
-    return { success: true, output };
+    console.log('Output:', maskApiKeys(output));
+    return { success: true, output: maskApiKeys(output) };
   } catch (error) {
+    // execSync error.message embeds the full failed command line — mask before it can leak.
     console.log(`❌ ${name} verification failed`);
-    console.log('Error:', error.message);
-    if (error.stdout) console.log('stdout:', error.stdout);
-    if (error.stderr) console.log('stderr:', error.stderr);
-    return { success: false, output: error.message };
+    console.log('Error:', maskApiKeys(error.message));
+    if (error.stdout) console.log('stdout:', maskApiKeys(error.stdout));
+    if (error.stderr) console.log('stderr:', maskApiKeys(error.stderr));
+    // Include stdout/stderr in the returned output — the retry loop classifies transient
+    // failures (indexing lag, rate limits) by signatures that only appear there.
+    return {
+      success: false,
+      output: maskApiKeys([error.message, error.stdout, error.stderr].filter(Boolean).join('\n')),
+    };
   }
 }
 
@@ -575,17 +623,19 @@ async function verifyContracts(chainArg, options = {}) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
     
-    // Build commands content
+    // Build commands content. API keys appear only as "$VAR" env references (and any stray
+    // literal would be masked) — no secret is ever persisted to disk.
     let commandsContent = `# Verify commands for ${chain.toUpperCase()} (Chain ID: ${chainConfig.chainId})\n`;
     commandsContent += `# Generated at: ${new Date().toISOString()}\n`;
-    commandsContent += `# Verifier: ${chainConfig.verifier}\n\n`;
-    
+    commandsContent += `# Verifier: ${chainConfig.verifier}\n`;
+    commandsContent += `# NOTE: API keys are "$VAR" env references — run \`set -a; source .env; set +a\` first when executing manually.\n\n`;
+
     for (const { name, command } of commands) {
       console.log(`\n# Verify ${name}`);
-      console.log(command);
-      
+      console.log(maskApiKeys(command));
+
       commandsContent += `# Verify ${name}\n`;
-      commandsContent += `${command}\n\n`;
+      commandsContent += `${maskApiKeys(command)}\n\n`;
     }
     
     // Save to file
@@ -603,8 +653,22 @@ async function verifyContracts(chainArg, options = {}) {
   console.log('EXECUTING VERIFICATION COMMANDS');
   console.log(`${'='.repeat(60)}`);
   
+  // Explorer failures right after a deploy are frequently transient — the indexer hasn't
+  // seen the new contract yet ("Unable to locate ContractCode") or the API is rate-limiting
+  // ("Too many requests", e.g. merlin's L2scan). Retry those with a growing pause; anything
+  // else (compile mismatch, bad config) fails fast.
+  const TRANSIENT_RE = /Unable to locate ContractCode|Too many requests|not.{0,20}indexed|rate.?limit/i;
+  const MAX_ATTEMPTS = 3;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   for (const { name, command } of commands) {
-    const execResult = executeCommand(command, name);
+    let execResult;
+    for (let attempt = 1; ; attempt++) {
+      execResult = executeCommand(command, name);
+      if (execResult.success || attempt >= MAX_ATTEMPTS || !TRANSIENT_RE.test(execResult.output || '')) break;
+      const waitS = 45 * attempt;
+      console.log(`⏳ ${name}: transient explorer failure (indexing lag / rate limit) — retrying in ${waitS}s (attempt ${attempt + 1}/${MAX_ATTEMPTS})...`);
+      await sleep(waitS * 1000);
+    }
     result.results.push({ name, ...execResult });
   }
   

@@ -11,5 +11,11 @@ module.exports = {
     _POOL_INIT_CODE_HASH: "",
     investEntrance: "",
     proxyAdmin: "0x3a1078eF3B6E36D1560B15f6e0BFa715567A96bA",
-    newImpl: "0x6f7c20464258c732577c87a9B467619e03e5C158",
+    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x4814e39840F5a14acf2010B0902151Ba1993b91f",
+    smartSwapRouterLibrary: "0x8746df25c800E58B3131A621f1B9099aa5552eB1",
+    swapWrapRouterLibrary: "0x179E743999CC80De438f1fbEE1bA8Ab4fFC629dF",
+    unxswapRouterLibrary: "0xd45de789297289Fab994b673CBBB4809bc4cA90B",
+    unxswapV3RouterLibrary: "0x758F66951bE222469634c185f06cB01FDC6510AF",
 }

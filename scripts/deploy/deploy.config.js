@@ -20,8 +20,14 @@ const DEFAULT_ENGINE = 'foundry';
 
 const DEPLOY_CONFIG = {
   // --- Foundry engine, with chain-specific forge args ---
-  // conflux: gas estimation is unreliable, bump the multiplier
-  conflux: { engine: 'foundry', forgeArgs: ['--gas-estimate-multiplier', '500'] },
+  // conflux: forge's gas ESTIMATE is broken-low, so a multiplier is needed to reach a usable
+  // per-tx gasLimit. But conflux also (a) has a 30M block gas limit and (b) won't mine the large
+  // deploy txs unless the gas PRICE is high (~2000 gwei; eth_gasPrice under-reports ~20). The old
+  // 500x multiplier at that price needs ~186 CFX (over the deployer balance) and each tx must stay
+  // < 30M. 250x lands per-tx gasLimit ~6-9M (> actual, < 30M) and, with --with-gas-price 2000gwei,
+  // keeps the required balance ~93 CFX. Deployed & verified 6/6 with these. (Prereq: an
+  // unrate-limited CONFLUX_RPC_URL — the public one caps at ~5 req and breaks the broadcast.)
+  conflux: { engine: 'foundry', forgeArgs: ['--gas-estimate-multiplier', '250', '--with-gas-price', '2000000000000'] },
   // metis / merlin / iotex / polyzkevm: require legacy (pre-EIP-1559) transactions
   metis: { engine: 'foundry', forgeArgs: ['--legacy'] },
   merlin: { engine: 'foundry', forgeArgs: ['--legacy'] },

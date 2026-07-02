@@ -11,5 +11,11 @@ module.exports = {
     commisson: "0xFF317b4E3041c1838BCfE189F0118aF8A5B5480F",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
 
-    newImpl: "0x95418635f012fFd10eAFcDaF4137e90371f06917",
+    newImpl: "0x6be7fed39e91f683fbd1f26a6a91ed0a5b7a7872",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x4386d00BdDAbb455260F2a51283090609aD22C9C",
+    smartSwapRouterLibrary: "0x90285C0EEDAEa2723f31723aa751FC7852109997",
+    swapWrapRouterLibrary: "0x1c9280F56af7d4290311dc2CDD29654C71dC2643",
+    unxswapRouterLibrary: "0x898d6fed0C59Abc9C10d6C8AF7A691ff0a3904ED",
+    unxswapV3RouterLibrary: "0xc9b0409c6e6317a1144Cc169337e455B17c5735A",
 }

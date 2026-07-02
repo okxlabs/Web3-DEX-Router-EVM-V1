@@ -105,8 +105,34 @@ task("deploy-and-verify", "Deploy the DexRouter implementation, record addresses
       }
 
       // Step 2: Deploy via the chain's engine
-      console.log("\n[Step 2/4] Deploying DexRouter...");
-      const deployResult = await deployDexRouter(chain, { broadcast, dryRun });
+      // Chains flagged `bigBlocks` (hyperevm) need the deployer account switched to
+      // HyperCore "big blocks" (30M gas limit) for the broadcast — small blocks (2-3M)
+      // cannot fit our deploy txs. The flag is account-level state on the L1, so it is
+      // enabled just-in-time and ALWAYS restored afterwards (finally), keeping block
+      // modes invisible to the caller. Simulations don't broadcast, so no toggle needed.
+      const needsBigBlocks = !!deployConfig.bigBlocks && broadcast && !dryRun;
+      let deployResult;
+      if (needsBigBlocks) {
+        const { setUsingBigBlocks } = require('../scripts/deploy/hyperliquidBigBlocks');
+        console.log("\n[Step 2/4] Deploying DexRouter (via HyperCore big blocks)...");
+        console.log("  Switching deployer to big blocks...");
+        await setUsingBigBlocks(process.env.PRIVATE_KEY, true);
+        console.log("  ✅ Deployer targets big blocks (30M gas limit)");
+        try {
+          deployResult = await deployDexRouter(chain, { broadcast, dryRun });
+        } finally {
+          try {
+            await setUsingBigBlocks(process.env.PRIVATE_KEY, false);
+            console.log("  ✅ Deployer restored to small blocks");
+          } catch (e) {
+            console.warn(`  ⚠️ Failed to restore small blocks: ${e.message}`);
+            console.warn("     Restore manually: node scripts/deploy/hyperliquidBigBlocks.js small");
+          }
+        }
+      } else {
+        console.log("\n[Step 2/4] Deploying DexRouter...");
+        deployResult = await deployDexRouter(chain, { broadcast, dryRun });
+      }
 
       if (!deployResult.success) {
         throw new Error(`Deployment failed: ${deployResult.error || 'Unknown error'}`);

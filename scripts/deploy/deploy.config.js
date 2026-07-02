@@ -28,14 +28,27 @@ const DEPLOY_CONFIG = {
   // keeps the required balance ~93 CFX. Deployed & verified 6/6 with these. (Prereq: an
   // unrate-limited CONFLUX_RPC_URL — the public one caps at ~5 req and breaks the broadcast.)
   conflux: { engine: 'foundry', forgeArgs: ['--gas-estimate-multiplier', '250', '--with-gas-price', '2000000000000'] },
-  // metis / merlin / iotex / polyzkevm: require legacy (pre-EIP-1559) transactions
+  // metis / merlin / polyzkevm: require legacy (pre-EIP-1559) transactions
   metis: { engine: 'foundry', forgeArgs: ['--legacy'] },
   merlin: { engine: 'foundry', forgeArgs: ['--legacy'] },
-  iotex: { engine: 'foundry', forgeArgs: ['--legacy'] },
+  // iotex: needs legacy txs AND a gas-estimate multiplier. IoTeX charges intrinsic gas per
+  // payload byte at a far higher rate than Ethereum, so forge's local simulation (+30%
+  // default buffer) under-estimates the large deploy txs by ~10-15% — all 5 txs of the
+  // 2026-07-02 broadcast mined but failed at 99-100% gas used (IoTeX status 106
+  // ExecutionReverted on the CREATE2 libs, 102 CodeStoreOutOfGas on DexRouter). 200%
+  // lands per-tx gasLimit ~5-6.5M; at the fixed 1000 gwei (1 Qev) min gas price the
+  // full-run escrow is ~30 IOTX.
+  iotex: { engine: 'foundry', forgeArgs: ['--legacy', '--gas-estimate-multiplier', '200'] },
   // polyzkevm: RPC rejects EIP-1559 fee estimation (unsupported feature: eip1559)
   polyzkevm: { engine: 'foundry', forgeArgs: ['--legacy'] },
   // zeta: RPC rejects EIP-1559 fee estimation (eth_gasPrice not available), needs legacy
   zeta: { engine: 'foundry', forgeArgs: ['--legacy'] },
+  // hyperevm: dual-block architecture — small blocks (default, 2-3M gas limit) cannot fit
+  // our ~3-4M-gas deploy txs (every plain broadcast dies with `-32603: exceeds block gas
+  // limit`). bigBlocks flips the deployer account to 30M "big blocks" on HyperCore for the
+  // duration of the broadcast and restores small blocks afterwards — handled transparently
+  // by deploy-and-verify via scripts/deploy/hyperliquidBigBlocks.js.
+  hyperevm: { engine: 'foundry', bigBlocks: true },
 
   // --- Hardhat (zkSync) engine ---
   // Standard `forge` cannot produce zkSync bytecode (needs zksolc), so zkSync deploys

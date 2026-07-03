@@ -79,21 +79,18 @@ ExtraData 由 4 个独立可选字段组成，每个字段通过 48-bit flag 匹
 
 - 参考 [arch/dependency.md](../arch/dependency.md)
 
-## ERC-8021 兼容性（effectiveEnd 反向扫描）— ⚠️ 未实现，设计已完成
+## ERC-8021 兼容性（effectiveEnd 反向扫描）— ✅ 已实现
 
-> **状态:** ⚠️ **未实现**。技术设计已完成（见 `docs/20260304-erc8021-compatibility/`），代码尚未合入。
-> **当前代码:** ExtraDataLib 和 CommissionLib 均直接使用 `calldatasize()` 作为右边界，无 effectiveEnd 机制。
+> **状态:** ✅ **已实现**。边界还原**内联在** `ExtraDataLib._getExtraDataEndPointAndLength(swapDataLength)`（并非独立的 `_computeEffectiveEnd()` 函数）。设计文档见 `docs/20260304-erc8021-compatibility/`。
+> **当前代码:** ExtraDataLib 用反向扫描得到的 `endPoints[0]` 锚定全部解析；CommissionLib 不再引用 `calldatasize()`，改为消费 `endPoints`。
 
 **背景:** ERC-8021 在 calldata 末尾追加归因后缀 `原始calldata | schemaData(变长) | schemaId(1B) | ercMarker(16B)`。DexRouter 从右到左解析 ExtraData，外部后缀会导致解析错位 → 佣金/正滑点被静默跳过（无 revert）。
 
-**计划实现方案（在 `ExtraDataLib` 中新增 `_computeEffectiveEnd()`）:**
+**实际实现（`_getExtraDataEndPointAndLength(swapDataLength)`）:**
 
 ```
-1. calldataEnd = calldatasize()
-2. remainder = (calldataEnd - 4) % 32        // 剥离非对齐的后缀字节
-3. effectiveEnd = calldataEnd - remainder     // 对齐到 4B selector + N*32B 边界
-4. scanPos = effectiveEnd
-5. 从 scanPos 向后以 32B 步长扫描（终止条件: scanPos > 0x23，确保不读过 selector）:
+1. endPoint = calldatasize() - ((calldatasize() - 4) % 0x20)   // 剥离非对齐的尾部后缀
+2. 自 endPoint 向后以 0x20 步长扫描，下界为 swapDataLength（gt(scanPos, swapDataLength)）:
      flagMasked = calldataload(scanPos - 0x20) & _COMMISSION_FLAG_MASK
      精确匹配 11 个已知标志位（6 佣金 + 2 正滑点 + 2 Permit2 + 1 RefundTo）:
        FROM_TOKEN_COMMISSION / TO_TOKEN_COMMISSION
@@ -102,16 +99,17 @@ ExtraData 由 4 个独立可选字段组成，每个字段通过 48-bit flag 匹
        TRIM_FLAG / TRIM_DUAL_FLAG
        PERMIT2_INFO_SIG65_FLAG / PERMIT2_INFO_SIG64_FLAG
        REFUND_TO_ADDRESS_FLAG
-     命中 → effectiveEnd = scanPos, break
-6. 后续所有解析使用 effectiveEnd 替代 calldatasize()
+     命中 → endPoint = scanPos, break
+3. endPoint 写入 endPoints[0]，锚定后续所有 ExtraData 解析
+4. 未命中任何 flag → 退化为"无 ExtraData"（各 length 为 0）
 ```
 
 **设计要点:**
 - [Rule] `_COMMISSION_FLAG_MASK == _TRIM_FLAG_MASK == _PERMIT2_INFO_FLAG_MASK == _REFUND_TO_MASK`（均为 `0xffffffffffff000...0`），一次 mask 覆盖全部 11 个标志位
-- [Rule] 扫描终止条件 `scanPos > 0x23`（即 35），确保 `calldataload(scanPos - 0x20)` 最小读取偏移 ≥ 4（跳过 4B selector）
-- [Rule] 非对齐字节直接剥离（`remainder = (calldataEnd - 4) % 32`），ERC-8021 后缀通常不是 32B 对齐的
-- 无后缀时: `effectiveEnd == calldatasize()`，零行为差异
-- Gas 开销预估: 每 32B 扫描步骤约 47 Gas，正常交易首步即命中
+- [Rule] 反向扫描下界为 `swapDataLength`（调用方 `DexRouter` 各入口传入）：此前的字节保证是 swapData，不可能含 ExtraData，从而避免误读 ABI 参数中形似 flag 的值
+- [Rule] 非对齐字节直接剥离（`(calldatasize() - 4) % 0x20`），ERC-8021 后缀通常不是 32B 对齐的
+- 无后缀时: `endPoints[0] == calldatasize()`，零行为差异
+- 命中后由 `_validateExtraDataBoundaries(endPoints, lengths, swapDataLength)` 校验边界
 
 ## Permit2Info Calldata 布局
 
@@ -127,6 +125,6 @@ ExtraData 由 4 个独立可选字段组成，每个字段通过 48-bit flag 匹
 
 ## 踩坑点
 
-- [Pitfall] effectiveEnd 尚未实现。ExtraDataLib 和 CommissionLib 均直接使用 `calldatasize()` 作为右边界，两条路径都不具备外部后缀防御能力
-- [Pitfall] effectiveEnd 扫描终止条件 `scanPos > 0x23`，如果 calldata 极短（仅有 selector + 极少参数），扫描会直接跳过不匹配任何标志位
+- [Pitfall] effectiveEnd 已实现（内联于 `_getExtraDataEndPointAndLength`）；旧文档"未实现/直接用 calldatasize()"的描述已过时
+- [Pitfall] effectiveEnd 反向扫描下界为 `swapDataLength`，若一直扫到下界仍未命中任何已知 flag，则视为无 ExtraData（各 length 为 0），而非 revert
 - [Pitfall] Calldata **must** 保持 32 字节对齐 `(calldatasize - 4) % 32 == 0`，非对齐字节被 effectiveEnd 算法直接剥离

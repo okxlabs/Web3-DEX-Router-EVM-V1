@@ -55,17 +55,18 @@ const DEPLOY_CONFIG = {
   // through the @matterlabs/hardhat-zksync path instead of the foundry pipeline.
   //
   // NOTE: this engine is NOT orchestrated by deploy-and-verify (capabilities.orchestrated
-  // = false). It is a standalone deploy only. Several gaps remain before zkSync could
-  // be a first-class orchestrated chain (tracked as future work):
-  //   - the script below deploys DexRouterExactOut, NOT the main DexRouter the foundry
-  //     pipeline deploys — the two are different contracts;
-  //   - it records addresses manually (no broadcast/ artifact, no auto recorder);
-  //   - verification needs hardhat-zksync-verify and a zksync rpc endpoint;
-  //   - deployed dir casing is `zkSyncEra` vs CHAINS key `zksyncEra`.
+  // = false), and structurally cannot be: the DexRouter deploy is TWO-PHASE with a
+  // mandatory recompile in between (zksolc links libraries at compile time — see
+  // hardhat.zksync.config.js), and hardhat has no simulation-only mode. The standalone
+  // flow (deploy_dexrouter_zksync.js) deploys the main DexRouter + its 5 router
+  // libraries, records into deployed/zkSyncEra/base.js automatically, and verification
+  // works via `hardhat --config hardhat.zksync.config.js verify` (hardhat-zksync-verify).
+  // Remaining gap: deployed dir casing is `zkSyncEra` vs CHAINS key `zksyncEra`.
   zksyncEra: {
     engine: 'hardhat-zksync',
     hardhatNetwork: 'zksync',
-    script: 'scripts/deploy/deploy_dex_exactout_imp.js',
+    hardhatConfig: 'hardhat.zksync.config.js',
+    script: 'scripts/deploy/deploy_dexrouter_zksync.js',
   },
 };
 

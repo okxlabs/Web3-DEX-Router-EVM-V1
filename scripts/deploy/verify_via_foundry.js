@@ -43,7 +43,10 @@ const CHAINS = {
   // NOTE: ftm & polyzkevm were moved OFF OKLink onto sourcify-api (see their entries below) — the
   // stale OKLink source there is superseded by correct, bytecode-matched source on Sourcify.
   // manta is the only chain still on OKLink.
-  manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
+  // manta: moved OFF OKLink onto SOURCIFY (Manta Pacific chainId 169 is Sourcify-supported) —
+  // same rationale as ftm/polyzkevm: OKLink is lenient and locks stored source. Sourcify does a
+  // fresh bytecode match. Verified 6/6 (2026-07).
+  manta: { chainId: 169, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   // ftm & polyzkevm: moved OFF OKLink onto SOURCIFY. OKLink is lenient (no bytecode match) and
   // had published wrong source that it then LOCKS (can't overwrite via API). Sourcify does a
   // fresh recompile-and-match on its own host and is unaffected by OKLink's stored copy — both
@@ -679,7 +682,9 @@ async function verifyContracts(chainArg, options = {}) {
   // seen the new contract yet ("Unable to locate ContractCode") or the API is rate-limiting
   // ("Too many requests", e.g. merlin's L2scan). Retry those with a growing pause; anything
   // else (compile mismatch, bad config) fails fast.
-  const TRANSIENT_RE = /Unable to locate ContractCode|Too many requests|not.{0,20}indexed|rate.?limit/i;
+  // "Cannot fetch bytecode" = Sourcify's own RPC transiently failed to read the deployed code
+  // (observed on manta) — retryable, same as explorer indexing lag / rate limits.
+  const TRANSIENT_RE = /Unable to locate ContractCode|Too many requests|not.{0,20}indexed|rate.?limit|Cannot fetch bytecode/i;
   const MAX_ATTEMPTS = 3;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const { verifyViaSourcify } = require('./sourcify');

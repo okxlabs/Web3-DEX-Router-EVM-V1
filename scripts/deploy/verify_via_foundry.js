@@ -38,14 +38,19 @@ const CHAINS = {
   // forge --skip-is-verified-check, returns success but does NOT overwrite the stored source).
   // Consequences: (1) correctness relies entirely on submitting the RIGHT source — always let this
   // script regenerate ChainConfig per-chain first (it now does); (2) a wrong source already published
-  // can only be corrected OKLink-side (un-verify/re-verify), not via this tool. ftm & polyzkevm are
-  // currently in this bad state (see their base.js). OKLink chain slug must match OKLink's naming
-  // (e.g. Polygon zkEVM is `polygon_zkevm`, not the repo key `polyzkevm`).
+  // can only be corrected OKLink-side (un-verify/re-verify), not via this tool. OKLink chain slug
+  // must match OKLink's naming (e.g. Polygon zkEVM is `polygon_zkevm`, not the repo key `polyzkevm`).
+  // NOTE: ftm & polyzkevm were moved OFF OKLink onto sourcify-api (see their entries below) — the
+  // stale OKLink source there is superseded by correct, bytecode-matched source on Sourcify.
+  // manta is the only chain still on OKLink.
   manta: { chainId: 169, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/manta', verifier: 'oklink' },
-  ftm: { chainId: 250, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ftm', verifier: 'oklink' },
-  // OKLink's chain slug for Polygon zkEVM is `polygon_zkevm`, not the repo chain key `polyzkevm`
-  // (a wrong slug makes forge's getabi pre-check return an undeserializable response).
-  polyzkevm: { chainId: 1101, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/polygon_zkevm', verifier: 'oklink' },
+  // ftm & polyzkevm: moved OFF OKLink onto SOURCIFY. OKLink is lenient (no bytecode match) and
+  // had published wrong source that it then LOCKS (can't overwrite via API). Sourcify does a
+  // fresh recompile-and-match on its own host and is unaffected by OKLink's stored copy — both
+  // exact_match against the current per-chain ChainConfig (verified 2026-07). The OKLink pages
+  // remain wrong until corrected OKLink-side, but the source is now correctly public on Sourcify.
+  ftm: { chainId: 250, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
+  polyzkevm: { chainId: 1101, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: blockscout (no API key required)

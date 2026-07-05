@@ -33,4 +33,11 @@ module.exports = {
     // verified contracts, so it can't be overwritten via API/forge — needs OKLink-side re-verify.
     // See verify_via_foundry.js OKLink note.
     newImpl: "0x61e7E4936E546910658F9458Ddfd785B44EC91Ae",
+    // Recovered from newImpl's on-chain bytecode (linkReferences positions) and each confirmed
+    // by Sourcify exact_match (2026-07). Enables full 6/6 verification on re-runs.
+    dagRouterLibrary: "0x5baa4b98b53f3e26b7e5b3f0a682cf783c93b7df",
+    smartSwapRouterLibrary: "0x9bfc4bcd4b823e40b393676e1ebd61d8bda6214c",
+    swapWrapRouterLibrary: "0x06a4cedcc3e936927a7414768f7a21f4fcc5063a",
+    unxswapRouterLibrary: "0x7886d8769dc45b82da9a9653c250ec62a817f370",
+    unxswapV3RouterLibrary: "0xf80e49fa0fdf851d4043a8280551808c5d3c6fa1",
 }

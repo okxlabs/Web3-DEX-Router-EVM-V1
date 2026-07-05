@@ -91,7 +91,16 @@ const CHAINS = {
   // IoTeXscan imports Sourcify matches, and manual UI upload (verify/iotex/ flattened sources)
   // remains the fallback.
   iotex: { chainId: 4689, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify' },
-  pharos: { chainId: 1672, verifier: 'manual' },
+  // pharos (Pharos Network mainnet): verified via SocialScan's Foundry-compatible endpoint
+  // (etherscan mode). chain_name is `pharos-mainnet`; the key is SOCIALSCAN_API_KEY.
+  // ⚠️ api.socialscan.io is network-blocked from the local dev environment (000) — run this
+  // verification from an unblocked network / CI (same as the old zeta zetascan situation).
+  pharos: {
+    chainId: 1672,
+    verifierUrl: 'https://api.socialscan.io/pharos-mainnet/v1/explorer/command_api/contract',
+    verifier: 'etherscan',
+    apiKeyEnv: 'SOCIALSCAN_API_KEY',
+  },
   // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
   // same chain (same chainId/rpc/verifier) and only uses a different address set
   // (deployed/<chain>/stg.js). So there are no *_stg entries here.
@@ -422,10 +431,15 @@ function generateVerifyCommands(chain, addresses, chainConfig, opts = {}) {
 // Secrets must never reach logs or generated files: mask explorer API key values wherever a
 // constructed forge command is printed or persisted (the key still goes to forge unmasked).
 const API_KEY_ARG_RE = /(--etherscan-api-key[=\s]+)(\S+)/g;
+// forge's etherscan verifier appends the resolved key to its request URL (?apikey=… / &apikey=…)
+// and echoes that URL in error output — mask it too, else the secret leaks into captured logs
+// and the saved verify_commands.sh on failure.
+const API_KEY_QUERY_RE = /([?&]apikey=)([^&\s"']+)/gi;
 function maskApiKeys(text) {
   // "$VAR" env references carry no secret — leave them readable; mask only literal values.
-  return text == null ? text : String(text).replace(API_KEY_ARG_RE, (m, pre, val) =>
-    /^["']?\$/.test(val) ? m : `${pre}***`);
+  return text == null ? text : String(text)
+    .replace(API_KEY_ARG_RE, (m, pre, val) => (/^["']?\$/.test(val) ? m : `${pre}***`))
+    .replace(API_KEY_QUERY_RE, (m, pre) => `${pre}***`);
 }
 
 /**

@@ -49,18 +49,15 @@ const CHAINS = {
   xlayer: { chainId: 196, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/xlayer', verifier: 'oklink' },
   ethw: { chainId: 10001, verifierUrl: 'https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/ethw', verifier: 'oklink' },
   // verifier: blockscout (no API key required)
-  // cro: Cronos explorer's Etherscan-compatible API is at /mainnet/api/v2 (NOT /mainnet/api) and is
-  // key-gated — uses the etherscan verifier with CROSCAN_API_KEY (passed as ?apikey=).
-  // ⚠️ KNOWN ISSUE — Cloudflare blocks automated verification: explorer-api.cronos.org sits behind
-  // Cloudflare bot-management. GET/read requests pass, but the verifysourcecode POST is challenged.
-  //   - forge's (reqwest) POST is always CF-blocked (returns an HTML challenge → "Failed to
-  //     deserialize response"). So `verify_via_foundry.js cro` cannot complete via forge.
-  //   - A node fetch POST bypasses CF for SMALL bodies (verified UnxswapRouter/UnxswapV3Router that
-  //     way), but CF's WAF still blocks the LARGE standard-json bodies (DexRouter + the big libs),
-  //     deterministically — browser-like headers/retries don't help.
-  // => The large contracts (DexRouter, SmartSwapRouter, DagRouter, SwapWrapRouter) must be verified
-  //    via the Cronos web UI in a real browser, or Cronos must relax the CF WAF for verification.
-  cro: { chainId: 25, verifierUrl: 'https://explorer-api.cronos.org/mainnet/api/v2', verifier: 'etherscan', apiKeyEnv: 'CROSCAN_API_KEY' },
+  // cro: Cronos's own explorer API (explorer-api.cronos.org) sits behind Cloudflare, whose WAF
+  // deterministically blocks the verifysourcecode POST once real source pushes the body past
+  // ~90 KB (content + size — confirmed 2026-07 by bisection; browser headers/multipart/retries
+  // don't help). So verify via SOURCIFY instead: Cronos (chainId 25) is Sourcify-supported and
+  // the Cronos explorer ingests Sourcify matches to display source. The sourcify-api verifier
+  // talks to sourcify.dev directly (a different host → no CF block) and auto-detects DexRouter's
+  // linked libraries. Verified 6/6 this way (2026-07). To fall back to the CF-blocked direct API,
+  // switch to verifier 'etherscan' with verifierUrl .../mainnet/api/v2 + apiKeyEnv CROSCAN_API_KEY.
+  cro: { chainId: 25, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
   // zeta: explorer moved — explorer.zetachain.com now 301-redirects everything to zetascan.com
   // (forge does not re-POST across 301, so verification against the old host silently fails).
@@ -370,20 +367,30 @@ function generateVerifyCommands(chain, addresses, chainConfig, opts = {}) {
   const commands = [];
   const { force = false } = opts;
 
+  // sourcify-api: submitted over HTTP to the Sourcify v2 API (bypasses Cloudflare-guarded
+  // explorers and forge's legacy-sourcify pre-check), not as a shell command. Carry the
+  // address + contract identifier; the loop calls verifyViaSourcify() for these.
+  const isSourcifyApi = chainConfig.verifier === 'sourcify-api';
+  const sourcifyEntry = (name, address, contractId) => ({
+    name,
+    sourcify: { address, contractId, chainId: chainConfig.chainId, serverUrl: chainConfig.verifierUrl },
+  });
+
   // Verify DexRouter
   if (addresses.newImpl) {
-    const cmd = generateVerifyCommand(
-      addresses.newImpl,
-      'contracts/8/DexRouter.sol:DexRouter',
-      chainConfig,
-      chain,
-      {
-        constructorArgs: addresses.constructorArg,
-        libraries: addresses.libraries,
-        force,
-      }
+    const id = 'contracts/8/DexRouter.sol:DexRouter';
+    commands.push(
+      isSourcifyApi
+        ? sourcifyEntry('DexRouter', addresses.newImpl, id)
+        : {
+            name: 'DexRouter',
+            command: generateVerifyCommand(addresses.newImpl, id, chainConfig, chain, {
+              constructorArgs: addresses.constructorArg,
+              libraries: addresses.libraries,
+              force,
+            }),
+          }
     );
-    commands.push({ name: 'DexRouter', command: cmd });
   }
 
   // Verify each library contract
@@ -391,10 +398,13 @@ function generateVerifyCommands(chain, addresses, chainConfig, opts = {}) {
     const contractName = fieldNameToContractName(libField);
     const contractPath = `contracts/8/router/${contractName}.sol:${contractName}`;
 
-    const cmd = generateVerifyCommand(libAddr, contractPath, chainConfig, chain, { force });
-    commands.push({ name: contractName, command: cmd });
+    commands.push(
+      isSourcifyApi
+        ? sourcifyEntry(contractName, libAddr, contractPath)
+        : { name: contractName, command: generateVerifyCommand(libAddr, contractPath, chainConfig, chain, { force }) }
+    );
   }
-  
+
   return commands;
 }
 
@@ -630,12 +640,16 @@ async function verifyContracts(chainArg, options = {}) {
     commandsContent += `# Verifier: ${chainConfig.verifier}\n`;
     commandsContent += `# NOTE: API keys are "$VAR" env references — run \`set -a; source .env; set +a\` first when executing manually.\n\n`;
 
-    for (const { name, command } of commands) {
+    for (const { name, command, sourcify } of commands) {
+      // sourcify-api entries are HTTP submissions, not shell commands — describe the action.
+      const line = sourcify
+        ? `# (Sourcify v2 API) POST ${sourcify.serverUrl}/v2/verify/${sourcify.chainId}/${sourcify.address}  [${sourcify.contractId}]`
+        : maskApiKeys(command);
       console.log(`\n# Verify ${name}`);
-      console.log(maskApiKeys(command));
+      console.log(line);
 
       commandsContent += `# Verify ${name}\n`;
-      commandsContent += `${maskApiKeys(command)}\n\n`;
+      commandsContent += `${line}\n\n`;
     }
     
     // Save to file
@@ -660,10 +674,18 @@ async function verifyContracts(chainArg, options = {}) {
   const TRANSIENT_RE = /Unable to locate ContractCode|Too many requests|not.{0,20}indexed|rate.?limit/i;
   const MAX_ATTEMPTS = 3;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  for (const { name, command } of commands) {
+  const { verifyViaSourcify } = require('./sourcify');
+  for (const entry of commands) {
+    const { name, command, sourcify } = entry;
     let execResult;
     for (let attempt = 1; ; attempt++) {
-      execResult = executeCommand(command, name);
+      if (sourcify) {
+        console.log(`\n${'='.repeat(60)}\nVerifying ${name} via Sourcify v2 (${sourcify.serverUrl})...\n${'='.repeat(60)}`);
+        execResult = await verifyViaSourcify(sourcify.serverUrl, sourcify.chainId, sourcify.address, sourcify.contractId);
+        console.log(execResult.success ? `✅ ${name}: ${execResult.output}` : `❌ ${name}: ${execResult.output}`);
+      } else {
+        execResult = executeCommand(command, name);
+      }
       if (execResult.success || attempt >= MAX_ATTEMPTS || !TRANSIENT_RE.test(execResult.output || '')) break;
       const waitS = 45 * attempt;
       console.log(`⏳ ${name}: transient explorer failure (indexing lag / rate limit) — retrying in ${waitS}s (attempt ${attempt + 1}/${MAX_ATTEMPTS})...`);
@@ -711,11 +733,13 @@ function main() {
     console.log('  - etherscan: Generates and executes forge verify-contract commands');
     console.log('  - oklink: Generates and executes forge verify-contract commands');
     console.log('  - sourcify: Generates and executes forge verify-contract commands');
+    console.log('  - sourcify-api: Submits to the Sourcify v2 API directly (bypasses Cloudflare-guarded explorers)');
     console.log('  - manual: Flattens contracts for manual web verification');
     console.log('');
     console.log('Supported chains:');
     console.log('  etherscan: ' + Object.entries(CHAINS).filter(([_, c]) => c.verifier === 'etherscan').map(([k]) => k).join(', '));
     console.log('  sourcify: ' + Object.entries(CHAINS).filter(([_, c]) => c.verifier === 'sourcify').map(([k]) => k).join(', '));
+    console.log('  sourcify-api: ' + Object.entries(CHAINS).filter(([_, c]) => c.verifier === 'sourcify-api').map(([k]) => k).join(', '));
     console.log('  oklink: ' + Object.entries(CHAINS).filter(([_, c]) => c.verifier === 'oklink').map(([k]) => k).join(', '));
     console.log('  manual: ' + Object.entries(CHAINS).filter(([_, c]) => c.verifier === 'manual').map(([k]) => k).join(', '));
     process.exit(0);

@@ -52,18 +52,21 @@ const CHAINS = {
   // cro: Cronos's own explorer API (explorer-api.cronos.org) sits behind Cloudflare, whose WAF
   // deterministically blocks the verifysourcecode POST once real source pushes the body past
   // ~90 KB (content + size — confirmed 2026-07 by bisection; browser headers/multipart/retries
-  // don't help). So verify via SOURCIFY instead: Cronos (chainId 25) is Sourcify-supported and
-  // the Cronos explorer ingests Sourcify matches to display source. The sourcify-api verifier
-  // talks to sourcify.dev directly (a different host → no CF block) and auto-detects DexRouter's
-  // linked libraries. Verified 6/6 this way (2026-07). To fall back to the CF-blocked direct API,
-  // switch to verifier 'etherscan' with verifierUrl .../mainnet/api/v2 + apiKeyEnv CROSCAN_API_KEY.
+  // don't help). So verify via SOURCIFY instead: Cronos (chainId 25) is Sourcify-supported.
+  // The sourcify-api verifier talks to sourcify.dev directly (a different host → no CF block)
+  // and auto-detects DexRouter's linked libraries. Verified 6/6 this way (2026-07).
+  // ⚠️ The source is public/verified on SOURCIFY (sourcify.dev/#/lookup/<addr>), but Cronoscan
+  // does NOT back-read Sourcify, so its own contract page still shows unverified. To make the
+  // Cronoscan page show source, verify against .../mainnet/api/v2 (verifier 'etherscan' +
+  // apiKeyEnv CROSCAN_API_KEY) — but that's the CF-blocked path, so it needs the web UI.
   cro: { chainId: 25, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   metis: { chainId: 1088, verifierUrl: 'https://andromeda-explorer.metis.io/api/', verifier: 'blockscout' },
-  // zeta: explorer moved — explorer.zetachain.com now 301-redirects everything to zetascan.com
-  // (forge does not re-POST across 301, so verification against the old host silently fails).
-  // NOTE (2026-07-02): zetascan.com is network-blocked from the local dev environment (reachable
-  // via the corporate proxy only) — run this verification from an unblocked network (e.g. CI).
-  zeta: { chainId: 7000, verifierUrl: 'https://zetascan.com/api/', verifier: 'blockscout' },
+  // zeta: the native explorer (zetascan.com) was network-blocked from the local dev environment,
+  // so verify via SOURCIFY instead — ZetaChain (chainId 7000) is Sourcify-supported. Verified
+  // 6/6 this way (source public at sourcify.dev/#/lookup/<addr>). As with cro, an Etherscan-style
+  // zeta explorer would not back-read Sourcify; switch to a blockscout/etherscan verifier against
+  // the native explorer if its own page must show source.
+  zeta: { chainId: 7000, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
   // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
   // ETHERSCAN_API_KEY value works as a dummy key.

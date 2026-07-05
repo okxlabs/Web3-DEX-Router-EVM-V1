@@ -5,8 +5,16 @@
  *   - Some explorers (Cronos) sit behind Cloudflare, whose WAF deterministically blocks the
  *     large standard-json verification POST (403 challenge on any body once real source pushes
  *     it past ~90 KB — content + size, not size alone; browser headers/multipart don't help).
- *     Sourcify is a different host (sourcify.dev), so it sidesteps the CF block entirely, and
- *     explorers that ingest Sourcify matches (Cronos among them) then show the source.
+ *     Sourcify is a different host (sourcify.dev), so it sidesteps the CF block entirely.
+ *
+ * WHERE the verified source shows up: on Sourcify itself — the lookup UI
+ *   (https://sourcify.dev/#/lookup/<address>) and the repo API (/v2/contract/<chainId>/<addr>,
+ *   /server/repository/.../sources/...). Explorers that READ Sourcify (Blockscout family,
+ *   Otterscan, Remix) then display it automatically. Etherscan-family explorers — including
+ *   Cronoscan — generally do NOT back-read Sourcify: the contract is publicly verified on
+ *   Sourcify but the Etherscan-style explorer page may still show it unverified. If a specific
+ *   explorer page must show source, verify against that explorer's own API (web UI if it's
+ *   CF-blocked to automation).
  *   - forge's sourcify path targets the legacy Sourcify API and does an etherscan-style ABI
  *     pre-check that misfires on some setups. This talks to the current v2 API directly.
  *

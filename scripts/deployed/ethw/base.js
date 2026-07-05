@@ -16,5 +16,14 @@ module.exports = {
     // Recovered on-chain: prod deploy (new RPC) succeeded but record step didn't run.
     // newImpl = deployer CREATE nonce-6 address (code 13322). NOTE: a prior killed run left a
     // stale impl at nonce-5 (0x61e7E4936E546910658F9458Ddfd785B44EC91Ae) — use THIS (nonce-6) for go-live.
-    newImpl: "0x9A93a99ae01e1907dF6cb94dac122ae29E02f095"
+    newImpl: "0x9A93a99ae01e1907dF6cb94dac122ae29E02f095",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    // Recovered from newImpl's on-chain bytecode (linkReferences positions), 2026-07. The
+    // deploy record step never ran, so these were missing. Each library confirmed present
+    // on-chain (code sizes match sibling chains); owner() on newImpl == constructorArg.
+    dagRouterLibrary: "0xdfd1b9d16b58dc0ec2d38776e129260eda2bf483",
+    smartSwapRouterLibrary: "0xf767e28e699ba6d48a3a590b38c8b34b5106f0f2",
+    swapWrapRouterLibrary: "0x2d85e3433ac95cace9ed42351d4885c832e57586",
+    unxswapRouterLibrary: "0x7b92eb7c6af7178a95eba4b12b0dcfcecaf3198f",
+    unxswapV3RouterLibrary: "0x1b154ecdf409ecd652a32951c30214780700094a",
 }

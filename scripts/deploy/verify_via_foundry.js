@@ -76,6 +76,11 @@ const CHAINS = {
   // the native explorer if its own page must show source.
   zeta: { chainId: 7000, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   mode: { chainId: 34443, verifierUrl: 'https://explorer.mode.network/api/', verifier: 'blockscout' },
+  // robinhood: RobinHood Chain (chainId 4663) — Blockscout explorer, Etherscan-compatible /api,
+  // no API key required (mirrors the hardhat.config customChain). Not on Sourcify's chain list,
+  // so blockscout is the path. (RPC/explorer are network-blocked from the local dev env — run
+  // deploy/verify from an unblocked network; prod go-live is the securityManager addProxy gate.)
+  robinhood: { chainId: 4663, verifierUrl: 'https://robinhoodchain.blockscout.com/api', verifier: 'blockscout' },
   // verifier: custom — ConfluxScan eSpace is Etherscan-compatible; per Conflux docs any
   // ETHERSCAN_API_KEY value works as a dummy key.
   conflux: { chainId: 1030, verifierUrl: 'https://evmapi.confluxscan.org/api/', verifier: 'custom' },

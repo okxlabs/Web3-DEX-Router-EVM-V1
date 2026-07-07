@@ -68,6 +68,7 @@ monad = "${MONAD_RPC_URL}"
 katana = "${KATANA_RPC_URL}"
 hyperevm = "${HYPEREVM_RPC_URL}"
 pharos = "${PHAROS_RPC_URL}"
+robinhood = "${ROBINHOOD_RPC_URL}"
 
 [fmt]
 line_length = 120

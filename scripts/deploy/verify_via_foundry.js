@@ -19,7 +19,10 @@ const CHAINS = {
   avax: { chainId: 43114, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=43114', verifier: 'etherscan' },
   op: { chainId: 10, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=10', verifier: 'etherscan' },
   polygon: { chainId: 137, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=137', verifier: 'etherscan' },
-  scroll: { chainId: 534352, verifierUrl: 'https://blockscout.scroll.io/api/', verifier: 'blockscout' },
+  // scroll: Blockscout verified DexRouter but failed the 5 router libraries (library
+  // self-address-guard bytecode). Scroll (534352) is Sourcify-supported, which auto-detects
+  // the linked libraries and matches all 6 — moved to sourcify-api for reliable full coverage.
+  scroll: { chainId: 534352, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   sonic: { chainId: 146, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=146', verifier: 'etherscan' },
   unichain: { chainId: 130, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=130', verifier: 'etherscan' },
   linea: { chainId: 59144, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=59144', verifier: 'etherscan' },

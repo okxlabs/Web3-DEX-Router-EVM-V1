@@ -92,6 +92,17 @@ module.exports = {
       //   url: "https://rpc.ankr.com/eth"
       // }
     },
+    robinhood: {
+      url: process.env.ROBINHOOD_RPC_URL || 'https://rpc.mainnet.chain.robinhood.com',
+      chainId: 4663,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     monad: {
       url: process.env.MONAD_RPC_URL || '',
       chainId: 143,
@@ -665,8 +676,19 @@ module.exports = {
       unichain: ETHERSCAN_API_KEY,
       sei: ETHERSCAN_API_KEY,
       apechain: ETHERSCAN_API_KEY,
+      robinhood: 'empty', // Blockscout instance, no API key required
     },
     customChains: [
+      {
+        // Robinhood Chain is NOT on the Etherscan v2 multichain API; its Blockscout
+        // instance exposes an Etherscan-compatible API at /api
+        network: "robinhood",
+        chainId: 4663,
+        urls: {
+          apiURL: "https://robinhoodchain.blockscout.com/api",
+          browserURL: "https://robinhoodchain.blockscout.com"
+        }
+      },
       {
         network: "mainnet",
         chainId: 1,

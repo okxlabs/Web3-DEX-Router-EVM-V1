@@ -14,7 +14,17 @@ contract Deploy is Test {
         //     deployer == 0xEA522Fe3A65874bA3CEC38e912220282b7C71E97,
         //     "wrong deployer! change the private key"
         // );
-        deploy_eth();
+        deploy_robinhood();
+    }
+    function deploy_robinhood() internal {
+        vm.createSelectFork(vm.envString("ROBINHOOD_RPC_URL"));
+
+        console2.log("block.chainID", block.chainid);
+        require(block.chainid == 4663, "must be robinhood");
+        address WETH = 0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73;
+        vm.broadcast(deployer);
+        address adapter = address(new NativePmmAdapterV3(WETH));
+        console2.log("NativePmmAdapterV3 deployed robinhood: %s", adapter);
     }
     function deploy_eth() internal {
         vm.createSelectFork(vm.envString("ETH_RPC_URL"));

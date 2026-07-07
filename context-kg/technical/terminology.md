@@ -36,13 +36,20 @@ description: "DexRouter 领域术语表——统一术语定义与命名映射"
 | sellQuote           | 适配器反向交换                                                            | `IAdapter.sellQuote()`                             |
 | RouterPath          | 路由路径结构体，描述跳转链                                                      | `IDexRouter.RouterPath`                            |
 | BaseRequest         | 基础请求结构体（fromToken, toToken, fromTokenAmount, minReturnAmount, deadLine） | `IDexRouter.BaseRequest`                           |
-| effectiveEnd        | ExtraData 真实边界（应对 ERC-8021 后缀），⚠️ 尚未实现，设计已完成          | 计划: `ExtraDataLib._computeEffectiveEnd()`         |
+| effectiveEnd        | ExtraData 真实右边界（反向扫描去除 ERC-8021 后缀），✅ 已实现             | `ExtraDataLib._getExtraDataEndPointAndLength()` → `endPoints[0]` |
 | PausableModuleV2    | 暂停模块，支持 owner 无限期暂停和 reporter 24 小时紧急暂停                            | `PausableModuleV2`                                 |
 | ApproveProxy        | 传统授权代理合约                                                           | `_APPROVE_PROXY`                                   |
 | DENOMINATOR         | 佣金费率分母 = 10^9                                                      | `Constants`                                        |
 | TRIM_DENOMINATOR    | 正滑点费率分母 = 1000                                                     | `Constants`                                        |
 | middleReceiver      | 中间接收者，有 to-token 佣金或正滑点时设为 address(this)                           | `CommissionLib`                                    |
 | Memo                | 透传数据，合约不处理，用于第三方链上索引                                               | calldata 中                                         |
-| ERC-8021            | 交易归因标准，在 calldata 后追加后缀                                            | 外部标准                                               |
+| ERC-8021            | 交易归因标准，在 calldata 后追加后缀（由 effectiveEnd 反向扫描剥离）                 | 外部标准                                               |
+| DynamicRoute / JIT  | Just-In-Time 动态路由原语，试运行 N 个候选适配器后择优执行，执行后余额校验              | `contracts/8/adapter/DynamicRoute.sol`             |
+| Candidate           | JIT 候选适配器结构体（adapter, assetTo, rawData, extraData）                  | `DynamicRoute.Candidate`                           |
+| dry-run / 试运行      | JIT 在沙箱内试执行候选并以魔数前缀 revert 回传产出（`DRY_RUN_RESULT_MAGIC`）        | `DynamicRoute._dryRun()`                           |
+| SecurityManager     | TokenApproveProxy 的治理封装：白名单镜像 + 新增(admin)/移除(admin或安全角色)拆分 | `contracts/8/SecurityManager.sol`                  |
+| SECURITY_ROLE       | 应急响应角色，仅可移除（吊销）proxy，不可新增                                       | `keccak256("SECURITY_ROLE")`                       |
+| TokenApprove        | 用户代币授权目标合约（runtime claim 平面）                                       | `contracts/8/TokenApprove.sol`                     |
+| TokenApproveProxy   | 授权代理，被 SecurityManager 治理（管理平面经 ITokenApproveProxyAdmin）         | `contracts/8/TokenApproveProxy.sol`                |
 
 

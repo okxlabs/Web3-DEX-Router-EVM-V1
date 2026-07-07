@@ -56,7 +56,7 @@ description: "DexRouter 主规则和全局约束——最高权威文件，冲�
 - [Rule] ExtraData 解析 **must** 从右到左（先佣金 → 后正滑点 → 后 Permit2 → 后 RefundTo）
 - [Rule] 标志位为 48 位（6 字节），**never** 缩短标志位长度
 - [Rule] 佣金/正滑点解析 **must** 使用 effectiveEnd（反向扫描去除外部后缀）作为右边界，**never** 直接使用 `calldatasize()`
-- [Warning] effectiveEnd **尚未实现**。当前 ExtraDataLib 和 CommissionLib 均直接使用 `calldatasize()`，设计文档见 `docs/20260304-erc8021-compatibility/`
+- effectiveEnd **已实现**：内联在 `ExtraDataLib._getExtraDataEndPointAndLength(swapDataLength)`，以 `swapDataLength` 为下界做 32 字节对齐反向扫描、命中 11 个已知 flag 即为真实右边界；CommissionLib 已不再直接使用 `calldatasize()`。详见 pitfalls/calldata-parsing.md P-001
 
 ## 代币处理约束
 

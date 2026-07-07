@@ -43,6 +43,7 @@ const xlayer_test = require('./xlayer_test')
 const monad = require('./monad')
 const hyperevm = require('./hyperevm')
 const pharos = require('./pharos')
+const robinhood = require('./robinhood')
 let config
 
 console.log('current network.name: ', network.name)
@@ -133,5 +134,7 @@ if (network.name === 'okc') {
     config = hyperevm
 } else if (network.name == 'pharos') {
     config = pharos
+} else if (network.name == 'robinhood') {
+    config = robinhood
 }
 module.exports = config

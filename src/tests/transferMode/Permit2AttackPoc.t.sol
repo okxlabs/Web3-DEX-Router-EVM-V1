@@ -1,0 +1,215 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "../common/TrimAndCommissionTestBase.t.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+
+/// @notice PoC: 攻击者 bob 使用 arnaud 的 permit2 签名，将 swap 输出接收地址替换为 bob
+/// @dev 攻击场景：签名者(arnaud) != 交易发送者(bob)，bob 篡改 receiver 地址
+contract Permit2AttackPoc is TrimAndCommissionTestBase {
+
+    /// @notice 测试：bob 使用 arnaud 的签名发起交易，将 receiver 改为 bob
+    /// @dev 预期：交易应该 revert，因为 permit2Info.owner != msg.sender
+    function test_permit2Attack_replaceReceiver_shouldRevert() public {
+        // 1. 设置: arnaud 持有 WETH 并授权给 Permit2
+        deal(WETH, arnaud, oneEther);
+        vm.prank(arnaud);
+        SafeERC20.safeApprove(IERC20(WETH), address(permit2), oneEther);
+
+        console2.log("======== Before Attack ========");
+        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
+        console2.log("bob USDC balance: %d", IERC20(USDC).balanceOf(bob));
+
+        // 2. 生成 DAG swap 参数: WETH -> USDT -> USDC
+        DexRouter.BaseRequest memory baseRequest = _generateBaseRequest(WETH, USDC, oneEther);
+        DexRouter.RouterPath[] memory paths = _buildTwoHopDagPaths(
+            WETH,
+            USDT,
+            WETH_USDT_UNIV3,
+            USDC_USDT_UNIV3,
+            false,
+            true,
+            _MODE_PERMIT2_SIGNATURE
+        );
+
+        // 3. 使用 arnaud 的私钥生成 permit2 签名
+        //    注意：permit2Info.owner = arnaud
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = oneEther;
+        bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
+
+        // 4. 构造恶意交易数据：receiver = bob（而非签名者 arnaud）
+        bytes memory swapData = abi.encodeWithSelector(
+            DexRouter.dagSwapTo.selector,
+            0,          // orderId
+            bob,        // ⚠️ 攻击点：receiver 改为 bob，而非签名者 arnaud
+            baseRequest,
+            paths
+        );
+        bytes memory data = bytes.concat(swapData, permit2Info);
+
+        // 5. bob 作为攻击者发送交易，预期 revert
+        //    因为 permit2Info.owner (arnaud) != msg.sender (bob)
+        vm.prank(bob);
+        (bool success, bytes memory returnData) = address(dexRouter).call(data);
+        
+        // 6. 验证攻击被阻止
+        assertFalse(success, "Attack should have been blocked, but it succeeded");
+        
+        // 验证 revert 原因是 "permit2Info owner mismatch"
+        // 解码 revert 原因
+        if (returnData.length >= 68) {
+            // 跳过 Error(string) selector (4 bytes) + offset (32 bytes) + length (32 bytes)
+            assembly {
+                returnData := add(returnData, 4)
+            }
+            string memory reason = abi.decode(returnData, (string));
+            assertEq(reason, "permit2Info owner mismatch", "Wrong revert reason");
+        }
+
+        console2.log("======== Attack Blocked ========");
+        console2.log("arnaud WETH balance: %d (unchanged)", IERC20(WETH).balanceOf(arnaud));
+        console2.log("bob USDC balance: %d (still 0)", IERC20(USDC).balanceOf(bob));
+        console2.log("Attack successfully prevented!");
+    }
+
+    /// @notice 测试：arnaud 自己发起交易，应该成功
+    /// @dev 预期：交易成功，因为 permit2Info.owner == msg.sender == arnaud
+    function test_permit2_legitimateSwap_shouldSucceed() public {
+        // 1. 设置: arnaud 持有 WETH 并授权给 Permit2
+        deal(WETH, arnaud, oneEther);
+        vm.prank(arnaud);
+        SafeERC20.safeApprove(IERC20(WETH), address(permit2), oneEther);
+
+        console2.log("======== Before Swap ========");
+        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
+        console2.log("arnaud USDC balance: %d", IERC20(USDC).balanceOf(arnaud));
+
+        // 2. 生成 DAG swap 参数: WETH -> USDT -> USDC
+        DexRouter.BaseRequest memory baseRequest = _generateBaseRequest(WETH, USDC, oneEther);
+        DexRouter.RouterPath[] memory paths = _buildTwoHopDagPaths(
+            WETH,
+            USDT,
+            WETH_USDT_UNIV3,
+            USDC_USDT_UNIV3,
+            false,
+            true,
+            _MODE_PERMIT2_SIGNATURE
+        );
+
+        // 3. 使用 arnaud 的私钥生成 permit2 签名
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = oneEther;
+        bytes memory permit2Info = _generatePermit2Info(WETH, amounts);
+
+        // 4. 构造正常交易数据：receiver = arnaud（签名者自己）
+        bytes memory swapData = abi.encodeWithSelector(
+            DexRouter.dagSwapTo.selector,
+            0,          // orderId
+            arnaud,     // receiver = arnaud (签名者自己)
+            baseRequest,
+            paths
+        );
+        bytes memory data = bytes.concat(swapData, permit2Info);
+
+        // 5. arnaud 自己发送交易，应该成功
+        //    因为 permit2Info.owner (arnaud) == msg.sender (arnaud)
+        vm.prank(arnaud);
+        (bool success, ) = address(dexRouter).call(data);
+        
+        // 6. 验证交易成功
+        assertTrue(success, "Legitimate swap should succeed");
+
+        console2.log("======== After Swap ========");
+        console2.log("arnaud WETH balance: %d", IERC20(WETH).balanceOf(arnaud));
+        console2.log("arnaud USDC balance: %d", IERC20(USDC).balanceOf(arnaud));
+        
+        // 验证 arnaud 收到了 USDC
+        assertGt(IERC20(USDC).balanceOf(arnaud), 0, "arnaud should receive USDC");
+        assertEq(IERC20(WETH).balanceOf(arnaud), 0, "arnaud WETH should be spent");
+    }
+
+    // ============================== internal functions ==============================
+    
+    /// @notice Build a two-hop DAG path (node0 -> node1 -> node2)
+    /// @dev DAG rawData encoding: [8bits inputIndex][8bits outputIndex][72bits weight][160bits poolAddress]
+    function _buildTwoHopDagPaths(
+        address node0Token,
+        address node1Token,
+        address pool0,
+        address pool1,
+        bool pool0Reverse,
+        bool pool1Reverse,
+        uint256 mode
+    ) internal view returns (DexRouter.RouterPath[] memory paths) {
+        paths = new DexRouter.RouterPath[](2);
+        
+        // Node 0: node0Token -> node1Token
+        paths[0] = _buildDagNode(
+            node0Token,
+            pool0,
+            pool0Reverse,
+            0,      // inputIndex = 0 (this is node 0)
+            1,      // outputIndex = 1 (output to node 1)
+            mode
+        );
+        
+        // Node 1: node1Token -> finalToken (to node2/receiver)
+        paths[1] = _buildDagNode(
+            node1Token,
+            pool1,
+            pool1Reverse,
+            1,      // inputIndex = 1 (this is node 1)
+            2,      // outputIndex = 2 (output to final receiver)
+            0       // no mode for intermediate nodes
+        );
+        
+        return paths;
+    }
+
+    /// @notice Build a single DAG node
+    function _buildDagNode(
+        address fromToken,
+        address pool,
+        bool reverse,
+        uint256 inputIndex,
+        uint256 outputIndex,
+        uint256 mode
+    ) internal view returns (DexRouter.RouterPath memory path) {
+        path.mixAdapters = new address[](1);
+        path.mixAdapters[0] = UniversalUniV3Adapter;
+        
+        path.assetTo = new address[](1);
+        path.assetTo[0] = UniversalUniV3Adapter;
+        
+        path.rawData = new uint256[](1);
+        uint256 rawData = uint256(uint160(pool));
+        rawData |= uint256(10000) << 160;           // weight = 10000 (100%)
+        rawData |= uint256(outputIndex) << 176;
+        rawData |= uint256(inputIndex) << 184;
+        if (reverse) rawData |= uint256(0x80) << 248;
+        path.rawData[0] = rawData;
+        
+        path.extraData = new bytes[](1);
+        (address token0, address token1) = _getPoolTokens(pool);
+        path.extraData[0] = reverse 
+            ? abi.encode(0, abi.encode(token1, token0, 0)) 
+            : abi.encode(0, abi.encode(token0, token1, 0));
+        
+        path.fromToken = uint256(uint160(fromToken)) | mode;
+        
+        return path;
+    }
+
+    /// @notice Get token0 and token1 from pool
+    function _getPoolTokens(address pool) internal pure returns (address token0, address token1) {
+        if (pool == WETH_USDT_UNIV3) {
+            return (WETH, USDT);
+        } else if (pool == USDC_USDT_UNIV3) {
+            return (USDC, USDT);
+        } else if (pool == USDC_WETH_UNIV3) {
+            return (USDC, WETH);
+        }
+        revert("unknown pool");
+    }
+}

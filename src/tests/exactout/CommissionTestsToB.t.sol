@@ -195,7 +195,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank();
@@ -266,7 +266,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
@@ -332,7 +332,7 @@ contract CommissionToBTests is BaseTestSetup {
         
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
         vm.stopPrank();
@@ -400,7 +400,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
         vm.stopPrank();
@@ -441,7 +441,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据，不使用中间变量
             (bool success, ) = address(dexRouterExactOut).call(
@@ -566,7 +566,7 @@ contract CommissionToBTests is BaseTestSetup {
         // 内联构建调用数据
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(
@@ -628,7 +628,7 @@ contract CommissionToBTests is BaseTestSetup {
         // 内联构建调用数据
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(
@@ -694,7 +694,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
             (bool success, ) = address(dexRouterExactOut).call(
@@ -710,7 +710,7 @@ contract CommissionToBTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[targetTokenIndex]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         refererAddress,
                         0,
@@ -759,7 +759,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             
             // 直接构建并连接数据
             (bool success, ) = address(dexRouterExactOut).call(
@@ -951,7 +951,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
@@ -1022,7 +1022,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
             (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
@@ -1088,7 +1088,7 @@ contract CommissionToBTests is BaseTestSetup {
 
         vm.startPrank(amy);
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
             (bool success, ) = address(dexRouterExactOut).call{value: amountInMax}(data);
             require(success, "call failed");
@@ -1157,7 +1157,7 @@ contract CommissionToBTests is BaseTestSetup {
             console2.log("Approved tokenApprove:", address(tokenApprove));
             console2.log("Approval amount:", tokens[sourceTokenIndex].allowance(amy, address(tokenApprove)));
             console2.log("Amy address:", amy);
-            console2.log("DexRouter address:", address(dexRouterExactOut));
+            console2.log("DexRouterExactOut address:", address(dexRouterExactOut));
             console2.log("Pool address:", address(pair));
             (bool success, ) = address(dexRouterExactOut).call(data);
             require(success, "call failed");
@@ -1407,7 +1407,7 @@ contract CommissionToBTests is BaseTestSetup {
                     _buildCommissionInfoUnified(
                         false, // 不从源代币收取
                         true,  // 从目标代币收取
-                        address(tokens[2]),
+                        address(COMMISSION_ETH),
                         200,   // 0.2%的佣金率
                         address(0x123),
                         0,

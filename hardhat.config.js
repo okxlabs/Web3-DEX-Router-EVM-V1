@@ -6,16 +6,29 @@ require("solidity-coverage");
 require('hardhat-contract-sizer');
 require('hardhat-log-remover');
 require("@openzeppelin/hardhat-upgrades");
-require("@matterlabs/hardhat-zksync-deploy");
-require("@matterlabs/hardhat-zksync-solc");
-// require("@matterlabs/hardhat-zksync-verify");
 require('dotenv').config();
 require("./scripts/multichain.js");
-// require('@okxweb3/hardhat-explorer-verify');
-require("./tasks/deploy-upgrade");
+require("./tasks/deploy-and-verify");
+require("./tasks/check-impl");
 
-// Note: If no private key is configured in the project, the first test account of Hardhat is used by default
-const PRIVATE_KEY = process.env.PRIVATE_KEY_DEPLOYER || 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+// Deployer/signer key. On local networks (hardhat/localhost, or no --network) we fall back
+// to the well-known Hardhat test account so compile/test work without a key. On any real
+// network we FAIL FAST when PRIVATE_KEY is missing, rather than silently signing with the
+// public test key (which would otherwise happen and is dangerous on a live chain).
+const HARDHAT_TEST_KEY = 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const LOCAL_NETWORKS = new Set(['hardhat', 'localhost']);
+const TARGET_NETWORK =
+  process.env.HARDHAT_NETWORK ||
+  (process.argv.includes('--network') ? process.argv[process.argv.indexOf('--network') + 1] : undefined);
+const PRIVATE_KEY = (() => {
+  if (process.env.PRIVATE_KEY) return process.env.PRIVATE_KEY;
+  if (!TARGET_NETWORK || LOCAL_NETWORKS.has(TARGET_NETWORK)) return HARDHAT_TEST_KEY;
+  throw new Error(
+    `PRIVATE_KEY is not set, but the target network "${TARGET_NETWORK}" is not local. ` +
+      `Refusing to fall back to the public Hardhat test key on a live network. ` +
+      `Set PRIVATE_KEY in your .env before running against "${TARGET_NETWORK}".`
+  );
+})();
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY || '';
 const INFSTONES_KEY = process.env.INFSTONES_KEY || '';
 const INFURA_KEY = process.env.INFURA_KEY || '';
@@ -45,18 +58,18 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1
+            runs: 200
           }
         }
-      // },
-      // {
-      //   version: '^0.8.0',
-      //   settings: {
-      //     optimizer: {
-      //       enabled: true,
-      //       runs: 1
-      //     }
-      //   }
+      },
+      {
+        version: '^0.8.0',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
       }
     ]
   },
@@ -89,7 +102,7 @@ module.exports = {
       }
     },
     monad: {
-      url: 'https://rpc-mainnet.monadinfra.com/rpc/pJvqD44aLGU4IJmorkPJpzEeqI4NJJjO',
+      url: process.env.MONAD_RPC_URL || '',
       chainId: 143,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -99,8 +112,19 @@ module.exports = {
         },
       }
     },
+    pharos: {
+      url: process.env.PHAROS_RPC_URL || 'https://rpc.pharos.xyz',
+      chainId: 1672,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     okc: {
-      url: INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`,
+      url: process.env.OKC_RPC_URL || (INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`),
       chainId: 66,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -111,7 +135,7 @@ module.exports = {
       },
     },
     tron: {
-      url: "https://api.trongrid.io",
+      url: process.env.TRON_RPC_URL || "https://api.trongrid.io",
       chainId: 65,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -122,7 +146,7 @@ module.exports = {
       },
     },
     tron: {
-      url: "https://exchaintestrpc.okex.org",
+      url: process.env.TRON_TEST_RPC_URL || "https://exchaintestrpc.okex.org",
       chainId: 65,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -133,7 +157,7 @@ module.exports = {
       },
     },
     zeta: {
-      url: 'https://zeta-chain.drpc.org',
+      url: process.env.ZETA_RPC_URL || 'https://zeta-chain.drpc.org',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -143,7 +167,7 @@ module.exports = {
       }
     },
     flare: {
-      url: "https://flare-api.flare.network/ext/C/rpc",
+      url: process.env.FLARE_RPC_URL || "https://flare-api.flare.network/ext/C/rpc",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -153,18 +177,7 @@ module.exports = {
       },
     },
     bsc: {
-      url: "https://bsc-dataseed1.defibit.io",
-      chainId: 56,
-      accounts: [`${PRIVATE_KEY}`],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200
-        },
-      },
-    },
-    bsc_stg: {
-      url: "https://bsc.blockrazor.xyz",
+      url: process.env.BSC_RPC_URL || "https://bsc-dataseed1.defibit.io",
       chainId: 56,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -175,7 +188,7 @@ module.exports = {
       },
     },
     bsc_dev: {
-      url: "https://rpc.ankr.com/bsc",
+      url: process.env.BSC_DEV_RPC_URL || "https://rpc.ankr.com/bsc",
       chainId: 56,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -186,7 +199,7 @@ module.exports = {
       },
     },
     bsc_test: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      url: process.env.BSC_TEST_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -197,7 +210,7 @@ module.exports = {
       },
     },
     eth: {
-      url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+      url: process.env.ETH_RPC_URL || (ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`),
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -206,18 +219,8 @@ module.exports = {
         },
       },
     },
-    eth_stg: {
-      url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts: [`${PRIVATE_KEY}`],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200
-        },
-      }
-    },
     goerli: {
-      url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+      url: process.env.GOERLI_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -227,7 +230,7 @@ module.exports = {
       },
     },
     sepolia: {
-      url: `https://rpc.sepolia.org`,
+      url: process.env.SEPOLIA_RPC_URL || `https://rpc.sepolia.org`,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -237,7 +240,7 @@ module.exports = {
       },
     },
     cro: {
-      url: "https://cronos-evm-rpc.publicnode.com",
+      url: process.env.CRO_RPC_URL || "https://cronos-evm-rpc.publicnode.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -247,7 +250,7 @@ module.exports = {
       },
     },
     crotest: {
-      url: "https://cronos-testnet-3.crypto.org:8545",
+      url: process.env.CROTEST_RPC_URL || "https://cronos-testnet-3.crypto.org:8545",
       accounts: [`${PRIVATE_KEY}`],
       network_id: "*",
       skipDryRun: true,
@@ -259,7 +262,7 @@ module.exports = {
       },
     },
     avax: {
-      url: "https://1rpc.io/avax/c",
+      url: process.env.AVAX_RPC_URL || "https://1rpc.io/avax/c",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -269,7 +272,7 @@ module.exports = {
       },
     },
     avaxtest: {
-      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      url: process.env.AVAXTEST_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",
       accounts: [`${PRIVATE_KEY}`],
       gas: 2100000,
       gasPrice: 25000000000,
@@ -281,7 +284,7 @@ module.exports = {
       },
     },
     polygon: {
-      url: "https://polygon.lava.build",
+      url: process.env.POLYGON_RPC_URL || "https://polygon.lava.build",
       accounts: [`${PRIVATE_KEY}`],
       gasPrice: 250000000000,
       settings: {
@@ -292,7 +295,7 @@ module.exports = {
       },
     },
     polygontest: {
-      url: "https://rpc-mumbai.maticvigil.com/",
+      url: process.env.POLYGONTEST_RPC_URL || "https://rpc-mumbai.maticvigil.com/",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -302,17 +305,7 @@ module.exports = {
       },
     },
     arb: {
-      url: "https://arb1.arbitrum.io/rpc",
-      accounts: [`${PRIVATE_KEY}`],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200
-        },
-      },
-    },
-    arb_stg: {
-      url: "https://arb1.arbitrum.io/rpc",
+      url: process.env.ARB_RPC_URL || "https://arb1.arbitrum.io/rpc",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -322,7 +315,7 @@ module.exports = {
       },
     },
     op: {
-      url: "https://optimism-rpc.publicnode.com",
+      url: process.env.OP_RPC_URL || "https://optimism-rpc.publicnode.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -332,7 +325,7 @@ module.exports = {
       },
     },
     ftm: {
-      url: "https://1rpc.io/ftm",
+      url: process.env.FTM_RPC_URL || "https://1rpc.io/ftm",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -342,7 +335,7 @@ module.exports = {
       },
     },
     ethw: {
-      url: "https://mainnet.ethereumpow.org",
+      url: process.env.ETHW_RPC_URL || "https://mainnet.ethereumpow.org",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -352,7 +345,7 @@ module.exports = {
       },
     },
     conflux: {
-      url: "https://evm.confluxrpc.com",
+      url: process.env.CONFLUX_RPC_URL || "https://evm.confluxrpc.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -362,7 +355,7 @@ module.exports = {
       }
     },
     polyzkevm: {
-      url: "https://zkevm-rpc.com",
+      url: process.env.POLYZKEVM_RPC_URL || "https://zkevm-rpc.com",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -372,7 +365,7 @@ module.exports = {
       }
     },
     zksync: {
-      url: "https://mainnet.era.zksync.io",
+      url: process.env.ZKSYNC_RPC_URL || "https://mainnet.era.zksync.io",
       ethNetwork: ZKSYNC_ETH_NETWORK,
       zksync: true,
       chainId: 324,
@@ -386,7 +379,7 @@ module.exports = {
       }
     },
     linea: {
-      url: `https://1rpc.io/linea`,
+      url: process.env.LINEA_RPC_URL || `https://1rpc.io/linea`,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -396,7 +389,7 @@ module.exports = {
       }
     },
     mantle: {
-      url: `https://rpc.mantle.xyz`,
+      url: process.env.MANTLE_RPC_URL || `https://rpc.mantle.xyz`,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -406,17 +399,7 @@ module.exports = {
       }
     },
     base: {
-      url: 'https://base-mainnet.public.blastapi.io',
-      accounts: [`${PRIVATE_KEY}`],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200
-        },
-      }
-    },
-    base_stg: {
-      url: 'https://mainnet.base.org',
+      url: process.env.BASE_RPC_URL || 'https://base-mainnet.public.blastapi.io',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -426,7 +409,7 @@ module.exports = {
       }
     },
     scroll: {
-      url: "https://rpc.scroll.io" || "",
+      url: process.env.SCROLL_RPC_URL || "https://rpc.scroll.io",
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -436,7 +419,7 @@ module.exports = {
       }
     },
     basetest: {
-      url: 'https://goerli.base.org',
+      url: process.env.BASETEST_RPC_URL || 'https://goerli.base.org',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -446,7 +429,7 @@ module.exports = {
       }
     },
     canto: {
-      url: 'https://mainnode.plexnode.org:8545',
+      url: process.env.CANTO_RPC_URL || 'https://mainnode.plexnode.org:8545',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -456,7 +439,7 @@ module.exports = {
       }
     },
     manta: {
-      url: 'https://pacific-rpc.manta.network/http',
+      url: process.env.MANTA_RPC_URL || 'https://pacific-rpc.manta.network/http',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -466,7 +449,7 @@ module.exports = {
       }
     },
     metis: {
-      url: 'https://andromeda.metis.io/?owner=1088',
+      url: process.env.METIS_RPC_URL || 'https://andromeda.metis.io/?owner=1088',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -476,7 +459,7 @@ module.exports = {
       }
     },
     merlin: {
-      url: 'https://rpc.merlinchain.io',
+      url: process.env.MERLIN_RPC_URL || 'https://rpc.merlinchain.io',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -486,7 +469,18 @@ module.exports = {
       }
     },
     xlayer: {
-      url: 'https://rpc.xlayer.tech',
+      url: process.env.XLAYER_RPC_URL || 'https://rpc.xlayer.tech',
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
+    xlayer_test: {
+      url: 'https://testrpc.xlayer.tech',
+      chainId: 1952,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -496,7 +490,7 @@ module.exports = {
       }
     },
     blast: {
-      url: 'https://rpc.blast.io',
+      url: process.env.BLAST_RPC_URL || 'https://rpc.blast.io',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -506,7 +500,7 @@ module.exports = {
       }
     },
     mode: {
-      url: 'https://mainnet.mode.network',
+      url: process.env.MODE_RPC_URL || 'https://mainnet.mode.network',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -516,7 +510,7 @@ module.exports = {
       }
     },
     sei: {
-      url: 'https://evm-rpc.sei-apis.com',
+      url: process.env.SEI_RPC_URL || 'https://evm-rpc.sei-apis.com',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -526,7 +520,7 @@ module.exports = {
       }
     },
     moonbeam: {
-      url: 'https://rpc.ankr.com/moonbeam',
+      url: process.env.MOONBEAM_RPC_URL || 'https://rpc.ankr.com/moonbeam',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -536,7 +530,7 @@ module.exports = {
       }
     },
     iotex: {
-      url: 'https://babel-api.mainnet.iotex.one',
+      url: process.env.IOTEX_RPC_URL || 'https://babel-api.mainnet.iotex.one',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -546,7 +540,7 @@ module.exports = {
       }
     },
     apechain: {
-      url: 'https://rpc.apechain.com/http',
+      url: process.env.APECHAIN_RPC_URL || 'https://rpc.apechain.com/http',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -556,7 +550,7 @@ module.exports = {
       }
     },
     taiko: {
-      url: 'https://rpc.mainnet.taiko.xyz',
+      url: process.env.TAIKO_RPC_URL || 'https://rpc.mainnet.taiko.xyz',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -566,7 +560,7 @@ module.exports = {
       }
     },
     story: {
-      url: 'https://homer.storyrpc.io',
+      url: process.env.STORY_RPC_URL || 'https://homer.storyrpc.io',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -576,7 +570,7 @@ module.exports = {
       }
     },
     sonic: {
-      url: 'https://sonic-rpc.publicnode.com',
+      url: process.env.SONIC_RPC_URL || 'https://sonic-rpc.publicnode.com',
       chainId: 146,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
@@ -587,7 +581,7 @@ module.exports = {
       }
     },
     berachain: {
-      url: 'https://rpc.berachain-apis.com',
+      url: process.env.BERACHAIN_RPC_URL || 'https://rpc.berachain-apis.com',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -597,7 +591,7 @@ module.exports = {
       }
     },
     unichain: {
-      url: 'https://unichain.drpc.org',
+      url: process.env.UNICHAIN_RPC_URL || 'https://unichain.drpc.org',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -607,7 +601,7 @@ module.exports = {
       }
     },
     plasma: {
-      url: 'https://rpc.plasma.to',
+      url: process.env.PLASMA_RPC_URL || 'https://rpc.plasma.to',
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -616,8 +610,9 @@ module.exports = {
         },
       }
     },
-    xlayer_stg: {
-      url: 'https://rpc.xlayer.tech',
+    hyperevm: {
+      url: process.env.HYPEREVM_RPC_URL || 'https://rpc.hyperliquid.xyz/evm',
+      chainId: 999,
       accounts: [`${PRIVATE_KEY}`],
       settings: {
         optimizer: {
@@ -625,7 +620,7 @@ module.exports = {
           runs: 200
         },
       }
-    }
+    },
   },
   paths: {
     sources: './contracts/8',
@@ -664,6 +659,7 @@ module.exports = {
       linea: ETHERSCAN_API_KEY,
       mantle: ETHERSCAN_API_KEY,
       xlayer: XLAYERSCAN_API_KEY,
+      xlayer_test: XLAYERSCAN_API_KEY,
       mode: MODESCAN_API_KEY,
       manta: MANTASCAN_API_KEY,
       scroll: ETHERSCAN_API_KEY,
@@ -860,6 +856,11 @@ module.exports = {
         network: "xlayer",
         chainId: 196,
         urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER", browserURL: "https://www.oklink.com", }
+      },
+      {
+        network: "xlayer_test",
+        chainId: 1952,
+        urls: { apiURL: "https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/XLAYER_TESTNET", browserURL: "https://www.oklink.com", }
       },
       {
         network: "scroll",

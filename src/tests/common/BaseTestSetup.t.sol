@@ -2,8 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import "@dex-exactout/DexRouterExactOut.sol";
-// These @dex/ interfaces have no transitive deps that conflict with @dex-exactout/
+import {DexRouterExactOut} from "@dex-exactout/DexRouterExactOut.sol";
+import "@dex/TokenApprove.sol";
+import "@dex/TokenApproveProxy.sol";
+import "@dex/utils/WNativeRelayer.sol";
+import "@dex/libraries/EthReceiver.sol";
+import "@dex/interfaces/IWETH.sol";
 import "@dex/interfaces/IUniswapV2Factory.sol";
 import "@dex/interfaces/IUniswapV2Router02.sol";
 import "@dex/interfaces/IUniswapV2Pair.sol";
@@ -32,7 +36,7 @@ interface IUniswapV3MintCallback {
     ) external;
 }
 
-contract BaseTestSetup is Test, IUniswapV3MintCallback {
+contract BaseTestSetup is Test, IUniswapV3MintCallback, EthReceiver {
     DexRouterExactOut dexRouterExactOut;
     address tokenApprove = 0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f;
     ITokenApproveProxy tokenApproveProxy = ITokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
@@ -398,9 +402,7 @@ contract BaseTestSetup is Test, IUniswapV3MintCallback {
 
     function setUpOKContracts() internal {
         vm.startPrank(admin);
-        dexRouterExactOut = new DexRouterExactOut();
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(address(dexRouterExactOut), address(admin), abi.encodeWithSelector(DexRouterExactOut.initialize.selector));
-        dexRouterExactOut = DexRouterExactOut(payable(address(proxy)));
+        dexRouterExactOut = new DexRouterExactOut(admin);
         vm.stopPrank();
         address tokenApproveProxyOwner = tokenApproveProxy.owner();
         vm.startPrank(tokenApproveProxyOwner);

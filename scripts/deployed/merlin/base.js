@@ -3,6 +3,7 @@ module.exports = {
     wNativeRelayer: "0x38a342664aBE254Fc2Ca4A98d85eaB7C5aE63c85",
     tokenApprove: "0x8b773D83bc66Be128c60e07E17C8901f7a64F000",
     tokenApproveProxy: "0xfAd6a9eEe5b32E9B81bb217BaeF37742B2ca5B83",
+    permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0x127a986cE31AA2ea8E1a6a0F0D5b7E5dbaD7b0bE",
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",
     _FF_FACTORY: "",

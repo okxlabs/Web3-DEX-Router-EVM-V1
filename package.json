@@ -4,6 +4,8 @@
   "license": "MIT",
   "description": "Swap Contract for DEX Aggregator",
   "scripts": {
+    "postinstall": "node scripts/deploy/ensure-chainconfig.js",
+    "ensure-chainconfig": "node scripts/deploy/ensure-chainconfig.js",
     "compile": "npx hardhat --config hardhat.config.js compile",
     "compile5": "npx hardhat --config hardhat.config.5.js compile",
     "size": "hardhat size-contracts",

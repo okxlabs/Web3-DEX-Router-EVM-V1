@@ -5,11 +5,12 @@ import "@dex/DexRouter.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/adapter/DnyFeeAdapter.sol";
-import "@dex/libraries/CommonUtils.sol";
+import "@dex/libraries/Constants.sol";
+import "@dex/libraries/EthReceiver.sol";
 import {PMMLib} from "@dex/libraries/PMMLib.sol";
 import {Test, console2} from "forge-std/test.sol";
 
-contract DagByInvestTest is Test ,CommonUtils {
+contract DagByInvestTest is Test, EthReceiver {
     DexRouter dexRouter;
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58);
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f);
@@ -21,7 +22,7 @@ contract DagByInvestTest is Test ,CommonUtils {
 
     function setUp() public {
         vm.createSelectFork("https://rpc.mevblocker.io/noreverts");
-        dexRouter = new DexRouter();
+        dexRouter = new DexRouter(tokenApproveProxyAdmin);
         vm.startPrank(tokenApproveProxyAdmin);
         tokenApproveProxy.addProxy(address(dexRouter));
         vm.stopPrank();
@@ -49,6 +50,7 @@ contract DagByInvestTest is Test ,CommonUtils {
         batches[0].extraData = new bytes[](1);
         batches[0].extraData[0] = abi.encode(30);
         batches[0].fromToken = uint256(uint160(address(WETH))) | _MODE_BY_INVEST;
+        vm.expectRevert("Invalid source token");
         dexRouter.dagSwapTo{value: 1 ether}(uint(0), address(this), baseRequest, batches);
     }
     function test_dagByInvest_weth() public {

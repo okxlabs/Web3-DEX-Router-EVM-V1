@@ -1,7 +1,0 @@
-module.exports = {
-    usdt: "0x55d398326f99059ff775485246999027b3197955",
-    weth: "0x2170ed0880ac9a755fd29b2688956bd959f933f8",
-    wbnb: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
-    dot: "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402",
-    shib: "0x2859e4544c4bb03966803b044a93563bd2d0dd4d"
-}

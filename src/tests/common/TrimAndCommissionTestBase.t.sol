@@ -3,13 +3,17 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "@dex/DexRouter.sol";
+import {DexRouterExactOut} from "@dex-exactout/DexRouterExactOut.sol";
 import "@dex/TokenApprove.sol";
 import "@dex/TokenApproveProxy.sol";
 import "@dex/utils/WNativeRelayer.sol";
 import "@dex/libraries/SafeERC20.sol";
 import "@dex/adapter/UniAdapter.sol";
+import "@dex/interfaces/permit2/IPermit2.sol";
+import "@dex/interfaces/permit2/ISignatureTransfer.sol";
 import "./CommissionHelper.t.sol";
 import "./TrimHelper.t.sol";
+import "./Permit2Helper.t.sol";
 
 interface ISafeMoon {
     function owner() external view returns (address);
@@ -19,7 +23,29 @@ interface ISafeMoon {
     function sellTotalFees() external view returns (uint256);
 }
 
-contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
+interface IPermit2Approve {
+    function approve(address token, address spender, uint160 amount, uint48 expiration) external;
+}
+
+contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper, Permit2Helper {
+    // transfer modes
+    uint256 internal constant _MODE_LEGACY =
+        0x0000000000000000000000000000000000000000000000000000000000000000; // 0b000 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_PERMIT2_ALLOWANCE =
+        0x0200000000000000000000000000000000000000000000000000000000000000; // 0b001 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_PERMIT2_SIGNATURE =
+        0x0600000000000000000000000000000000000000000000000000000000000000; // 0b011 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_BY_INVEST =
+        0x0400000000000000000000000000000000000000000000000000000000000000; // 0b010 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_NO_TRANSFER =
+        0x0800000000000000000000000000000000000000000000000000000000000000; // 0b100 in [bit251, bit250, bit249]
+    uint256 internal constant _MODE_DIRECT =
+        0x0A00000000000000000000000000000000000000000000000000000000000000; // 0b101 in [bit251, bit250, bit249]
+    uint256 internal constant _TRANSFER_MODE_MASK =
+        0x0E00000000000000000000000000000000000000000000000000000000000000; // 0b111 in [bit251, bit250, bit249]
+    uint256 internal constant REFUND_TO_ADDRESS_FLAG =
+        0xac3a7da8b1c60000000000000000000000000000000000000000000000000000; // bytes6(keccak256("RefundTo"))
+
     // tokens
     address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // decimals=18
@@ -32,20 +58,26 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
     address constant WETH_USDT_UNIV3 = 0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36;
     address constant USDC_WETH_UNIV2 = 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc;
     address constant USDC_WETH_UNIV3 = 0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640;
+    address constant USDC_USDT_UNIV2 = 0x3041CbD36888bECc7bbCBc0045E3B1f144466f5f;
+    address constant USDC_USDT_UNIV3 = 0x3416cF6C708Da44DB2624D63ea0AAef7113527C6;
     address constant WETH_SAFEMOON_UNIV2 = 0xd2e185A9076d33BD76cE548961EE6E9cB700BA17;
 
     // users
     address public admin = vm.rememberKey(1);
-    address public arnaud = vm.rememberKey(11111111111111111111);
+    uint256 public arnaudPrivateKey = 11111111111111111111;
+    address public arnaud = vm.rememberKey(arnaudPrivateKey);
+    address public bob = vm.rememberKey(11111111110000000000);
     address public trimAddress = vm.rememberKey(22222222222222222222);
     address public chargeAddress = vm.rememberKey(33333333333333333333);
     address[] public referrerAddresses = new address[](8);
     
     // contracts
     DexRouter public dexRouter;
+    DexRouterExactOut public dexRouterExactOut;
     TokenApprove tokenApprove = TokenApprove(0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f); // ETH
     TokenApproveProxy tokenApproveProxy = TokenApproveProxy(0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58); // ETH
     WNativeRelayer wNativeRelayer = WNativeRelayer(payable(0x5703B683c7F928b721CA95Da988d73a3299d4757)); // ETH
+    IPermit2 permit2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3); // ETH
 
     address constant UniversalUniV3Adapter = 0x6747BcaF9bD5a5F0758Cbe08903490E45DdfACB5;
     address public UniV2Adapter;
@@ -117,6 +149,47 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         } else {
             deal(_fromToken, arnaud, _amount);
             SafeERC20.safeApprove(IERC20(_fromToken), address(tokenApprove), _amount);
+        }
+        address[] memory tokens = new address[](2);
+        tokens[0] = _fromToken;
+        tokens[1] = _toToken;
+        _beforeSwapCheck(tokens);
+        _;
+        bool[] memory referrerShouldReceive = new bool[](MAX_COMMISSION_MULTIPLE_NUM);
+        for (uint256 i = 0; i < referrerShouldReceiveNum; i++) {
+            referrerShouldReceive[i] = true;
+        }
+        _afterSwapCheck(tokens, trimShouldReceive, chargeShouldReceive, isFromCommission, referrerShouldReceive);
+        vm.stopPrank();
+    }
+
+    modifier tokenLogAndCheck3(
+        address _fromToken,
+        address _toToken,
+        uint256 _amount,
+        bool trimShouldReceive,
+        bool chargeShouldReceive,
+        bool isFromCommission,
+        uint256 referrerShouldReceiveNum,
+        uint256 transferMode
+    ) {
+        vm.startPrank(arnaud);
+        console2.log("User arnaud:", arnaud);
+        if (_fromToken == ETH) {
+            deal(address(arnaud), _amount);
+        } else {
+            deal(_fromToken, arnaud, _amount);
+            if (transferMode == _MODE_LEGACY) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(tokenApprove), _amount);
+            } else if (transferMode == _MODE_DIRECT) {
+                SafeERC20.safeApprove(IERC20(_fromToken), _swapTarget(), _amount);
+            } else if (transferMode == _MODE_PERMIT2_ALLOWANCE) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
+                IPermit2Approve(address(permit2)).approve(address(_fromToken), _swapTarget(), uint160(_amount), uint48(block.timestamp + 1000));
+            } else if (transferMode == _MODE_PERMIT2_SIGNATURE) {
+                SafeERC20.safeApprove(IERC20(_fromToken), address(permit2), _amount);
+            }
+            // For other modes (_MODE_NO_TRANSFER/_MODE_BY_INVEST), no need to approve
         }
         address[] memory tokens = new address[](2);
         tokens[0] = _fromToken;
@@ -251,13 +324,16 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         vm.createSelectFork(vm.envString("ETH_RPC_URL"), 23293873); // 2025.9.5 10:18
         vm.startPrank(admin);
         UniV2Adapter = address(new UniAdapter());
-        dexRouter = new DexRouter();
+        dexRouter = new DexRouter(admin);
+        dexRouterExactOut = new DexRouterExactOut(admin);
         vm.stopPrank();
         address wNativeRelayerOwner = wNativeRelayer.owner();
         vm.startPrank(wNativeRelayerOwner);
         tokenApproveProxy.addProxy(address(dexRouter));
-        address[] memory whitelistedCallers = new address[](1);
+        tokenApproveProxy.addProxy(address(dexRouterExactOut));
+        address[] memory whitelistedCallers = new address[](2);
         whitelistedCallers[0] = address(dexRouter);
+        whitelistedCallers[1] = address(dexRouterExactOut);
         wNativeRelayer.setCallerOk(whitelistedCallers, true);
         vm.stopPrank();
         address safeMoonOwner = ISafeMoon(SAFEMOON).owner();
@@ -267,6 +343,11 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
         vm.stopPrank();
         // console2.log("safeMoon buy fees: %d", ISafeMoon(SAFEMOON).buyTotalFees());
         // console2.log("safeMoon sell fees: %d", ISafeMoon(SAFEMOON).sellTotalFees());
+    }
+
+    // Swap target for approvals / permit signing. Override in exact-out tests to point at dexRouterExactOut.
+    function _swapTarget() internal view virtual returns (address) {
+        return address(dexRouter);
     }
 
     // ==================== Internal Functions ====================
@@ -362,5 +443,37 @@ contract TrimAndCommissionTestBase is Test, CommissionHelper, TrimHelper {
             commissionRates_,
             referrerAddresses_
         );
+    }
+
+    function _generateRefundToData(address refundTo) internal view returns (bytes memory) {
+        return abi.encodePacked(bytes32(REFUND_TO_ADDRESS_FLAG | uint256(uint160(refundTo))));
+    }
+
+
+    function _generatePermit2Info(
+        address token,
+        uint256[] memory amounts
+    ) internal view returns (bytes memory) {
+        ISignatureTransfer.PermitBatchTransferFrom memory permit = getPermitBatchTransferFrom(
+            token,
+            amounts,
+            1, // nonce
+            2524579200 // deadline 2050-01-01 00:00:00
+        );
+        bytes memory signature = getPermitBatchTransferSignature(
+            permit,
+            arnaudPrivateKey,
+            _swapTarget(),
+            Permit2EthDomainSeperator
+        );
+        bytes memory permit2Info = _buildPermit2InfoUnified(
+            amounts,
+            permit.nonce,
+            permit.deadline,
+            arnaud,
+            signature
+        );
+
+        return permit2Info;
     }
 }

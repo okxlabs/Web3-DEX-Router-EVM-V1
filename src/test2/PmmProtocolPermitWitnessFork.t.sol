@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import {PMMAdapter, IPMMProtocol} from "@dex/adapter/PmmAdapter.sol";
 import "forge-std/Test.sol";
 import {IWETH} from "@dex/interfaces/IWETH.sol";
-import {IPermit2} from "@dex/interfaces/IPermit2.sol";
+import {IPermit2} from "@dex/interfaces/permit2/IPermit2.sol";
+import {ISignatureTransfer} from "@dex/interfaces/permit2/ISignatureTransfer.sol";
 import {TestHelper} from "./helpers/RFQTestHelper.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {OrderRFQLib} from "./helpers/RFQTestHelper.sol";
@@ -71,8 +72,8 @@ contract PmmProtocolPermitWitnessFork is TestHelper {
         order.permit2WitnessType = WITNESS_TYPE_STRING;
 
         // Sign for Permit2 Witness
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({token: usdc, amount: order.makerAmount}),
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({token: usdc, amount: order.makerAmount}),
             nonce: order.rfqId,
             deadline: order.expiry
         });
@@ -164,8 +165,8 @@ contract PmmProtocolPermitWitnessFork is TestHelper {
         order.permit2WitnessType = WITNESS_TYPE_STRING;
 
         // Sign for Permit2 Witness
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({token: usdc, amount: order.makerAmount}),
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({token: usdc, amount: order.makerAmount}),
             nonce: order.rfqId,
             deadline: order.expiry
         });
@@ -235,8 +236,8 @@ contract PmmProtocolPermitWitnessFork is TestHelper {
         order.permit2WitnessType = WITNESS_TYPE_STRING;
 
         // Sign for Permit2 Witness (maker will provide USDT via Permit2)
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({token: usdt, amount: order.makerAmount}),
+        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+            permitted: ISignatureTransfer.TokenPermissions({token: usdt, amount: order.makerAmount}),
             nonce: order.rfqId,
             deadline: order.expiry
         });
@@ -284,7 +285,7 @@ contract PmmProtocolPermitWitnessFork is TestHelper {
 
     // Helper to sign Permit2 Witness Typed Data
     function getPermit2WitnessSignature(
-        IPermit2.PermitTransferFrom memory permit,
+        ISignatureTransfer.PermitTransferFrom memory permit,
         address spender,
         bytes32 witness,
         string memory witnessTypeString,

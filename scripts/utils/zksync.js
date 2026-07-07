@@ -39,8 +39,15 @@ const buildZkProvider = (hre, networkName = hre.network.name) => {
 
 const buildZkWallet = (hre, networkName = hre.network.name) => {
   const provider = buildZkProvider(hre, networkName);
-  const privateKey =
-    process.env.PRIVATE_KEY_DEPLOYER || DEFAULT_DEPLOYER_PRIVATE_KEY;
+  // zkSync wallet ops only happen on a real network — fail fast rather than silently
+  // signing with the public test key when PRIVATE_KEY is missing.
+  if (!process.env.PRIVATE_KEY) {
+    throw new Error(
+      `PRIVATE_KEY is not set — refusing to build a zkSync wallet with the public test key ` +
+        `on network "${networkName}". Set PRIVATE_KEY in your .env.`,
+    );
+  }
+  const privateKey = process.env.PRIVATE_KEY;
   const { Wallet } = ensureZkSyncModule();
   return new Wallet(privateKey, provider);
 };

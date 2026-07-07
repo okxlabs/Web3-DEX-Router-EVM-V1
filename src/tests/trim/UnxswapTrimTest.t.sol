@@ -356,7 +356,7 @@ contract UnxswapTrimTest is TrimAndCommissionTestBase {
         uint256 minReturn = 0;
         address receiver = arnaud;
         bytes32[] memory pools = new bytes32[](1);
-        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(amount * 996 / 1000), address(WETH_USDT_UNIV2)));
+        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(996_000_000), address(WETH_USDT_UNIV2)));
         return abi.encodeWithSelector(
             DexRouter.unxswapTo.selector, srcToken, amount, minReturn, receiver, pools
         );
@@ -368,7 +368,7 @@ contract UnxswapTrimTest is TrimAndCommissionTestBase {
         uint256 minReturn = 0;
         address receiver = arnaud;
         bytes32[] memory pools = new bytes32[](1);
-        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(amount * 996 / 1000), address(WETH_USDT_UNIV2)));
+        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(996_000_000), address(WETH_USDT_UNIV2)));
         return abi.encodeWithSelector(
             DexRouter.unxswapTo.selector, srcToken, amount, minReturn, receiver, pools
         );
@@ -380,7 +380,7 @@ contract UnxswapTrimTest is TrimAndCommissionTestBase {
         uint256 minReturn = 0;
         address receiver = arnaud;
         bytes32[] memory pools = new bytes32[](1);
-        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(amount * 996 / 1000), address(WETH_USDT_UNIV2)));
+        pools[0] = bytes32(abi.encodePacked(uint8(0x00), uint56(0), uint32(996_000_000), address(WETH_USDT_UNIV2)));
         return abi.encodeWithSelector(
             DexRouter.unxswapTo.selector, srcToken, amount, minReturn, receiver, pools
         );
@@ -392,7 +392,7 @@ contract UnxswapTrimTest is TrimAndCommissionTestBase {
         uint256 minReturn = 0;
         address receiver = arnaud;
         bytes32[] memory pools = new bytes32[](1);
-        pools[0] = bytes32(abi.encodePacked(uint8(0xc0), uint56(0), uint32(amount * 996 / 1000), address(WETH_USDT_UNIV2)));
+        pools[0] = bytes32(abi.encodePacked(uint8(0xc0), uint56(0), uint32(996_000_000), address(WETH_USDT_UNIV2)));
         return abi.encodeWithSelector(
             DexRouter.unxswapTo.selector, srcToken, amount, minReturn, receiver, pools
         );

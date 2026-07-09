@@ -20,6 +20,11 @@ const DEFAULT_VALUES = {
   approveProxy: '0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58',
   permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
   ffFactory: '0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000',
+  // DexRouter owner (privileged: pause / transferOwnership / setReporter), baked into the
+  // deployed impl via DeployDexRouter.s.sol. This is the fleet-wide EVM prod owner used on
+  // every chain unless a chain's deployed/<chain>/base.js overrides `owner` (e.g. a chain
+  // whose governance key differs — the EVM owner is not controllable there).
+  owner: '0xAcE2B3E7c752d5deBca72210141d464371b3B9b1',
 };
 
 function isZeroAddress(a) {
@@ -59,6 +64,9 @@ function validateValues(v, chain) {
   // Required, must be a real (non-zero) address — a zero here would break the router.
   checkRequiredAddr(errs, '_WETH (wNativeToken)', v.weth);
   checkRequiredAddr(errs, '_APPROVE_PROXY (tokenApproveProxy)', v.approveProxy);
+  // Owner defaults to the fleet prod owner but is validated: a zero/garbage owner would
+  // brick the control plane (unpausable, non-transferable) and can't be fixed without redeploy.
+  checkRequiredAddr(errs, '_OWNER (owner)', v.owner);
 
   // Optional — a chain may legitimately have no Permit2 / no Uniswap V3 factory.
   // Zero is allowed (callers should log it), but a malformed non-zero value is rejected.
@@ -74,17 +82,22 @@ function validateValues(v, chain) {
 
 /**
  * Render ChainConfig.sol source from a validated set of per-chain values.
- * @param {{chainId:number, gasLimit:number|string, weth?:string, approveProxy?:string, permit2?:string, ffFactory?:string}} v
+ * @param {{chainId:number, gasLimit:number|string, weth?:string, approveProxy?:string, permit2?:string, ffFactory?:string, owner?:string}} v
  * @param {string} [chain]
  * @returns {string}
  */
 function generateSource(v, chain) {
+  // Owner is optional in base.js: absent -> fleet prod owner default. Apply the default
+  // BEFORE validation so a chain without an `owner` field still gets a valid (validated)
+  // owner, while a chain that sets a bad owner still fails loudly.
+  v = { ...v, owner: v.owner || DEFAULT_VALUES.owner };
   validateValues(v, chain);
 
   const weth = v.weth;
   const approveProxy = v.approveProxy;
   const permit2 = v.permit2 || ZERO_ADDRESS;
   const ffFactory = v.ffFactory || ZERO_FF_FACTORY;
+  const owner = v.owner;
 
   return `/// SPDX-License-Identifier: MIT
 // AUTO-GENERATED — DO NOT EDIT BY HAND. This file is gitignored.
@@ -102,6 +115,9 @@ address constant _APPROVE_PROXY = ${approveProxy};
 address constant _PERMIT2 = ${permit2};
 // Uniswap V3 CREATE2 prefix: 0xff ++ factory(20 bytes) ++ 11-byte zero padding.
 bytes32 constant _FF_FACTORY = ${ffFactory};
+// DexRouter owner (constructor arg in DeployDexRouter.s.sol). Per-chain via base.js owner,
+// defaulting to the fleet prod owner. NOT baked into any value/routing path.
+address constant _OWNER = ${owner};
 `;
 }
 

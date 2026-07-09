@@ -1,6 +1,6 @@
 const gasLimitConfig = require('../gas_limit/native_transfer_gas');
 const { CHAINS, resolveChain } = require('./verify_via_foundry');
-const { writeChainConfig, ZERO_ADDRESS, ZERO_FF_FACTORY } = require('./chainConfigGen');
+const { writeChainConfig, ZERO_ADDRESS, ZERO_FF_FACTORY, DEFAULT_VALUES } = require('./chainConfigGen');
 const { loadDeployed, normalizeEnv } = require('./deployedEnv');
 
 // Generate the gitignored contracts/8/libraries/ChainConfig.sol for a (chain, env) target.
@@ -34,6 +34,7 @@ function generate(chainArg, env = 'prod') {
     approveProxy: base.tokenApproveProxy,
     permit2,
     ffFactory,
+    owner: base.owner, // undefined -> chainConfigGen applies the fleet prod-owner default
   };
 
   console.log(`\n========== ChainConfig.sol for ${chain}/${env} (chainId ${values.chainId}) ==========\n`);
@@ -43,6 +44,7 @@ function generate(chainArg, env = 'prod') {
   console.log(`  - _APPROVE_PROXY = ${values.approveProxy || '(missing!)'}`);
   console.log(`  - _PERMIT2       = ${permit2}${base.permit2 ? '' : ' (not configured, zero)'}`);
   console.log(`  - _FF_FACTORY    = ${ffFactory}${base._FF_FACTORY ? '' : ' (not configured, zero)'}`);
+  console.log(`  - _OWNER         = ${base.owner || DEFAULT_VALUES.owner}${base.owner ? '' : ' (default fleet prod owner)'}`);
 
   writeChainConfig(values, `${chain}/${env}`);
   console.log('\nChainConfig.sol generated!');

@@ -20,10 +20,11 @@ const DEFAULT_VALUES = {
   approveProxy: '0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58',
   permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
   ffFactory: '0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000',
-  // DexRouter owner (privileged: pause / transferOwnership / setReporter), baked into the
-  // deployed impl via DeployDexRouter.s.sol. This is the fleet-wide EVM prod owner used on
-  // every chain unless a chain's deployed/<chain>/base.js overrides `owner` (e.g. a chain
-  // whose governance key differs — the EVM owner is not controllable there).
+  // DexRouter owner (privileged: pause / transferOwnership / setReporter). This value is
+  // ONLY the fresh-checkout compile seed (ensure-chainconfig.js) so `forge build` works
+  // before any deploy — it is NOT a deploy-time fallback. gen-chainconfig requires every
+  // chain's deployed/<chain>/base.js to set `owner` explicitly; a missing owner fails loudly
+  // in validateValues, so a real deploy never silently inherits this seed.
   owner: '0xAcE2B3E7c752d5deBca72210141d464371b3B9b1',
 };
 
@@ -87,10 +88,9 @@ function validateValues(v, chain) {
  * @returns {string}
  */
 function generateSource(v, chain) {
-  // Owner is optional in base.js: absent -> fleet prod owner default. Apply the default
-  // BEFORE validation so a chain without an `owner` field still gets a valid (validated)
-  // owner, while a chain that sets a bad owner still fails loudly.
-  v = { ...v, owner: v.owner || DEFAULT_VALUES.owner };
+  // Owner is REQUIRED input (from deployed/<chain>/base.js) — no default fallback. A missing
+  // owner fails loudly in validateValues, exactly like _WETH/_APPROVE_PROXY. (The only caller
+  // relying on DEFAULT_VALUES.owner is the fresh-checkout seed, which passes it explicitly.)
   validateValues(v, chain);
 
   const weth = v.weth;
@@ -115,8 +115,8 @@ address constant _APPROVE_PROXY = ${approveProxy};
 address constant _PERMIT2 = ${permit2};
 // Uniswap V3 CREATE2 prefix: 0xff ++ factory(20 bytes) ++ 11-byte zero padding.
 bytes32 constant _FF_FACTORY = ${ffFactory};
-// DexRouter owner (constructor arg in DeployDexRouter.s.sol). Per-chain via base.js owner,
-// defaulting to the fleet prod owner. NOT baked into any value/routing path.
+// DexRouter owner (constructor arg in DeployDexRouter.s.sol). Per-chain, REQUIRED in
+// deployed/<chain>/base.js owner (no default). NOT baked into any value/routing path.
 address constant _OWNER = ${owner};
 `;
 }

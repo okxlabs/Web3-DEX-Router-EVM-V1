@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wNativeRelayer: "0xBbfeB05E692ac508f0338733AbEccb1a5a4d91C1",
     tokenApprove: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",

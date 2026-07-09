@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73", // canonical WETH (aeWETH, Arbitrum bridge standard)
     wNativeRelayer: "0x5D796C6E479052Db44Ee6a45Dd72E57C800A4C1B", // owner: admin
     tokenApprove: "0x42170295F1173c9e5874ea9d00c6d137E1a4f53d", // owner: admin

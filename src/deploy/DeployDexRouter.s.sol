@@ -13,7 +13,8 @@ import "@dex/libraries/Constants.sol";
  */
 contract Deploy is Script {
     function run() public {
-        address owner = 0xAcE2B3E7c752d5deBca72210141d464371b3B9b1;
+        // Per-chain owner from ChainConfig (base.js `owner`, default = fleet prod owner).
+        address owner = _OWNER;
 
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);

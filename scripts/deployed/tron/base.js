@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xd491C007D2B6250c3a6aa4415914346e035a3944", // TVMArd5cm9piDca8T6TsWdDHK4C3BjES1b (TRON governance owner)
     wNativeToken: "0x891cdb91d149f23B1a45D9c5Ca78a88d0cB44C18",
     wNativeRelayer: "0xE2c927B0B939AadB945668b012ec3BB6cdD722EA",
     tokenApprove: "0x51b160bb02261c822b33e61c6b947f275144545e",

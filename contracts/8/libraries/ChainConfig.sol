@@ -14,3 +14,6 @@ address constant _APPROVE_PROXY = 0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58;
 address constant _PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 // Uniswap V3 CREATE2 prefix: 0xff ++ factory(20 bytes) ++ 11-byte zero padding.
 bytes32 constant _FF_FACTORY = 0xff1F98431c8aD98523631AE4a59f267346ea31F9840000000000000000000000;
+// DexRouter owner (constructor arg in DeployDexRouter.s.sol). Per-chain, REQUIRED in
+// deployed/<chain>/base.js owner (no default). NOT baked into any value/routing path.
+address constant _OWNER = 0xAcE2B3E7c752d5deBca72210141d464371b3B9b1;

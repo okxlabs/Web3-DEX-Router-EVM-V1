@@ -24,8 +24,11 @@ const path = require('path');
 const { Deployer } = require('@matterlabs/hardhat-zksync-deploy');
 const { buildZkWallet } = require('../utils/zksync');
 
-// Same prod owner the foundry deploy script hardcodes for every chain.
-const OWNER = '0xAcE2B3E7c752d5deBca72210141d464371b3B9b1';
+// DexRouter owner (privileged: pause / transferOwnership / setReporter). Read from the
+// zkSyncEra base.js `owner` field so the privileged address is visible/reviewable in the
+// record; absent -> this fleet prod-owner default (same value the foundry pipeline uses).
+const DEFAULT_OWNER = '0xAcE2B3E7c752d5deBca72210141d464371b3B9b1';
+const ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
 
 const RECORD_PATH = path.join(__dirname, '../deployed/zkSyncEra/base.js');
 
@@ -93,10 +96,15 @@ async function main() {
       'Recompile first: npx hardhat --config hardhat.zksync.config.js compile --force --network zksync'
     );
   }
-  const dexRouter = await deployer.deploy(artifact, [OWNER]);
+  const owner = record.owner || DEFAULT_OWNER;
+  if (!ADDR_RE.test(owner)) {
+    throw new Error(`Invalid DexRouter owner ${JSON.stringify(owner)} — set a valid 0x-address in deployed/zkSyncEra/base.js "owner".`);
+  }
+  console.log(`Owner: ${owner}${record.owner ? ' [base.js]' : ' [default fleet owner]'}`);
+  const dexRouter = await deployer.deploy(artifact, [owner]);
   console.log(`DexRouter impl: ${dexRouter.address}`);
   saveField('newImpl', dexRouter.address);
-  saveField('constructorArg', OWNER);
+  saveField('constructorArg', owner);
   console.log('\nDeploy complete. Go-live gate (Boss system): TokenApproveProxy.addProxy(newImpl).');
 }
 

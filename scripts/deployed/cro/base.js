@@ -4,6 +4,7 @@ module.exports = {
     wNativeRelayer: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
     tokenApprove: "0x70cbb871e8f30fc8ce23609e9e0ea87b6b222f58",
     tokenApproveProxy: "0xE9BBD6eC0c9Ca71d3DcCD1282EE9de4F811E50aF",
+    securityManager: "0x4cFDD69FB22C986f398996d3D4896b1Ab7a6bE66", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     // human checked wnative and wnative relayer and tokenApprove is correct
     // Disabled: the canonical UniV3 factory (0x1F98..984) is NOT deployed on Cro,

@@ -6,6 +6,7 @@ module.exports = {
     tokenApproveProxy: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
     _FF_FACTORY: "", // uniswap v3 factory not deployed on ETHW
     // human checked wnative and wnative relayer and tokenApprove and _FF_FACTORY is correct
+    securityManager: "0xa990fb4a7A174D290259464C47ED7f5d7310f03D", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0x51B6812B030a19cF801be8C4B41748488A7e1D60",
     xbridge: "0xFc99f58A8974A4bc36e60E2d490Bb8D72899ee9f",

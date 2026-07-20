@@ -6,6 +6,7 @@ module.exports = {
     // DexRouter owner (constructor arg): privileged pause / transferOwnership / setReporter.
     // Read by deploy_dexrouter_zksync.js; fleet EVM prod owner (same as other EVM chains).
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    securityManager: "0x2cD92272CdB28aa681b89D512846185914261674", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0xb9061E38FeE7d30134F56aEf7117E2F6d1580666",
     xbridge: "0x4040bEC373F6e8be2F913324de94A7b9242E5E92",

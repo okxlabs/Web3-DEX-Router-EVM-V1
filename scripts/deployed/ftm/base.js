@@ -4,6 +4,7 @@ module.exports = {
     wNativeRelayer: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
     tokenApprove: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
     tokenApproveProxy: "0xE9BBD6eC0c9Ca71d3DcCD1282EE9de4F811E50aF",
+    securityManager: "0x3EB49E5C975e1CE41Bffee52D9FdFa9793d75d3D", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0xf332761c673b59B21fF6dfa8adA44d78c12dEF09",
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",

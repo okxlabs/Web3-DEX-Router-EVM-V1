@@ -6,6 +6,7 @@ module.exports = {
     tokenApproveProxy: "0xfAd6a9eEe5b32E9B81bb217BaeF37742B2ca5B83",
     _FF_FACTORY: "", // uniswap v3 factory not deployed on Merlin
     // human checked wnative and wnative relayer and tokenApprove and _FF_FACTORY is correct
+    securityManager: "0xbF94a31025C5eA080892f6176681492b62547d4d", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     dexRouter: "0x127a986cE31AA2ea8E1a6a0F0D5b7E5dbaD7b0bE",
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",

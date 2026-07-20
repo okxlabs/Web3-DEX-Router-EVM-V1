@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x6100E367285b01F48D07953803A2d8dCA5D19873",
     wNativeRelayer: "0x6747BcaF9bD5a5F0758Cbe08903490E45DdfACB5",
     tokenApprove: "0x9FD43F5E4c24543b2eBC807321E58e6D350d6a5A",
@@ -6,5 +7,11 @@ module.exports = {
     securityManager: "0x5a2868515746d7C8F6599909D2b6E590A34063E9", // governs tokenApproveProxy whitelist; DEFAULT_ADMIN_ROLE = admin
     permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
     _FF_FACTORY: "0xffcb2436774C3e191c85056d248EF4260ce5f27A9D0000000000000000000000",
-    newImpl: "0x19D345f95A80cc136d898f41b490E023cFF78658",
+    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0x0933A9AE1E3419d112C4d18106DD2c1D618E4DdF",
+    smartSwapRouterLibrary: "0x8c2944e3D4f46f5C71e7d59bea6E83B9e2E026c1",
+    swapWrapRouterLibrary: "0xE6d0Cb267235EaBeA1Fe0c356F7eEd873562230C",
+    unxswapRouterLibrary: "0x24f37F90dE5F44c67D1a12be20eB70a75A4f8307",
+    unxswapV3RouterLibrary: "0x7d81fCB01576cD895898f271b92421f21eF13110",
 }

@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8",
     wNativeRelayer: "0x693EDf0068c24743ad1f36122c8e6D9aCDFD349e",
     tokenApprove: "0x57df6092665eb6058DE53939612413ff4B09114E",
@@ -16,8 +17,14 @@ module.exports = {
     _HASHED_NAME: "",
     _HASHED_VERSION: "",
     _TYPE_HASH: "",
-    _CACHED_CHAIN_ID: 59144,
+    _CACHED_CHAIN_ID: 5000,
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
-    newImpl: "0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4",
+    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xb50Be79b71aac74f32AC79fC93585A0ACf089922",
+    smartSwapRouterLibrary: "0x0b9Db74211F7F835f8184AE527857c167170312f",
+    swapWrapRouterLibrary: "0x5cE92495415aF5874e91cFeC28634fc08af58064",
+    unxswapRouterLibrary: "0x4860B414785e6B1DEC22b46B5c2a3D41eE1e823e",
+    unxswapV3RouterLibrary: "0x19F6508E0A0206c6009354179a5b92E9A47bb480",
 }

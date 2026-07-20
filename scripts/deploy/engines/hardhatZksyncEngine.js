@@ -7,17 +7,21 @@ const PROJECT_ROOT = path.join(__dirname, '..', '..', '..');
  * Build the `npx hardhat run` command for a zkSync deploy.
  * @param {string} chain
  * @param {Object} options
- * @param {string} options.script - hardhat script to run (e.g. scripts/deploy/deploy_dex_exactout_imp.js)
+ * @param {string} options.script - hardhat script to run (e.g. scripts/deploy/deploy_dexrouter_zksync.js)
  * @param {string} [options.hardhatNetwork] - --network value (defaults to chain)
+ * @param {string} [options.hardhatConfig] - --config value; required for zkSync since the
+ *   zk toolchain lives in its own config (main hardhat.config.js never loads @matterlabs
+ *   plugins — running the deploy script under it would read non-EraVM artifacts)
  * @returns {string}
  */
 function buildCommand(chain, options = {}) {
-  const { script, hardhatNetwork } = options;
+  const { script, hardhatNetwork, hardhatConfig } = options;
   if (!script) {
     throw new Error(`hardhat-zksync engine: missing "script" in deploy config for chain "${chain}"`);
   }
   const network = hardhatNetwork || chain;
-  return `npx hardhat run ${script} --network ${network}`;
+  const configFlag = hardhatConfig ? `--config ${hardhatConfig} ` : '';
+  return `npx hardhat ${configFlag}run ${script} --network ${network}`;
 }
 
 /**

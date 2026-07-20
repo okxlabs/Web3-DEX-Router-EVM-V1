@@ -180,6 +180,17 @@ per-chain 常量(`_WETH`/`_APPROVE_PROXY`/`_PERMIT2`/`_FF_FACTORY`/gas limit)**�
 
 `npx hardhat check-impl --chain <name|all> [--env stg]` —— 注入该(链,环境)常量 → 编译 → 与链上字节码逐字节对比(归一化掉链接库地址、immutable owner、尾部 metadata)。这是当前 DexRouter **唯一有效**的 impl 校验(常量是编译期 `constant`、非外部 getter,无法 eth_call)。
 
+### 校验 ChainConfig 地址正确性(部署前)
+
+`npx hardhat verify-chainconfig --chain <name|all> [--env stg]` —— 校验 per-chain 地址不只是"形状对",而是"真指向正确合约"。**根因**:`_WETH/_APPROVE_PROXY/_PERMIT2/_FF_FACTORY` 是烧进字节码的编译期 `constant`、无 getter,一个**笔误但合法**的地址会静默通过 `chainConfigGen.validateValues()`(只验非零/20字节)、部署后也无法 eth_call 复核 —— 错了"无感"。本命令补上身份层:
+
+- **离线层(永远跑)**:`CHAINS[chain].chainId` 与 `base._CACHED_CHAIN_ID` 双源一致、EIP-55 校验和 → **硬失败**;permit2 是否规范地址、WETH 跨链复用 → 告警。
+- **链上层(RPC 可达才跑)**:地址有无 code、**`tokenApproveProxy.tokenApprove()` == `base.tokenApprove`**(资金闸门交叉校验)、WETH `decimals/symbol`、Permit2 `DOMAIN_SEPARATOR`、RPC 上报 chainId 匹配 → 身份矛盾**硬失败**;**RPC 拒绝/连不上 → 降级告警(不阻断,不误杀)**。
+
+实现:`scripts/deploy/verify-chainconfig.js`(核心)、`scripts/deploy/rpc.js`(共享 `rpcUrlFor`,check-impl 复用)。**已接入部署流水线**:`deploy-and-verify` 的 **Step 1b**(gen ChainConfig 之后、forge 部署之前)自动跑此校验,有 error 则**部署前 abort**;RPC 不可达只告警放行。
+
+> 注:`_CACHED_CHAIN_ID` 仅为 `base.js` 记录字段、不被 gen/deploy 消费(链 ID 真相源是 `CHAINS`);它存在的价值就是给本校验做**双源交叉核对**——不一致通常意味着 `base.js` 是从别的链拷贝来的(其它地址也可能是错拷贝),故硬失败强制人工复核。
+
 ### 安全闸门
 
 - **prod**:部署的是**全新不可升级实现**,部署 ≠ 上线;真正生效靠把它加入 **`TokenApproveProxy` 白名单(`addProxy`)**——这才是资金闸门。该操作**经 Boss 系统托管执行**(见上方"特权操作"),务必复核后再操作。

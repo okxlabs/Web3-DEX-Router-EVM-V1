@@ -9,7 +9,9 @@ require("@openzeppelin/hardhat-upgrades");
 require('dotenv').config();
 require("./scripts/multichain.js");
 require("./tasks/deploy-and-verify");
+require("./tasks/deploy-and-verify-many");
 require("./tasks/check-impl");
+require("./tasks/verify-chainconfig");
 
 // Deployer/signer key. On local networks (hardhat/localhost, or no --network) we fall back
 // to the well-known Hardhat test account so compile/test work without a key. On any real

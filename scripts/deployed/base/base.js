@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x4200000000000000000000000000000000000006",
     wNativeRelayer: "0xd2F0aC2012C8433F235c8e5e97F2368197DD06C7",
     tokenApprove: "0x57df6092665eb6058DE53939612413ff4B09114E",
@@ -18,6 +19,12 @@ module.exports = {
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
-    newImpl: "0xC8F6b8Ba0DC0f175B568B99440B0867F69A29265",
+    newImpl: "0x84220f7ef461b97eabbb61e3c8a12b7c212454ed",
     newExactOutImpl: "0x77449Ff075C0A385796Da0762BCB46fd5cc884c6",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xAf392c1F59eA569Cd7B66766d5fcDd2f29Da7e61",
+    smartSwapRouterLibrary: "0x02B2bdF7EDe03c04d9B9723e940cee1fC45a85F6",
+    swapWrapRouterLibrary: "0x1B989018c594720C6F1D35CE52192cBcE52C2279",
+    unxswapRouterLibrary: "0xC97e62bD49a873Bd57D8cEC2A45AefD4419ade35",
+    unxswapV3RouterLibrary: "0x664eb029797D50E2863CAcE0124a05b138A7208B",
 }

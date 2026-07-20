@@ -34,6 +34,7 @@ function generate(chainArg, env = 'prod') {
     approveProxy: base.tokenApproveProxy,
     permit2,
     ffFactory,
+    owner: base.owner, // required: undefined -> chainConfigGen validateValues fails loudly
   };
 
   console.log(`\n========== ChainConfig.sol for ${chain}/${env} (chainId ${values.chainId}) ==========\n`);
@@ -43,6 +44,7 @@ function generate(chainArg, env = 'prod') {
   console.log(`  - _APPROVE_PROXY = ${values.approveProxy || '(missing!)'}`);
   console.log(`  - _PERMIT2       = ${permit2}${base.permit2 ? '' : ' (not configured, zero)'}`);
   console.log(`  - _FF_FACTORY    = ${ffFactory}${base._FF_FACTORY ? '' : ' (not configured, zero)'}`);
+  console.log(`  - _OWNER         = ${base.owner || '(MISSING — required in base.js!)'}`);
 
   writeChainConfig(values, `${chain}/${env}`);
   console.log('\nChainConfig.sol generated!');

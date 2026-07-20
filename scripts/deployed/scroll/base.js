@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x5300000000000000000000000000000000000004",
     wNativeRelayer: "0xd2F0aC2012C8433F235c8e5e97F2368197DD06C7",
     tokenApprove: "0x57df6092665eb6058DE53939612413ff4B09114E",
@@ -11,6 +12,7 @@ module.exports = {
     limitOrder: "",
     protocolAdmin: "0x06C95a3934d94d5ae5bf54731bD2840ceFee6F87",
     _FF_FACTORY: "0xff70C62C8b8e801124A4Aa81ce07b637A3e83cb9190000000000000000000000",
+    // human checked wnative and wnative relayer and tokenApprove and _FF_FACTORY is correct
     _CACHED_DOMAIN_SEPARATOR: "",
     _HASHED_NAME: "",
     _HASHED_VERSION: "",
@@ -19,5 +21,11 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     proxyAdmin: "0xc6d8e2e0E5c25ACecff66BE60F257884D0e9DF50",
 
-    newImpl: "0x5e2F47bD7D4B357fCfd0Bb224Eb665773B1B9801"
+    newImpl: "0x974d1cf6ffa4fce5a4d62955afc02f45aac29f35",
+    constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
+    dagRouterLibrary: "0xf8f615651a8B2676D61613Ce3000222D56088A6E",
+    smartSwapRouterLibrary: "0x02E78B0E68dd40ccE76295C587c240901DC13544",
+    swapWrapRouterLibrary: "0x44eBFD5658458e923954553D1c6d8dA3cf03a590",
+    unxswapRouterLibrary: "0xE3537A71885fe56e41A9229257cd74Da95559068",
+    unxswapV3RouterLibrary: "0x98ADDE4050FB99ea9FD94D20f281AE26E1E51577",
 }

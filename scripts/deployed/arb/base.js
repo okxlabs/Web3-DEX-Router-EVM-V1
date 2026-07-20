@@ -1,4 +1,5 @@
 module.exports = {
+    owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     wNativeRelayer: "0xd99cAE3FAC551f6b6Ba7B9f19bDD316951eeEE98",
     tokenApprove: "0x70cBb871E8f30Fc8Ce23609E9E0Ea87B6b222F58",
@@ -16,7 +17,7 @@ module.exports = {
     //p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
-    newImpl: "0x4bc8cf139d8d3be1b8aabd7b0b25b88a6dd40044",
+    newImpl: "0x41cb7e6f799723405270402bff1fdbb040cfa8c4",
     newExactOutImpl: "0x9736d9a45115E33411390EbD54e5A5C3A6E25aA6",
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",

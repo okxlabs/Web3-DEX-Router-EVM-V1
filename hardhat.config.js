@@ -103,6 +103,17 @@ module.exports = {
         },
       }
     },
+    ink: {
+      url: process.env.INK_RPC_URL || 'https://rpc-gel.inkonchain.com',
+      chainId: 57073,
+      accounts: [`${PRIVATE_KEY}`],
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
+      }
+    },
     monad: {
       url: process.env.MONAD_RPC_URL || '',
       chainId: 143,
@@ -677,6 +688,7 @@ module.exports = {
       sei: ETHERSCAN_API_KEY,
       apechain: ETHERSCAN_API_KEY,
       robinhood: 'empty', // Blockscout instance, no API key required
+      ink: 'empty', // Blockscout instance, no API key required
     },
     customChains: [
       {
@@ -687,6 +699,15 @@ module.exports = {
         urls: {
           apiURL: "https://robinhoodchain.blockscout.com/api",
           browserURL: "https://robinhoodchain.blockscout.com"
+        }
+      },
+      {
+        // Ink (chainId 57073) is a Blockscout instance, not on the Etherscan v2 multichain API
+        network: "ink",
+        chainId: 57073,
+        urls: {
+          apiURL: "https://explorer.inkonchain.com/api",
+          browserURL: "https://explorer.inkonchain.com"
         }
       },
       {

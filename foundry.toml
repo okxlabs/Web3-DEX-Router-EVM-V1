@@ -79,6 +79,7 @@ apechain = "${APECHAIN_RPC_URL}"
 iotex = "${IOTEX_RPC_URL}"
 plasma = "${PLASMA_RPC_URL}"
 robinhood = "${ROBINHOOD_RPC_URL}"
+ink = "${INK_RPC_URL}"
 
 [fmt]
 line_length = 120

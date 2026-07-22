@@ -44,6 +44,7 @@ const monad = require('./monad')
 const hyperevm = require('./hyperevm')
 const pharos = require('./pharos')
 const robinhood = require('./robinhood')
+const ink = require('./ink')
 let config
 
 console.log('current network.name: ', network.name)
@@ -136,5 +137,7 @@ if (network.name === 'okc') {
     config = pharos
 } else if (network.name == 'robinhood') {
     config = robinhood
+} else if (network.name == 'ink') {
+    config = ink
 }
 module.exports = config

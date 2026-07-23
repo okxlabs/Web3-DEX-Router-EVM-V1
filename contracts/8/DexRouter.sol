@@ -18,7 +18,7 @@ import "./router/SwapWrapRouter.sol";
 
 contract DexRouter is EthReceiver, IDexRouter, IUniswapV3SwapCallback, PausableModuleV2, ReentrancyGuard {
 
-    string public constant version = "v1.0.9-multi-funding-mode";
+    string public constant version = "v1.0.10-rfq-anti-arbitrage";
 
     constructor(address _owner) PausableModuleV2(_owner) ReentrancyGuard() {}
 

@@ -1,9 +1,17 @@
 ---
 name: "module-dexrouter"
 description: "DexRouter 入口合约模块设计"
+last_updated: "2026-07-16"
+target_release: "v1.0.10-rfq-anti-arbitrage"
 ---
 
 # Module: DexRouter
+
+## 目标发布版本
+
+- 主 DexRouter：`v1.0.10-rfq-anti-arbitrage`
+- 升级范围：`contracts/8/DexRouter.sol` 实现合约；沿用现有代理和外部交易入口 ABI
+- `DexRouterExactOut` 不包含在本次防套利发布中，仍为 `v1.0.9-multi-funding-mode`
 
 ## 职责
 

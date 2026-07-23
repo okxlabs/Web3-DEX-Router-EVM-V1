@@ -24,6 +24,12 @@ uint256 constant _WEIGHT_MASK =
 uint256 constant _CALL_GAS_LIMIT = 5000;
 uint256 constant ORIGIN_PAYER =
     0x3ca20afc2ccc0000000000000000000000000000000000000000000000000000;
+// Marker for the DexRouter caller tail word appended before ORIGIN_PAYER.
+uint256 constant DEX_ROUTER_CALLER_MARKER =
+    0x3ca20afc2ddd0000000000000000000000000000000000000000000000000000;
+// Exact-match mask for marker validation.
+uint256 constant MARKER_MASK =
+    0xffffffffffff0000000000000000000000000000000000000000000000000000;
 uint256 constant SWAP_AMOUNT =
     0x00000000000000000000000000000000ffffffffffffffffffffffffffffffff;
 uint256 constant _WETH_MASK =

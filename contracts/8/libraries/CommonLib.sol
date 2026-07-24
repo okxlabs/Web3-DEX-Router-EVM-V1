@@ -53,6 +53,7 @@ library CommonLib {
         require(deadLine >= block.timestamp, "Route: expired");
     }
 
+    /// @dev Appends dexRouterCaller at -64 and refundTo at -32.
     function exeAdapter(
         bool reverse,
         address adapter,
@@ -70,6 +71,7 @@ library CommonLib {
                         poolAddress,
                         moreinfo
                     ),
+                    DEX_ROUTER_CALLER_MARKER + uint(uint160(msg.sender)),
                     ORIGIN_PAYER + uint(uint160(refundTo))
                 )
             );
@@ -85,6 +87,7 @@ library CommonLib {
                         poolAddress,
                         moreinfo
                     ),
+                    DEX_ROUTER_CALLER_MARKER + uint(uint160(msg.sender)),
                     ORIGIN_PAYER + uint(uint160(refundTo))
                 )
             );

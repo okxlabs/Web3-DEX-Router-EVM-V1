@@ -10,10 +10,12 @@
  */
 const foundry = require('./foundryEngine');
 const hardhatZksync = require('./hardhatZksyncEngine');
+const tron = require('./tronEngine');
 
 const ENGINES = {
   [foundry.name]: foundry,
   [hardhatZksync.name]: hardhatZksync,
+  [tron.name]: tron,
 };
 
 /**

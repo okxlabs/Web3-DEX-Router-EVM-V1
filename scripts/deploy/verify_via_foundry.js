@@ -121,6 +121,14 @@ const CHAINS = {
     verifier: 'etherscan',
     apiKeyEnv: 'SOCIALSCAN_API_KEY',
   },
+  // tron: not part of the foundry/deploy-and-verify pipeline at all (see the "tron" entry
+  // in deploy.config.js and scripts/deploy/deploy_dexrouter_tron.js) — TVM bytecode compiles
+  // with a separate tron-solc fork, not forge/solc. This CHAINS entry exists only so
+  // deploy_dexrouter_tron.js can cross-check its RPC's reported chainId against a single
+  // source of truth (CHAINS.tron.chainId), same as every other chain. verifier is 'manual'
+  // because Sourcify cannot verify tron-solc bytecode — open-sourcing is TronScan-only
+  // (flatten the cleaned source from cache/tron-build/ and upload via the TronScan web UI).
+  tron: { chainId: 728126428, verifier: 'manual' },
   // NOTE: staging is an environment (--env stg), NOT a separate chain. stg deploys to the
   // same chain (same chainId/rpc/verifier) and only uses a different address set
   // (deployed/<chain>/stg.js). So there are no *_stg entries here.

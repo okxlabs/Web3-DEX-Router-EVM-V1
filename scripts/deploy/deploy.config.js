@@ -68,6 +68,23 @@ const DEPLOY_CONFIG = {
     hardhatConfig: 'hardhat.zksync.config.js',
     script: 'scripts/deploy/deploy_dexrouter_zksync.js',
   },
+
+  // --- TRON engine ---
+  // TVM chain: forge cannot target it (needs the tron-solc compiler fork and tronweb
+  // transaction signing), so TRON deploys through a standalone node script instead of
+  // the foundry pipeline. Like zksync, it is NOT orchestrated by deploy-and-verify
+  // (capabilities.orchestrated = false); deploy-and-verify refuses it up front.
+  //
+  // Standalone flow (scripts/deploy/deploy_dexrouter_tron.js):
+  //   gen ChainConfig(tron) -> forge flatten -> TVM source transforms -> tron-solc
+  //   compile -> deploy 5 router libraries -> link (bytecode substitution) -> deploy
+  //   DexRouter(owner) -> record into deployed/tron/base.js.
+  // Verification is manual on TronScan with the cleaned flattened source + library
+  // addresses. Go-live stays behind the Boss-executed TokenApproveProxy.addProxy gate.
+  tron: {
+    engine: 'tron',
+    script: 'scripts/deploy/deploy_dexrouter_tron.js',
+  },
 };
 
 /**

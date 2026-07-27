@@ -9,5 +9,9 @@ module.exports = {
     unxswapRouterLibrary: "TDQYyasfm3zHh1sbZTFgfDcDssLX3isSjk",
     unxswapV3RouterLibrary: "TTqG86Rw8DndW2RCzANubs9ayQq3kn383z",
     newImpl: "TDikUyY85FF9Gg8M73BWEPEPmVzsnFCFi4",
+    // Deliberately NOT updated to match `owner` above: this rehearsal ran 2026-07-06,
+    // before the mainnet wrong-owner fix (see base.js's history) — it genuinely used
+    // 0xAcE2B3E7… (the EVM prod owner, wrong for TRON) as its constructor arg. Both
+    // fields get overwritten unconditionally on the next `--nile` run regardless.
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
 }

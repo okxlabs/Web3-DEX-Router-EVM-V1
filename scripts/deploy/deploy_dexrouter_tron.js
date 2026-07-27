@@ -70,12 +70,15 @@ function loadRecord() {
   return require(RECORD_PATH);
 }
 
-// Update `field: "…",` in place, or append it before the closing brace.
+// Update `field: "…",` in place, or append it before the closing brace. Matches (and
+// discards) the whole line including any trailing `// comment` — e.g. a pre-deploy
+// placeholder explaining why a field was cleared ("bytecode changed, cleared to force
+// redeploy") — so the freshly written real address is never left next to stale prose.
 function saveField(field, value) {
   let txt = fs.readFileSync(RECORD_PATH, 'utf8');
-  const re = new RegExp(`(\\n\\s*)${field}:\\s*"[^"]*"`);
+  const re = new RegExp(`(\\n\\s*)${field}:\\s*"[^"]*"[^\\n]*`);
   txt = re.test(txt)
-    ? txt.replace(re, `$1${field}: "${value}"`)
+    ? txt.replace(re, `$1${field}: "${value}",`)
     : txt.replace(/\n}/, `\n    ${field}: "${value}",\n}`);
   fs.writeFileSync(RECORD_PATH, txt, 'utf8');
   console.log(`  recorded ${field} = ${value}`);

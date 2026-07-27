@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 1088,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x75cb093E4D61d2A2e65D8e0BBb01DE8d89b53481",
     wNativeRelayer: "0xd2F0aC2012C8433F235c8e5e97F2368197DD06C7",
@@ -11,12 +12,15 @@ module.exports = {
     _FF_FACTORY: "",
     _POOL_INIT_CODE_HASH: "",
     investEntrance: "0x7251FEbEABB01eC9dE53ECe7a96f1C951F886Dd2",
-    newImpl: "0x9a93a99ae01e1907df6cb94dac122ae29e02f095",
+    newImpl: "0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad", // v1.0.10-rfq-anti-arbitrage; verified: https://andromeda-explorer.metis.io/address/0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad?tab=contract
     proxyAdmin: "0xc6d8e2e0E5c25ACecff66BE60F257884D0e9DF50",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x263c3f6FA05109232749e54349f0fBBCB74Ed26d",
-    smartSwapRouterLibrary: "0x28697957f705c1F49434E7eab1C2c0588035848E",
-    swapWrapRouterLibrary: "0xf96CDe195f57Bb7cE65b2f8eb9D032b2e94c4660",
-    unxswapRouterLibrary: "0x8D7b76A9e69B6032E216A474B663904AF10dd5A2",
-    unxswapV3RouterLibrary: "0xe5469e80444E8Cd9184754ebB91a583205a359cB",
+    // Blockscout's forge-native verify path fails on these 5 (self-address-guard bytecode in
+    // router libraries, same class of issue as scroll — see verify_via_foundry.js CHAINS note).
+    // Verified via Sourcify's direct API instead (repo.sourcify.dev), independently confirmed exact_match.
+    dagRouterLibrary: "0x4Af60d9e8fBbf02f55D16A4B364aA4281C698543", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/1088/0x4Af60d9e8fBbf02f55D16A4B364aA4281C698543/
+    smartSwapRouterLibrary: "0x92276ec9FbdFB82d64aAD348B75862a943A0655C", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/1088/0x92276ec9FbdFB82d64aAD348B75862a943A0655C/
+    swapWrapRouterLibrary: "0x6BbBaa9924d24bd71367D48874f76A52E9e649B9", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/1088/0x6BbBaa9924d24bd71367D48874f76A52E9e649B9/
+    unxswapRouterLibrary: "0x39E738Cf836e0735F578EaB04d10b5Ae518Ef808", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/1088/0x39E738Cf836e0735F578EaB04d10b5Ae518Ef808/
+    unxswapV3RouterLibrary: "0xD239cBE1366deaE4025206Ce57A24DAd2BB1fe02", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/1088/0xD239cBE1366deaE4025206Ce57A24DAd2BB1fe02/
 }

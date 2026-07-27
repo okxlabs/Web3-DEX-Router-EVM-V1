@@ -20,11 +20,11 @@ module.exports = {
     _FF_FACTORY: "",
     commisson: "",
     p2pTrading: "",
-    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    newImpl: "0xd72f9af181a0eb1b8550a00124ecdb71bb758c89", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0xd72f9af181a0eb1b8550a00124ecdb71bb758c89#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xff905991ff9b636012002a6019BFB878aa522590",
-    smartSwapRouterLibrary: "0x2b74df73B1A9dB369C46F32Bf341A4609ED28885",
-    swapWrapRouterLibrary: "0x6C46E02D92A7dE09CcCB0AbD0C09650D615Ef1Ce",
-    unxswapRouterLibrary: "0x8988dB1DD080c31AF9c5e50C05fca7B616A68816",
-    unxswapV3RouterLibrary: "0x1533c4418073C74A366CcdfD6B02ccDBf56e89E1",
+    dagRouterLibrary: "0x0BD0906CC90f1fabe80B42db1bACa04c84A55d2c", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0x0bd0906cc90f1fabe80b42db1baca04c84a55d2c#code
+    smartSwapRouterLibrary: "0x7C97CD57985C96195Cc5db1EFfbcb02D472A8201", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0x7c97cd57985c96195cc5db1effbcb02d472a8201#code
+    swapWrapRouterLibrary: "0xc7BCc4607bF195e6B0a4239D1cdB9c2EDCa865C4", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0xc7bcc4607bf195e6b0a4239d1cdb9c2edca865c4#code
+    unxswapRouterLibrary: "0x08C4446930c0D5AA65Bf01B6BA5a9c14b48eDF5b", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0x08c4446930c0d5aa65bf01b6ba5a9c14b48edf5b#code
+    unxswapV3RouterLibrary: "0xB35656b33A5878b53B77d88b4C14578d6b95fD37", // v1.0.10-rfq-anti-arbitrage; verified: https://sonicscan.org/address/0xb35656b33a5878b53b77d88b4c14578d6b95fd37#code
 }

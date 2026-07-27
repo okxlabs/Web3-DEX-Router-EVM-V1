@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 130,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x4200000000000000000000000000000000000006",
     wNativeRelayer: "0x9020D5c8B8620e078d611182689Fe393ab81c6ae",
@@ -18,11 +19,11 @@ module.exports = {
     _HASHED_VERSION: "",
     _TYPE_HASH: "",
     nftmarketplace: "",
-    newImpl: "0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad",
+    newImpl: "0xe3dab8bf5187f9b4e8e89ff5414d7cf71e2c82e1", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0xe3dab8bf5187f9b4e8e89ff5414d7cf71e2c82e1#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x2997f8D52495C05B9120187cB7719B66F5CeFfA8",
-    smartSwapRouterLibrary: "0xC562F1CEbE82346dCFe14E661E36382CC9820525",
-    swapWrapRouterLibrary: "0x63BC1b47143D920E3038cD31de9b05F34cD71a2F",
-    unxswapRouterLibrary: "0x632979dfa5E6F2F0405d5B2feEAe562676bDDBC5",
-    unxswapV3RouterLibrary: "0xB2AcA11FB8A280d6E560d8Ea86eddE05fe24b661",
+    dagRouterLibrary: "0x5Ed54C9Df5392BE4715Da14f7EAc3249dfcEd490", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0x5ed54c9df5392be4715da14f7eac3249dfced490#code
+    smartSwapRouterLibrary: "0x01c6bd622f9e2fca97d5018E1551028B452d0218", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0x01c6bd622f9e2fca97d5018e1551028b452d0218#code
+    swapWrapRouterLibrary: "0x2EcB352d04Ea7890809a33074511979862b66561", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0x2ecb352d04ea7890809a33074511979862b66561#code
+    unxswapRouterLibrary: "0x6eF52e9525e2b43D0f35b788dDdb09FE693FcFEF", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0x6ef52e9525e2b43d0f35b788dddb09fe693fcfef#code
+    unxswapV3RouterLibrary: "0x664771F948f3F1d4E1C4020E3db238A64Ff51fa5", // v1.0.10-rfq-anti-arbitrage; verified: https://uniscan.xyz/address/0x664771f948f3f1d4e1c4020e3db238a64ff51fa5#code
 }

@@ -28,12 +28,12 @@ module.exports = {
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
 
-    newImpl: "0x57081ea5d9d8769832f967f96a8023b89fdd18cc",
-    newExactOutImpl: "0x5cb43Bae4f36E2f9f858232B4Dce0dbE27bb85e3", 
+    newImpl: "0x5994814f2c4040b863a0125a45de152a8c2a4dec", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0x5994814f2c4040b863a0125a45de152a8c2a4dec#code
+    newExactOutImpl: "0x5cb43Bae4f36E2f9f858232B4Dce0dbE27bb85e3",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xc67734A29fAc8E02585870f69B0f9Fba934575A5",
-    smartSwapRouterLibrary: "0x74A3fdaa31BFCaB3FFcC49d173312Fb5ECe6771C",
-    swapWrapRouterLibrary: "0x684e0B814653e9dFaaA16bE2A2f7de3d04345e1b",
-    unxswapRouterLibrary: "0x9468Ec127C185ef62D386760eaCdAD1f1D66d84c",
-    unxswapV3RouterLibrary: "0xF7B7e566530Fa2B2060E0E77EdBD5B48D2BBB637",
+    dagRouterLibrary: "0xA6900950f04F328Cb1d46a0C5e0818162a82540a", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0xa6900950f04f328cb1d46a0c5e0818162a82540a#code
+    smartSwapRouterLibrary: "0x602960Fb87135BbAA0cF2743F230496019350cb9", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0x602960fb87135bbaa0cf2743f230496019350cb9#code
+    swapWrapRouterLibrary: "0x6eE39Ba8979646732A978Cf5E5aaf10879B44E92", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0x6ee39ba8979646732a978cf5e5aaf10879b44e92#code
+    unxswapRouterLibrary: "0xc43A68DF5A2Cf796D041F0927e2e693E3624c889", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0xc43a68df5a2cf796d041f0927e2e693e3624c889#code
+    unxswapV3RouterLibrary: "0x4BC430c6556759280989471dF24fC2651bCc3967", // v1.0.10-rfq-anti-arbitrage; verified: https://bscscan.com/address/0x4bc430c6556759280989471df24fc2651bcc3967#code
 }

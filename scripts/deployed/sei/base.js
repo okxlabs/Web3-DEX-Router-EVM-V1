@@ -21,11 +21,11 @@ module.exports = {
     commisson: "",
     p2pTrading: "",
 
-    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    newImpl: "0xd72f9af181a0eb1b8550a00124ecdb71bb758c89", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0xd72f9af181a0eb1b8550a00124ecdb71bb758c89#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x5b4B2F4924305a827DEE8dC1F3e37D6FdE934518",
-    smartSwapRouterLibrary: "0xD2C38caE796cB0C6fE8d751F54374c4Ed15C5918",
-    swapWrapRouterLibrary: "0x6b9c6e3589b25480c28015549968D78818ea1008",
-    unxswapRouterLibrary: "0xb55Ae4F44654f0a36ED3A191DBCB6448Bb42BfFD",
-    unxswapV3RouterLibrary: "0xeD02da88b21A00C28eD9f4b3952728Ef2766001a",
+    dagRouterLibrary: "0x36672A36dF0A3B90D03A4B3a0458041b81eacB81", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0x36672a36df0a3b90d03a4b3a0458041b81eacb81#code
+    smartSwapRouterLibrary: "0xF1De20fCF131b91d4b79a2cf679A1c4589EA4E02", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0xf1de20fcf131b91d4b79a2cf679a1c4589ea4e02#code
+    swapWrapRouterLibrary: "0xb5Dc4eC7CB5F1C8e2f14cD3b83d8E4e002A04b57", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0xb5dc4ec7cb5f1c8e2f14cd3b83d8e4e002a04b57#code
+    unxswapRouterLibrary: "0xefACeF9914302cDb92d526b7394165ec5931c748", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0xefacef9914302cdb92d526b7394165ec5931c748#code
+    unxswapV3RouterLibrary: "0x75a6BAC2100227Bc445Cad6Fc50426B32Eb506a9", // v1.0.10-rfq-anti-arbitrage; verified: https://seiscan.io/address/0x75a6bac2100227bc445cad6fc50426b32eb506a9#code
 }

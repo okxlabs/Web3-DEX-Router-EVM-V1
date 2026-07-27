@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 10001,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x7Bf88d2c0e32dE92CdaF2D43CcDc23e8Edfd5990",
     wNativeRelayer: "0x4D8d82F269A2704867b6cAf58d6e8389e3066eC9",
@@ -15,17 +16,19 @@ module.exports = {
     marketMaker: "0x55b35bF627944396f9950dD6BDdaDb5218110c76",
     pmmAdapter: "0x19440199101Fb45882d06Ee432437eC89f406248",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
-    // Recovered on-chain: prod deploy (new RPC) succeeded but record step didn't run.
-    // newImpl = deployer CREATE nonce-6 address (code 13322). NOTE: a prior killed run left a
-    // stale impl at nonce-5 (0x61e7E4936E546910658F9458Ddfd785B44EC91Ae) — use THIS (nonce-6) for go-live.
-    newImpl: "0x9A93a99ae01e1907dF6cb94dac122ae29E02f095",
+    // v1.0.10-rfq-anti-arbitrage redeploy (2026-07-26) confirmed via check-impl + on-chain
+    // version(). DexRouter itself verified via OKLink; the 5 libraries below genuinely FAILED
+    // OKLink verification ("No contract could be verified with provided data" — independently
+    // confirmed via checkverifystatus, not just the pipeline's misleading "all verified" log) —
+    // same self-address-guard-bytecode class of issue as scroll/metis's libraries, but ethw's
+    // chainId (10001) is NOT Sourcify-supported ("unsupported_chain"), so there is currently no
+    // working fallback verifier for these 5. check-impl already confirms bytecode correctness
+    // independent of this open-source gap.
+    newImpl: "0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad", // v1.0.10-rfq-anti-arbitrage; verified via OKLink: https://www.oklink.com/ethw/address/0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    // Recovered from newImpl's on-chain bytecode (linkReferences positions), 2026-07. The
-    // deploy record step never ran, so these were missing. Each library confirmed present
-    // on-chain (code sizes match sibling chains); owner() on newImpl == constructorArg.
-    dagRouterLibrary: "0xdfd1b9d16b58dc0ec2d38776e129260eda2bf483",
-    smartSwapRouterLibrary: "0xf767e28e699ba6d48a3a590b38c8b34b5106f0f2",
-    swapWrapRouterLibrary: "0x2d85e3433ac95cace9ed42351d4885c832e57586",
-    unxswapRouterLibrary: "0x7b92eb7c6af7178a95eba4b12b0dcfcecaf3198f",
-    unxswapV3RouterLibrary: "0x1b154ecdf409ecd652a32951c30214780700094a",
+    dagRouterLibrary: "0x2051FBAd256261E8C07F9617AbEE09704C229d10", // v1.0.10-rfq-anti-arbitrage; NOT verified — OKLink "Fail - Unable to verify", no Sourcify fallback for chainId 10001
+    smartSwapRouterLibrary: "0x70FA171420227463810CB4533fBC3639b6b66980", // v1.0.10-rfq-anti-arbitrage; NOT verified — OKLink "Fail - Unable to verify", no Sourcify fallback for chainId 10001
+    swapWrapRouterLibrary: "0x9D6756234b14F9ec5EafCa17Ceb07EbAA95a9bD7", // v1.0.10-rfq-anti-arbitrage; NOT verified — OKLink "Fail - Unable to verify", no Sourcify fallback for chainId 10001
+    unxswapRouterLibrary: "0x9751cD06f5969DacF3e5Ab82BfE89519373967F9", // v1.0.10-rfq-anti-arbitrage; NOT verified — OKLink "Fail - Unable to verify", no Sourcify fallback for chainId 10001
+    unxswapV3RouterLibrary: "0x387A458827F888fe5576DBD61502db59301C5b71", // v1.0.10-rfq-anti-arbitrage; NOT verified — OKLink "Fail - Unable to verify", no Sourcify fallback for chainId 10001
 }

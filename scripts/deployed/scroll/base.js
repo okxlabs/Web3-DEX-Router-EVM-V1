@@ -21,11 +21,11 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     proxyAdmin: "0xc6d8e2e0E5c25ACecff66BE60F257884D0e9DF50",
 
-    newImpl: "0x974d1cf6ffa4fce5a4d62955afc02f45aac29f35",
+    newImpl: "0x6148d68ec192df0a7d36d97bdabbebb014c69938", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0x6148d68ec192df0a7d36d97bdabbebb014c69938/
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xf8f615651a8B2676D61613Ce3000222D56088A6E",
-    smartSwapRouterLibrary: "0x02E78B0E68dd40ccE76295C587c240901DC13544",
-    swapWrapRouterLibrary: "0x44eBFD5658458e923954553D1c6d8dA3cf03a590",
-    unxswapRouterLibrary: "0xE3537A71885fe56e41A9229257cd74Da95559068",
-    unxswapV3RouterLibrary: "0x98ADDE4050FB99ea9FD94D20f281AE26E1E51577",
+    dagRouterLibrary: "0xcC82CeA621C522f99DdA2FaCF3d6e481810C4EaC", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0xcC82CeA621C522f99DdA2FaCF3d6e481810C4EaC/
+    smartSwapRouterLibrary: "0xF3Ab6dc96162A1F4427c0a0EC53a9AdfabA47955", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0xF3Ab6dc96162A1F4427c0a0EC53a9AdfabA47955/
+    swapWrapRouterLibrary: "0x13363D052939CC5Ec232343A3b5329351b5Cd555", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0x13363D052939CC5Ec232343A3b5329351b5Cd555/
+    unxswapRouterLibrary: "0x4c3C3aBfECcc43DaE067d56538F3F761d310cd21", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0x4c3C3aBfECcc43DaE067d56538F3F761d310cd21/
+    unxswapV3RouterLibrary: "0xc223a319Bb33a61EfeEd1A0249Acd713c91e6d81", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/534352/0xc223a319Bb33a61EfeEd1A0249Acd713c91e6d81/
 }

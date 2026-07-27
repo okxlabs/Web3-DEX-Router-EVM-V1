@@ -28,15 +28,15 @@ module.exports = {
     //p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
-    newImpl: "0xbb8ca112ec75db02f9efec50593f99b7c4a74f3e",
+    newImpl: "0x8feab81d36e7576107d5de0758c1b839be31b4f6", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0x8feab81d36e7576107d5de0758c1b839be31b4f6#code
     newExactOutImpl: "0xa875Fb2204cE71679BE054d97f7fAFFeb6536D67",
     nonProxy: "0x7D0CcAa3Fac1e5A943c5168b6CEd828691b46B36",
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xEd39E84976D9b0DeF93433682CCB84Ec2Ff957a9",
-    smartSwapRouterLibrary: "0x8c55B551E460688D6a160945C70A9BA30159b21B",
-    swapWrapRouterLibrary: "0x43840CEA579717F409075f0CA8a014ff3c574Cd5",
-    unxswapRouterLibrary: "0x3Cd176610D815B4e89Df37B2B344A1203926114c",
-    unxswapV3RouterLibrary: "0x99E4c59100D9ADa01ef50128824443718832f078",
+    dagRouterLibrary: "0x408Fab3aaFc590d99B09e6ad13AD5DF73b066526", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0x408fab3aafc590d99b09e6ad13ad5df73b066526#code
+    smartSwapRouterLibrary: "0xbF0824d673a73c67287059fD351794284646B8d7", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0xbf0824d673a73c67287059fd351794284646b8d7#code
+    swapWrapRouterLibrary: "0x057D1E699296ccEd17696c442E637DcA69b34E1a", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0x057d1e699296cced17696c442e637dca69b34e1a#code
+    unxswapRouterLibrary: "0x14D28f43301a5A6277AfaD65e9817e0a12Ea0Fec", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0x14d28f43301a5a6277afad65e9817e0a12ea0fec#code
+    unxswapV3RouterLibrary: "0x610638B97f5d3eb5c2e6b2b0aE9AB5436040A63F", // v1.0.10-rfq-anti-arbitrage; verified: https://etherscan.io/address/0x610638b97f5d3eb5c2e6b2b0ae9ab5436040a63f#code
 }

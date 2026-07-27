@@ -24,6 +24,30 @@ const path = require('path');
 const { Deployer } = require('@matterlabs/hardhat-zksync-deploy');
 const { buildZkWallet } = require('../utils/zksync');
 
+// contracts/8/libraries/ChainConfig.sol is a single gitignored file SHARED with the foundry
+// pipeline — check-impl/other chains' deploys regenerate and reset it constantly. Unlike
+// DeployDexRouter.s.sol (which asserts block.chainid == _EXPECTED_CHAIN_ID at deploy time),
+// this script had no equivalent guard, so a stale/wrong-chain ChainConfig.sol silently
+// compiled into a real deployment once (2026-07-27, eth's config deployed to zkSync — see
+// scripts/deployed/zkSyncEra/base.js history). Fail fast instead of trusting whatever is on
+// disk: regenerate immediately before running this script, and this reads back what actually
+// got compiled in.
+const CHAIN_CONFIG_PATH = path.join(__dirname, '../../contracts/8/libraries/ChainConfig.sol');
+function assertChainConfigMatches(expectedChainId) {
+  const src = fs.readFileSync(CHAIN_CONFIG_PATH, 'utf8');
+  const m = src.match(/_EXPECTED_CHAIN_ID\s*=\s*(\d+)\s*;/);
+  if (!m) {
+    throw new Error(`Could not find _EXPECTED_CHAIN_ID in ${CHAIN_CONFIG_PATH} — regenerate it first: node scripts/deploy/gen-chainconfig.js zksyncEra prod`);
+  }
+  const found = Number(m[1]);
+  if (found !== expectedChainId) {
+    throw new Error(
+      `ChainConfig.sol mismatch: it was generated for chainId ${found}, but this script targets zkSync (chainId ${expectedChainId}). ` +
+      `Regenerate the correct config first: node scripts/deploy/gen-chainconfig.js zksyncEra prod — then recompile before deploying.`
+    );
+  }
+}
+
 // DexRouter owner (privileged: pause / transferOwnership / setReporter). REQUIRED in the
 // zkSyncEra base.js `owner` field — no default fallback (mirrors the foundry pipeline, which
 // requires base.js owner too). Kept visible/reviewable in the record.
@@ -59,6 +83,7 @@ async function main() {
   if (hre.network.name !== 'zksync') {
     throw new Error(`This script targets the "zksync" network only (got "${hre.network.name}").`);
   }
+  assertChainConfigMatches(324); // zkSync Era mainnet
   const wallet = buildZkWallet(hre);
   const deployer = new Deployer(hre, wallet);
 

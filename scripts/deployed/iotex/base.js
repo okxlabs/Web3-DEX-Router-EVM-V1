@@ -23,11 +23,18 @@ module.exports = {
     // p2pTrading: "",
     p2pTrading: "",
 
-    newImpl: "0xb193874f0c77948d2bcfec2efaf8bc65b4c2ca89",
+    // ROOT CAUSE FOUND (2026-07-27): the "partial match" was an artifact of forge's NATIVE
+    // `--verifier sourcify` integration (used automatically because iotex's CHAINS entry says
+    // verifier:'sourcify', not 'sourcify-api') — it submits via a legacy path that Sourcify's
+    // matcher scores as partial even for byte-correct code. Resubmitting the exact same
+    // standard-json directly to Sourcify's v2 API (scripts/deploy/sourcify.js's approach,
+    // already used for scroll/manta/ftm/cro/pharos) flipped this to exact_match with zero
+    // code changes — confirming it was purely a submission-protocol gap, not a real mismatch.
+    newImpl: "0x8d44d0ab0eeba9923850a864d8c6f85b84fb02bb", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0x8d44d0ab0eeba9923850a864d8c6f85b84fb02bb/
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xf1bb82a5113695ac886ea490eAbD1a880fC5E571",
-    smartSwapRouterLibrary: "0x08e1B1ea2f31458421C608579F85fa934a326345",
-    swapWrapRouterLibrary: "0x2aD5D721d40c9A31F53D184BA325FB048d38600f",
-    unxswapRouterLibrary: "0x1519E0Ff261E2dF4DfaC1ccd928f840c52cC00e8",
-    unxswapV3RouterLibrary: "0x0930ffC18fa892B0c57301d93b156BD5a3A21908",
+    dagRouterLibrary: "0xd007141847c608D3a9FA904b674Ac8BE366F690f", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0xd007141847c608D3a9FA904b674Ac8BE366F690f/
+    smartSwapRouterLibrary: "0x83bD325318c832B8E70B77F2A65dC4d2c1D24476", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0x83bD325318c832B8E70B77F2A65dC4d2c1D24476/
+    swapWrapRouterLibrary: "0xC92779e260b6B3c164454764C17Ea07816790a8F", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0xC92779e260b6B3c164454764C17Ea07816790a8F/
+    unxswapRouterLibrary: "0x42581A9E5430Fd87D1EbfaB7d50b35988025e4E4", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0x42581A9E5430Fd87D1EbfaB7d50b35988025e4E4/
+    unxswapV3RouterLibrary: "0x5FF3B7e0e0A4F519c8bb602Cd089ae2C3Ff489B2", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/4689/0x5FF3B7e0e0A4F519c8bb602Cd089ae2C3Ff489B2/
 }

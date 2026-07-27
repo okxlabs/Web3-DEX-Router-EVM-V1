@@ -39,6 +39,9 @@ const DEPLOY_CONFIG = {
   // lands per-tx gasLimit ~5-6.5M; at the fixed 1000 gwei (1 Qev) min gas price the
   // full-run escrow is ~30 IOTX.
   iotex: { engine: 'foundry', forgeArgs: ['--legacy', '--gas-estimate-multiplier', '200'] },
+  // ⚠️ polyzkevm (Polygon zkEVM) has been SHUT DOWN (confirmed 2026-07-27) — do NOT deploy or
+  // upgrade here. Config kept only so historical addresses in deployed/polyzkevm/base.js remain
+  // readable; skipped in the v1.0.10 fleet rollout for this reason.
   // polyzkevm: RPC rejects EIP-1559 fee estimation (unsupported feature: eip1559)
   polyzkevm: { engine: 'foundry', forgeArgs: ['--legacy'] },
   // zeta: RPC rejects EIP-1559 fee estimation (eth_gasPrice not available), needs legacy

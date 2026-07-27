@@ -22,11 +22,11 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     // p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
-    newImpl: "0x8d44d0ab0eeba9923850a864d8c6f85b84fb02bb",
+    newImpl: "0xdfcb0cecc10e78f3f3749f3f3d3ee4047b2c9829", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0xdfcb0cecc10e78f3f3749f3f3d3ee4047b2c9829#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xABD172C4B040821fB7F3F67067e8B5f9530544e4",
-    smartSwapRouterLibrary: "0x5a1F1D86745a524F8AFba765cc0B4769FB9Ff245",
-    swapWrapRouterLibrary: "0x7AAc65523263752AbFfF5327415d5606D78Ac8a3",
-    unxswapRouterLibrary: "0x4527490d5a5F5ff960C1d45a486b5e3b0CB6b701",
-    unxswapV3RouterLibrary: "0x853d9f839Ad87556C8Ef23A2eD8f66ff7799c6d2",
+    dagRouterLibrary: "0x5961c561286619586FE9Cd51De1e41F4B887de1F", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0x5961c561286619586fe9cd51de1e41f4b887de1f#code
+    smartSwapRouterLibrary: "0xDE662442301F7ECBD98c8441ea5f20F714f4ad27", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0xde662442301f7ecbd98c8441ea5f20f714f4ad27#code
+    swapWrapRouterLibrary: "0xf6561CF9e46f0ad77b153e751Fe053efd1C634F7", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0xf6561cf9e46f0ad77b153e751fe053efd1c634f7#code
+    unxswapRouterLibrary: "0x873d284E435c35613486fa9cA0e4F3bf49E84906", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0x873d284e435c35613486fa9ca0e4f3bf49e84906#code
+    unxswapV3RouterLibrary: "0x408c683DDB787E1A8540eA198bE7b6e30d8DD707", // v1.0.10-rfq-anti-arbitrage; verified: https://lineascan.build/address/0x408c683ddb787e1a8540ea198be7b6e30d8dd707#code
 }

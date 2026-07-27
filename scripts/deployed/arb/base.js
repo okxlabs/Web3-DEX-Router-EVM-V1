@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 42161,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     wNativeRelayer: "0xd99cAE3FAC551f6b6Ba7B9f19bDD316951eeEE98",
@@ -17,14 +18,14 @@ module.exports = {
     //p2pTrading: "0xe6C2820Ba3d14d97b9e9A371771ed7A2f28A9c40",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
-    newImpl: "0x41cb7e6f799723405270402bff1fdbb040cfa8c4",
+    newImpl: "0x09f94b5fc68e227c323a6fbae3bd98c97fd8c849", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x09f94b5fc68e227c323a6fbae3bd98c97fd8c849#code
     newExactOutImpl: "0x9736d9a45115E33411390EbD54e5A5C3A6E25aA6",
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xb6c553e3378421c7b3d10A1c630F38C18aef39E6",
-    smartSwapRouterLibrary: "0x11Ada1c3bC80562Af971102a1fc250408003ddc3",
-    swapWrapRouterLibrary: "0xA5034322D2DA84590f18477942E7095E5E0551B0",
-    unxswapRouterLibrary: "0xEEeCb4098fb3C4ae7eebB7792942C9aED346dCaD",
-    unxswapV3RouterLibrary: "0x792E9dd5B8Ff4D9a863ac8C645a77Bfa5221232E",
+    dagRouterLibrary: "0x85379C25378FD67EC21962b0B351D56A62E76e8F", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x85379c25378fd67ec21962b0b351d56a62e76e8f#code
+    smartSwapRouterLibrary: "0x22ACb84465E251ea5706Fc88b9D5f6ED81B3b0Cc", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x22acb84465e251ea5706fc88b9d5f6ed81b3b0cc#code
+    swapWrapRouterLibrary: "0x523E74e69c71c4a69D4683b39356Ff5b56960902", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x523e74e69c71c4a69d4683b39356ff5b56960902#code
+    unxswapRouterLibrary: "0x0587488d2c9184B1F7108fB5064A4aA85688EFDb", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x0587488d2c9184b1f7108fb5064a4aa85688efdb#code
+    unxswapV3RouterLibrary: "0xce0462f0a179310D4b27E3Ed8ee13A77339391d9", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0xce0462f0a179310d4b27e3ed8ee13a77339391d9#code
 }

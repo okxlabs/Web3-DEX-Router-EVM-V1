@@ -12,12 +12,20 @@ module.exports = {
     _FF_FACTORY: "0xff204faca1764b154221e35c0d20abb3c5257104980000000000000000000000", // uniswap v3 fork, not the canonical UniV3 factory
     _CACHED_CHAIN_ID: 143,
     commisson: "",
-    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    // ROOT CAUSE FOUND (2026-07-27): the "partial match" was an artifact of forge's NATIVE
+    // `--verifier sourcify` integration (used automatically because monad's CHAINS entry says
+    // verifier:'sourcify', not 'sourcify-api'). Resubmitting the exact same standard-json
+    // directly to the v2 API (scripts/deploy/sourcify.js's approach) flipped this to
+    // exact_match (both creation and runtime) with zero code changes. NOTE: monad's verifier
+    // (sourcify-api-monad.blockvision.org) is its OWN separate Sourcify-compatible instance,
+    // NOT the canonical sourcify.dev — the verified source is browsable on monadvision.com
+    // (BlockVision's monad explorer), not repo.sourcify.dev (that domain has no record of it).
+    newImpl: "0xc1c76e784db8d68585fb608ce68fc5dcff14000e", // v1.0.10-rfq-anti-arbitrage; verified (exact_match, both creation+runtime): https://monadvision.com/address/0xc1C76E784Db8D68585fb608ce68FC5DcFF14000E?tab=Contract
     proxyAdmin: "",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xD31abd983eb77408763a5f49AC99F2e1047886AB",
-    smartSwapRouterLibrary: "0xcAdC692d7FAE835B17642260405aF2738020D767",
-    swapWrapRouterLibrary: "0x11030Ea04aD1CCDef0b8ac52c5FcEa67B108c5bF",
-    unxswapRouterLibrary: "0x7E32b8BD875CB353f25416847FecF4880C2Fd12B",
-    unxswapV3RouterLibrary: "0x6B7B42861EbA1278EBEa2650BE61455ee7452e17",
+    dagRouterLibrary: "0x6E6107E49eD64241D662554536859F02069581B8", // v1.0.10-rfq-anti-arbitrage; verified (exact_match): https://monadvision.com/address/0x6E6107E49eD64241D662554536859F02069581B8?tab=Contract
+    smartSwapRouterLibrary: "0x9704641eF363C94c0b3BBC9Bf4aD2F4875B0567E", // v1.0.10-rfq-anti-arbitrage; verified (exact_match): https://monadvision.com/address/0x9704641eF363C94c0b3BBC9Bf4aD2F4875B0567E?tab=Contract
+    swapWrapRouterLibrary: "0x72A4363E28783A0aa9FFC169390151DFCbAb62CB", // v1.0.10-rfq-anti-arbitrage; verified (exact_match): https://monadvision.com/address/0x72A4363E28783A0aa9FFC169390151DFCbAb62CB?tab=Contract
+    unxswapRouterLibrary: "0x79C37c11b4Ba7ADA256930DF0B7fa38e8bA88f7e", // v1.0.10-rfq-anti-arbitrage; verified (exact_match): https://monadvision.com/address/0x79C37c11b4Ba7ADA256930DF0B7fa38e8bA88f7e?tab=Contract
+    unxswapV3RouterLibrary: "0x3f515a7f0f5c59DDcBF3143266Fa8cfeCafEC431", // v1.0.10-rfq-anti-arbitrage; verified (exact_match): https://monadvision.com/address/0x3f515a7f0f5c59DDcBF3143266Fa8cfeCafEC431?tab=Contract
 }

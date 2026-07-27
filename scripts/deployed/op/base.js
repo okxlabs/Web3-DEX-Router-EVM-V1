@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 10,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x4200000000000000000000000000000000000006",
     wNativeRelayer: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
@@ -18,11 +19,11 @@ module.exports = {
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
 
-    newImpl: "0x5f73faff23dd542bd4ef4ec67d7849f31b6662eb",
+    newImpl: "0x1f5b43127414e36c31ecb5ff5567262997cd24d0", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0x1f5b43127414e36c31ecb5ff5567262997cd24d0#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x60Cb7D34785F0A3655bbe6100b044bB40495974a",
-    smartSwapRouterLibrary: "0x26962B79cA4D18bedcd77ABC9fd68bc29DDf44de",
-    swapWrapRouterLibrary: "0xE588BE352FA58429744b9e2CAb51A96C85fcAc5B",
-    unxswapRouterLibrary: "0x8FAc567c856A4D2D46c688e6B245Ef4e4F14541e",
-    unxswapV3RouterLibrary: "0x4a006cB5637352342dd06fFDa4e91a1038778d0d",
+    dagRouterLibrary: "0xAC0c536743c6170d51C4440d954FD0ba9F9ed043", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0xac0c536743c6170d51c4440d954fd0ba9f9ed043#code
+    smartSwapRouterLibrary: "0x57B610C9a2245Bdf84B6EF08f92E8EaC0A4151b1", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0x57b610c9a2245bdf84b6ef08f92e8eac0a4151b1#code
+    swapWrapRouterLibrary: "0x364ca60085CE246342aD9309910AcD8D338E1d95", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0x364ca60085ce246342ad9309910acd8d338e1d95#code
+    unxswapRouterLibrary: "0x28a7d9c6988d696d5e4d1830De4D5502Ff669062", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0x28a7d9c6988d696d5e4d1830de4d5502ff669062#code
+    unxswapV3RouterLibrary: "0x3b7359b3ee891661e8879A31DF8984646137e684", // v1.0.10-rfq-anti-arbitrage; verified: https://optimistic.etherscan.io/address/0x3b7359b3ee891661e8879a31df8984646137e684#code
 }

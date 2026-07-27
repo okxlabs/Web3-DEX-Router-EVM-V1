@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 43114,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
     wNativeRelayer: "0x3B86917369B83a6892f553609F3c2F439C184e31",
@@ -17,11 +18,11 @@ module.exports = {
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     _FF_FACTORY: "0xff740b1c1de25031c31ff4fc9a62f554a55cdc1bad0000000000000000000000",
-    newImpl: "0xb3382c52b408570a82948c63ada1b6fa745a86f8",
+    newImpl: "0xab96dcfa7a7d669d9bf5918fab8641479973dd0a", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0xab96dcfa7a7d669d9bf5918fab8641479973dd0a#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x41579D7d1B180435cE5a37dF71ec18E805a07Bcd",
-    smartSwapRouterLibrary: "0x695D0879c8a39Aec2825e5932f4C56Ab77519713",
-    swapWrapRouterLibrary: "0x650E296f146ad27a881B430934d7266D052944f8",
-    unxswapRouterLibrary: "0xf0733072D375053a30389e3bC83E2D003B9d4CbF",
-    unxswapV3RouterLibrary: "0x4435dB42fcDFA1342f611A78b49D892d2aFA6D0f",
+    dagRouterLibrary: "0xeB1C9E394F5a60A5aE790714b63C3F02863C19e2", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0xeb1c9e394f5a60a5ae790714b63c3f02863c19e2#code
+    smartSwapRouterLibrary: "0x34B5384d4312CB44C45D8761a12B56817E220CCE", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0x34b5384d4312cb44c45d8761a12b56817e220cce#code
+    swapWrapRouterLibrary: "0x0a33C23A6c07f059D42C71C5095Ad63C67109323", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0x0a33c23a6c07f059d42c71c5095ad63c67109323#code
+    unxswapRouterLibrary: "0xc2b6c102835c70Db70054d3Aa9ccE8271E72784C", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0xc2b6c102835c70db70054d3aa9cce8271e72784c#code
+    unxswapV3RouterLibrary: "0x6CbBea53B566b7814bd1F07F824ae5f2d9916B2B", // v1.0.10-rfq-anti-arbitrage; verified: https://snowscan.xyz/address/0x6cbbea53b566b7814bd1f07f824ae5f2d9916b2b#code
 }

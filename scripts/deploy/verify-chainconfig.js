@@ -93,11 +93,14 @@ async function verifyChainConfig(chain, env, opts = {}) {
   const ffEmbedded = FF_FACTORY_RE.test(ffFactory) ? "0x" + ffFactory.slice(4, 44) : null;
 
   // ---------------------------------------------------------------- offline layer
-  // chainId double-source agreement (CHAINS vs base._CACHED_CHAIN_ID).
+  // chainId double-source agreement (CHAINS vs base._CACHED_CHAIN_ID). Every tracked chain's
+  // base.js now carries this field (backfilled 2026-07-27), so a missing field is no longer
+  // a historical gap — it's fail-fast just like a mismatch, to keep the cross-check universal
+  // for every chain going forward (including new chain onboarding).
   if (!Number.isInteger(expectedChainId) || expectedChainId <= 0) {
     errors.push(`CHAINS.${chain}.chainId is missing/invalid (${JSON.stringify(expectedChainId)})`);
   } else if (base._CACHED_CHAIN_ID == null) {
-    warnings.push(`base.js has no _CACHED_CHAIN_ID — cannot cross-check against CHAINS.${chain}.chainId (${expectedChainId})`);
+    errors.push(`base.js has no _CACHED_CHAIN_ID — cannot cross-check against CHAINS.${chain}.chainId (${expectedChainId}). Add _CACHED_CHAIN_ID: ${expectedChainId} to deployed/${chain}/<env>.js.`);
   } else if (Number(base._CACHED_CHAIN_ID) !== Number(expectedChainId)) {
     errors.push(`chainId mismatch: CHAINS=${expectedChainId} but base._CACHED_CHAIN_ID=${base._CACHED_CHAIN_ID}`);
   }

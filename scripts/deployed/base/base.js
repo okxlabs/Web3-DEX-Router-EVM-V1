@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 8453,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x4200000000000000000000000000000000000006",
     wNativeRelayer: "0xd2F0aC2012C8433F235c8e5e97F2368197DD06C7",
@@ -19,12 +20,12 @@ module.exports = {
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     feeVaultUs: "0x2059839AA4408122A708c6B086ACe5cc5eCeAd72",
     feeVaultNonUs: "0xFAca0D13796498Ab33faa2557F4badDA949a2706",
-    newImpl: "0x84220f7ef461b97eabbb61e3c8a12b7c212454ed",
+    newImpl: "0x67d03631fe51b741c0c00c4e16eb662ac84381df", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0x67d03631fe51b741c0c00c4e16eb662ac84381df#code
     newExactOutImpl: "0x77449Ff075C0A385796Da0762BCB46fd5cc884c6",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xAf392c1F59eA569Cd7B66766d5fcDd2f29Da7e61",
-    smartSwapRouterLibrary: "0x02B2bdF7EDe03c04d9B9723e940cee1fC45a85F6",
-    swapWrapRouterLibrary: "0x1B989018c594720C6F1D35CE52192cBcE52C2279",
-    unxswapRouterLibrary: "0xC97e62bD49a873Bd57D8cEC2A45AefD4419ade35",
-    unxswapV3RouterLibrary: "0x664eb029797D50E2863CAcE0124a05b138A7208B",
+    dagRouterLibrary: "0xF0659736e86F090eD4d1B33801EAe1743F53897c", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0xf0659736e86f090ed4d1b33801eae1743f53897c#code
+    smartSwapRouterLibrary: "0x9ccC6f650FC1a3f64E0f6CB58d4007ed40139302", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0x9ccc6f650fc1a3f64e0f6cb58d4007ed40139302#code
+    swapWrapRouterLibrary: "0x962337b6DB4CB105a7AC31b03Cd21B4C17E6B04E", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0x962337b6db4cb105a7ac31b03cd21b4c17e6b04e#code
+    unxswapRouterLibrary: "0xA0B8CAe7C28266cf9cE3D3e93F22272Ed2d63A6c", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0xa0b8cae7c28266cf9ce3d3e93f22272ed2d63a6c#code
+    unxswapV3RouterLibrary: "0xFE817Cd886E5698daed7dA4C115656fafDD0f6A6", // v1.0.10-rfq-anti-arbitrage; verified: https://basescan.org/address/0xfe817cd886e5698daed7da4c115656fafdd0f6a6#code
 }

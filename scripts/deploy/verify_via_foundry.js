@@ -32,7 +32,11 @@ const CHAINS = {
   apechain: { chainId: 33139, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=33139', verifier: 'etherscan' },
   plasma: { chainId: 9745, verifierUrl: 'https://api.etherscan.io/v2/api?chainid=9745', verifier: 'etherscan' },
   // verifier: sourcify or custom
-  monad: { chainId: 143, verifierUrl: 'https://sourcify-api-monad.blockvision.org/', verifier: 'sourcify' },
+  // verifier is 'sourcify-api' (not forge's native 'sourcify'): confirmed 2026-07-27 that
+  // forge's native --verifier sourcify integration lands DexRouter as a Sourcify "partial
+  // match" even for byte-correct code (same issue as iotex) — the direct v2 API submission
+  // (scripts/deploy/sourcify.js) achieves full exact_match (both creation and runtime).
+  monad: { chainId: 143, verifierUrl: 'https://sourcify-api-monad.blockvision.org/', verifier: 'sourcify-api' },
   zksyncEra: { chainId: 324, verifierUrl: 'https://block-explorer-api.mainnet.zksync.io/api', verifier: 'custom', aliases: ['zksync'] },
   // verifier: oklink
   // ⚠️ OKLink is a LENIENT verifier: it does NOT recompile-and-bytecode-match the submitted source
@@ -101,7 +105,12 @@ const CHAINS = {
   // non-browser clients; the sample repo's index.iotexscan.io no longer resolves in DNS.
   // IoTeXscan imports Sourcify matches, and manual UI upload (verify/iotex/ flattened sources)
   // remains the fallback.
-  iotex: { chainId: 4689, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify' },
+  // verifier is 'sourcify-api' (not forge's native 'sourcify'): confirmed 2026-07-27 that
+  // forge's native --verifier sourcify integration lands DexRouter as Sourcify "partial match"
+  // (runtimeMatch only) even for byte-correct code — resubmitting the identical standard-json
+  // via scripts/deploy/sourcify.js's direct v2 API call flips it to exact_match with zero code
+  // changes. Router libraries were unaffected either way (always exact_match).
+  iotex: { chainId: 4689, verifierUrl: 'https://sourcify.dev/server', verifier: 'sourcify-api' },
   // pharos (Pharos Network mainnet): verified via SocialScan's Foundry-compatible endpoint
   // (etherscan mode). chain_name is `pharos-mainnet`; the key is SOCIALSCAN_API_KEY.
   // ⚠️ api.socialscan.io is network-blocked from the local dev environment (000) — run this

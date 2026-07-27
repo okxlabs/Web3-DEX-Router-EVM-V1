@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 137,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
     wNativeRelayer: "0xf332761c673b59B21fF6dfa8adA44d78c12dEF09",
@@ -20,11 +21,11 @@ module.exports = {
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
     nftmarketplace: "0xa7FD99748cE527eAdC0bDAc60cba8a4eF4090f7c",
 
-    newImpl: "0x172705e8e7d0b52d9378780d617e1d1c32af9fdf",
+    newImpl: "0x3c4829196bfadff4394726b45159aeaac6fcd41c", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0x3c4829196bfadff4394726b45159aeaac6fcd41c#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x27d54195560971459f666CcE2A3924C558eEeF3C",
-    smartSwapRouterLibrary: "0xA517B9C28b6D5f3226ceCe098ec948149B6b96e4",
-    swapWrapRouterLibrary: "0x1d0059D817d79013b1B9A110db34e9301B35fc32",
-    unxswapRouterLibrary: "0xC765f87fc06e52Ca033C6138c6d533Bf0a1b8e67",
-    unxswapV3RouterLibrary: "0x19d56FEC72911Af3DcaF862001b71BFC9acf2aA1",
+    dagRouterLibrary: "0xEbd3fd3e6aa2B29f4B749756c42B50c59E09CB81", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0xebd3fd3e6aa2b29f4b749756c42b50c59e09cb81#code
+    smartSwapRouterLibrary: "0xa6D9e17184e4a738eb6E3Ee9dC14768e9B86C157", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0xa6d9e17184e4a738eb6e3ee9dc14768e9b86c157#code
+    swapWrapRouterLibrary: "0x72a3719f24C1127Bf35C1C57575E2ab1086CB4Fb", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0x72a3719f24c1127bf35c1c57575e2ab1086cb4fb#code
+    unxswapRouterLibrary: "0x18A366f68E3723a72E9725AffBe8D2442d253423", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0x18a366f68e3723a72e9725affbe8d2442d253423#code
+    unxswapV3RouterLibrary: "0x23B0359660f87c509852Fb75B59033800c434361", // v1.0.10-rfq-anti-arbitrage; verified: https://polygonscan.com/address/0x23b0359660f87c509852fb75b59033800c434361#code
 }

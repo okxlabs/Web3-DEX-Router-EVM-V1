@@ -20,11 +20,11 @@ module.exports = {
     _CACHED_CHAIN_ID: 5000,
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
     p2pTrading: "0x0000000017D9a0231430ff2cc3467375a9Af76C7",
-    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    newImpl: "0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad#code
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0xb50Be79b71aac74f32AC79fC93585A0ACf089922",
-    smartSwapRouterLibrary: "0x0b9Db74211F7F835f8184AE527857c167170312f",
-    swapWrapRouterLibrary: "0x5cE92495415aF5874e91cFeC28634fc08af58064",
-    unxswapRouterLibrary: "0x4860B414785e6B1DEC22b46B5c2a3D41eE1e823e",
-    unxswapV3RouterLibrary: "0x19F6508E0A0206c6009354179a5b92E9A47bb480",
+    dagRouterLibrary: "0xE4D5acB71f826415803999D21283343779e516B4", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0xe4d5acb71f826415803999d21283343779e516b4#code
+    smartSwapRouterLibrary: "0x2F26F019BB721C5fd596b4A8ECDF53215D21F009", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0x2f26f019bb721c5fd596b4a8ecdf53215d21f009#code
+    swapWrapRouterLibrary: "0xFEEDe329fB7271b1572C2D7B86fc03d7D15c2c2D", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0xfeede329fb7271b1572c2d7b86fc03d7d15c2c2d#code
+    unxswapRouterLibrary: "0x097071E82BBEc4ae80F8a046FC2415bd3921c568", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0x097071e82bbec4ae80f8a046fc2415bd3921c568#code
+    unxswapV3RouterLibrary: "0x039Ce27633A8d8361096A21BA936e4a2D1AE6C2A", // v1.0.10-rfq-anti-arbitrage; verified: https://mantlescan.xyz/address/0x039ce27633a8d8361096a21ba936e4a2d1ae6c2a#code
 }

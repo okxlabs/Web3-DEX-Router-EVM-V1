@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 25,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23",
     wNativeRelayer: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
@@ -15,12 +16,12 @@ module.exports = {
     xbridge: "0xf956D9FA19656D8e5219fd6fa8bA6cb198094138",
     commisson: "0x838A5832eB19CfCe692809f5b2DE44b15380CDA2",
 
-    newImpl: "0xd72f9af181a0eb1b8550a00124ecdb71bb758c89",
+    newImpl: "0xc86fb5bf6bfde081fd627c639c05e70d23cf7717", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0xc86fb5bf6bfde081fd627c639c05e70d23cf7717/
 
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x34dff2Edf043fCB34bBBb72d3E8C97c7eE1bE03e",
-    smartSwapRouterLibrary: "0xfB9900ff1aF0cBD0c79eCe9d41C78142243f83b8",
-    swapWrapRouterLibrary: "0xE005b21AA648Fe7E4fea7Da50371a7c3501E1cb2",
-    unxswapRouterLibrary: "0xf339b4D079FCEA34414E60b6176f64980666d5f3",
-    unxswapV3RouterLibrary: "0xd1FeA1A5eFE9C22050e8528a2545D73325484499",
+    dagRouterLibrary: "0xBB3e6C90485cA727f94504713FA2c71273D34064", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0xBB3e6C90485cA727f94504713FA2c71273D34064/
+    smartSwapRouterLibrary: "0x866005115562e5Cf389a5b2A7C1862a3fc22b388", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0x866005115562e5Cf389a5b2A7C1862a3fc22b388/
+    swapWrapRouterLibrary: "0x7Df8dA835C82ce55ab5F2b80432339ab0588c1eE", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0x7Df8dA835C82ce55ab5F2b80432339ab0588c1eE/
+    unxswapRouterLibrary: "0xb09E0e45C3EC03FB184dDF8c90cB5e2e8eAE8be3", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0xb09E0e45C3EC03FB184dDF8c90cB5e2e8eAE8be3/
+    unxswapV3RouterLibrary: "0xBdc37f804C4f123C14323125334cc081474120fb", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/25/0xBdc37f804C4f123C14323125334cc081474120fb/
 }

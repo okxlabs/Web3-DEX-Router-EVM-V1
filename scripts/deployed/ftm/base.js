@@ -1,4 +1,5 @@
 module.exports = {
+    _CACHED_CHAIN_ID: 250,
     owner: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1", // DexRouter owner (pause/transferOwnership/setReporter)
     wNativeToken: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",
     wNativeRelayer: "0x40aA958dd87FC8305b97f2BA922CDdCa374bcD7f",
@@ -22,11 +23,11 @@ module.exports = {
     // per-byte comparison). OKLink accepted the mismatched source (it does not strict-match) and
     // LOCKS verified contracts, so it cannot be overwritten via API/forge — needs OKLink-side
     // un-verify/re-verify. See verify_via_foundry.js OKLink note.
-    newImpl: "0x61e7e4936e546910658f9458ddfd785b44ec91ae",
+    newImpl: "0xd72f9af181a0eb1b8550a00124ecdb71bb758c89", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0xd72f9af181a0eb1b8550a00124ecdb71bb758c89/
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
-    dagRouterLibrary: "0x58b9E5Eeb472DE5417BD8a290a6882b1F234Cdb2",
-    smartSwapRouterLibrary: "0x5E9036c3474e6082Aa558e6EAc7ffBa4B34cDD29",
-    swapWrapRouterLibrary: "0x08c887903334Ea8046C4280177BAf48DeEcE9dFB",
-    unxswapRouterLibrary: "0xf8E622D3a1734b293C3936d03d48Ac3598e84f54",
-    unxswapV3RouterLibrary: "0x063222d6e09e4c1607042D4afcEF87f907AEF09D",
+    dagRouterLibrary: "0x5D19D02B4a899eCc23801FB5626282e1233071D7", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0x5D19D02B4a899eCc23801FB5626282e1233071D7/
+    smartSwapRouterLibrary: "0xb632602C9a076cfeC8DF32658fb26fF3Fe20e671", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0xb632602C9a076cfeC8DF32658fb26fF3Fe20e671/
+    swapWrapRouterLibrary: "0x9eE621b16007078529271faF8440b90D009D4149", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0x9eE621b16007078529271faF8440b90D009D4149/
+    unxswapRouterLibrary: "0x7AAE833Db693BB54201B70f127844f0c1681aC1C", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0x7AAE833Db693BB54201B70f127844f0c1681aC1C/
+    unxswapV3RouterLibrary: "0x5C03F0D96bF822FFBe2070f3A0C5b5Eaab5e8a44", // v1.0.10-rfq-anti-arbitrage; verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/250/0x5C03F0D96bF822FFBe2070f3A0C5b5Eaab5e8a44/
 }

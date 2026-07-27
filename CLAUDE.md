@@ -100,6 +100,8 @@ lib/                  # Forge 依赖 (forge-std, permit2)
 
 两个引擎都覆盖 30+ 条链（Ethereum、Arbitrum、Base、BSC、Optimism、Polygon、Scroll、zkSync、Monad 等）。Foundry（`foundry.toml`）负责编译/部署/测试；Hardhat（`hardhat.config.js networks`）负责 `scripts/` 下约 50 个 ethers 运维脚本（代理升级、所有权转移、approve-proxy 配置）。
 
+> ⚠️ **`polyzkevm`(Polygon zkEVM)已于 2026-07-27 确认关闭停运,禁止再向该链部署或升级**。`deploy.config.js`/`verify_via_foundry.js` 里仍保留其配置条目,仅为了让 `deployed/polyzkevm/base.js` 里的历史地址记录保持可读,不代表该链仍可用。
+
 ### RPC 管理 —— 以 `.env` 为单一真相源
 
 RPC 节点 URL **不再硬编码**在 `foundry.toml` 或 `hardhat.config.js` 中。两者都从名为 `<CHAIN>_RPC_URL` 的环境变量读取，统一来自 gitignore 的 `.env`：
@@ -116,6 +118,15 @@ RPC 节点 URL **不再硬编码**在 `foundry.toml` 或 `hardhat.config.js` 中
 ## 部署 (Deployment)
 
 部署生态集中在 `scripts/deploy/`(引擎、配置、记录、验证、ChainConfig 生成)。**唯一入口是 hardhat task `deploy-and-verify`**（注册于 `hardhat.config.js`，实现于 `tasks/deploy-and-verify.js`）。
+
+### 两类部署:新链引导 vs DexRouter 版本部署(先分清楚再看以下细则)
+
+本仓库的"部署"覆盖两类不同的工作,评估风险/读代码时不要混为一谈:
+
+1. **新链部署(新链 onboarding)**:某条链**第一次**上线,需要部署全部基础设施(TokenApprove、TokenApproveProxy、WNativeRelayer、DexRouter 等)。引导期间部署者临时持有这些合约的 owner 权限用来跑通配置——这正是 `scripts/` 下 `03`–`23` 等编号运维脚本(`04_set_dex_approve_proxy.js`、`16_update_owner_tokenapprove.js`、`17_update_owner_approveproxy.js`、`18_change_owner.js`、`23_upgrade.js`、`41_transfer_owner.js` 等)**当前仍在用**的场景,不是历史遗留、无人使用的参考实现。配置完成后,ownership 转移给 OKX Boss 系统托管。真实例子:`0c42e825`(记录 ink 链地址)紧跟着 `dcad7d42`(转移 ink 链 TokenApprove/TokenApproveProxy/WNativeRelayer ownership)这一对提交。
+2. **DexRouter 版本部署**:链**已完成引导**,只是发布一个新的 DexRouter 实现——即本章节下文描述的标准 `deploy-and-verify` 流程(prod/stg 正交)。
+
+一旦某条链完成引导、ownership 转移给 Boss,这些编号运维脚本对该链就会失效(`onlyOwner` 因调用者不再是 owner 而 revert)——风险窗口只在"新链引导中、尚未转移 ownership"这段时间内,不是对已上线 prod/stg 链的持续性威胁。判断某条链是否还在引导窗口:看 `deployed/<chain>/` 下"记录地址"的提交之后是否紧跟着对应的"转移 ownership"提交。
 
 ```bash
 npx hardhat deploy-and-verify --network arb                       # 模拟(不广播)
@@ -156,7 +167,7 @@ npx hardhat deploy-and-verify --network arb --env stg --broadcast # staging 部�
 - **其它管理面**:approve-proxy 绑定、owner 迁移等(对应 `scripts/` 下 `03`–`23` 等运维脚本所代表的动作)。
 
 **对仓库与协作的影响:**
-- `scripts/` 下那些运维脚本(`23_upgrade.js`、`04_set_dex_approve_proxy.js`、`*_approve_proxy.js` 等)是**调用形态的参考实现 / 历史产物,不是当前的执行路径**。请勿假设"跑这个脚本"就能完成升级或配白名单;真正的执行入口在 Boss 系统。
+- `scripts/` 下那些运维脚本(`23_upgrade.js`、`04_set_dex_approve_proxy.js`、`*_approve_proxy.js` 等)**对已完成引导、ownership 已转移给 Boss 的链**而言,只是调用形态的参考实现,不是当前的执行路径。请勿假设"跑这个脚本"就能对这些链完成升级或配白名单;真正的执行入口在 Boss 系统。**但对尚在引导中的新链**,这些脚本就是实际在用的一次性配置工具(见上文"两类部署"),此时部署者仍持有 owner 权限。
 - 因此 **不要在 MR 里附带"代跑特权操作"的脚本**作为落地手段;落地步骤应描述为"在 Boss 系统对 `<proxy>` 执行 `<调用>`,签名者为 ProxyAdmin owner",并给出调用所需参数(目标地址、selector、calldata、目标 owner 等)。
 - 真实网络私钥也不在本地——本地缺 `PRIVATE_KEY` 时 `deploy-and-verify` 仅能做 impl 部署/校验,签名广播特权交易由 Boss 托管。
 
@@ -196,6 +207,31 @@ per-chain 常量(`_WETH`/`_APPROVE_PROXY`/`_PERMIT2`/`_FF_FACTORY`/gas limit)**�
 - **prod**:部署的是**全新不可升级实现**,部署 ≠ 上线;真正生效靠把它加入 **`TokenApproveProxy` 白名单(`addProxy`)**——这才是资金闸门。该操作**经 Boss 系统托管执行**(见上方"特权操作"),务必复核后再操作。
 - **stg**:生效靠 `ProxyAdmin.upgrade`/`upgradeAndCall` 挂载到既有 proxy(见上方"stg 与 prod 的架构差异"),不走 `addProxy` 白名单这条 prod 闸门;同样**经 Boss 系统执行**。
 - 真实网络缺 `PRIVATE_KEY` 时 hardhat/zksync **fail-fast**(不回退公开测试私钥)——签名广播特权交易由 Boss 托管,本地无私钥。
+
+### exact-out 模块当前禁止部署(硬性要求)
+
+**`contracts/exactout/`(`DexRouterExactOut` 及其 `router/`、`libraries/`)当前禁止任何新部署或升级**,不论 prod 还是 stg、不论是否 `--broadcast`。已上线的历史实例保持现状、不做变更,但**严禁再新增部署到任何链**,直到以下缺口被修复。这些缺口是 2026-07-24 对比 `1f2098b9`(审计修复完成的 v1.0.9 版本)与 `HEAD` 时发现的,发生在 `contracts/exactout/` 从 `DexRouter.sol` 拆分出来独立成模块之后,不属于原先审计范围内已修复的问题:
+
+1. **无 ChainConfig 覆盖,链相关地址手工硬编码**:`contracts/exactout/libraries/Constants.sol` 的 `_WETH`/`_APPROVE_PROXY` 是硬编码的 Ethereum 主网地址(`_PERMIT2` 是跨链确定性地址,不受影响),完全没有接入 `gen-chainconfig.js`/生成的 `ChainConfig.sol`。每次向非-eth 链部署都依赖有人在本地手工改这个文件再编译部署,且从未把改动提交回仓库——已用链上字节码核实(比对 Arbitrum 已部署的 `newExactOutImpl`),证实确实存在"改了但没提交"的情况,git 里的源码与链上实际字节码对不上。
+2. **无 check-impl 覆盖**:`tasks/check-impl.js` 明确写明"DexRouter only (ExactOut is a separate flow)"——exact-out 完全没有自动化字节码等价性校验,笔误/漏改地址不会被任何工具发现。
+3. **与主模块 v1.0.10 安全特性不同步**:`contracts/exactout/libraries/CommonLib.sol` 的 `exeAdapter` 没有注入主模块(`contracts/8/libraries/CommonLib.sol`)v1.0.10 新增的 `DEX_ROUTER_CALLER_MARKER`(RFQ 反套利/防毒流的基础);`DexRouterExactOut.sol` 的 `version` 常量仍停留在 `"v1.0.9-multi-funding-mode"`,未跟进主模块的 `"v1.0.10-rfq-anti-arbitrage"`。
+4. **部署路径本身脱离唯一入口**:exact-out 走独立的旧式脚本(`scripts/deploy/deploy_dex_exactout_imp.js` + `05_deploy_dex_exactout_proxy.js`/`30_check_const_exactout_impl.js`/`31_check_bytecode_exactout_Impl.js`/`43_check_status_exactout.js`/`44_transfer_exactout_owner.js`),不在 `deploy-and-verify` 的编排、`verify-chainconfig`、`check-impl` 校验范围内。
+
+**解除本条禁令需全部满足**(由负责人核实后更新/移除本节):
+- exact-out 接入 `gen-chainconfig.js`/`ChainConfig.sol` 生成流程,消灭手工改址;
+- `check-impl` 扩展覆盖 exact-out 实现,或建立等价的字节码校验机制;
+- 明确 `DEX_ROUTER_CALLER_MARKER` 是否需要补齐到 exact-out(或有明确的产品/安全评审记录说明为何不需要),版本号与主模块保持同步。
+
+### 开源与地址记录规范(硬性要求)
+
+**任何新部署的合约(dexRouter/newImpl,以及新引入的 library、proxy、proxyAdmin 等)都必须完成开源验证,不允许部署后停留在未开源状态。** 开源方式不限于浏览器原生 verifier(Etherscan 系列,参见 `scripts/deploy/verify_via_foundry.js` 的 `CHAINS` 配置)——**走 Sourcify 验证的场景同样视为开源完成的一种,不能因为走的是 Sourcify 而免于记录**(个别不支持标准 verifier/Sourcify 的链有各自的开源方式,例如 Tron 走 TronScan)。
+
+开源完成后,必须把浏览器(或 Sourcify)上该地址的验证/详情链接,以行内注释形式记录在 `deployed/<chain>/<env>.js` 对应地址字段之后,例如:
+```js
+dexRouter: "0x...", // v1.0.10-rfq-anti-arbitrage; verified: https://arbiscan.io/address/0x...#code
+newImpl: "0x...",   // verified via Sourcify: https://repo.sourcify.dev/contracts/full_match/<chainId>/0x.../
+```
+未记录验证链接的地址视为**部署未完成**,不得进入下一步(例如提交给 Boss 系统执行 `upgrade`/`addProxy`)。
 
 ## 开发约定 (Development Conventions)
 

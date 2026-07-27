@@ -18,13 +18,28 @@ module.exports = {
     commisson: "",
     p2pTrading: "",
     nftmarketplace: "",
-    newImpl: "0x9181473DB55A44ff9A934E8879d9E4A2328477C3",
+    // Redeployed 2026-07-27 after discovering the first v1.0.10 attempt was compiled with eth
+    // mainnet's ChainConfig.sol (_EXPECTED_CHAIN_ID=1, eth _WETH/_APPROVE_PROXY) instead of
+    // zkSync's own — deploy_dexrouter_zksync.js never calls gen-chainconfig.js and has no
+    // runtime chainId guard (unlike DeployDexRouter.s.sol's require(block.chainid ==
+    // _EXPECTED_CHAIN_ID)), so it silently compiled against whatever ChainConfig.sol happened
+    // to be on disk. That bad build never went live (no addProxy), so no funds were at risk.
+    // This build's ChainConfig was regenerated correctly (chainId 324) immediately before both
+    // Phase A and Phase B, with no other gen-chainconfig/check-impl calls in between — confirmed
+    // by reading the verified DexRouter source back from the zkSync explorer API afterward
+    // (_EXPECTED_CHAIN_ID=324, real zkSync _WETH/_APPROVE_PROXY).
+    newImpl: "0x46eDEcEa0228f04Ab88dC34BE98314863bA40bE0", // v1.0.10-rfq-anti-arbitrage; verified (correct chainId 324 ChainConfig): https://explorer.zksync.io/address/0x46eDEcEa0228f04Ab88dC34BE98314863bA40bE0#contract
     _CACHED_CHAIN_ID: 324,
-    dagRouterLibrary: "0x42cc958f18A945C77f74b6253a611807E61F929F",
-    smartSwapRouterLibrary: "0x8b4759B30d80A1dbE91A57558e07DB9e341d89bE",
-    swapWrapRouterLibrary: "0x5704350034bEf16cA62479F1Be10500f42C17D15",
-    unxswapRouterLibrary: "0x08634257dE032DB9828341F7B10fF0aF2D9A27a6",
-    unxswapV3RouterLibrary: "0x78743CB29EBeabAFC5E49118859de801435e04FB",
+    // Same as before: bytecode confirmed byte-identical to compiled source except the trailing
+    // zksolc metadata hash (eth_getCode vs local artifact deployedBytecode); hardhat-zksync-verify's
+    // local pre-check rejects the mismatch before submission for libraries specifically (DexRouter
+    // has an automatic full-solc-input retry fallback that libraries lack — see
+    // hardhat.zksync.config.js's ZKSYNC_LIBS_SENTINEL note for a manual verify workaround).
+    dagRouterLibrary: "0x0777ef68d22E8401FBD2C811902a398CaD7229A1",
+    smartSwapRouterLibrary: "0x47021E9b3ed60773a77020449406a1F78d7eC6bD",
+    swapWrapRouterLibrary: "0xD5De23953E1D388F5685D22B97cc1AC2EEca26d0",
+    unxswapRouterLibrary: "0xCeC9430e8323C801a1EC9760199400Ca10DB8273",
+    unxswapV3RouterLibrary: "0xE73C06F22C47496EdFab22dc2963428Bd8022F1d",
     constructorArg: "0xAcE2B3E7c752d5deBca72210141d464371b3B9b1",
 }
 

@@ -7,14 +7,13 @@ require('hardhat-contract-sizer');
 require('hardhat-log-remover');
 require("@openzeppelin/hardhat-upgrades");
 require('dotenv').config();
-require("./scripts/multichain.js");
 require('@okxweb3/hardhat-explorer-verify');
-require("./tasks/deploy-upgrade");
 
 require("@zetachain/toolkit/tasks");
 
 // Note: If no private key is configured in the project, the first test account of Hardhat is used by default
-const PRIVATE_KEY = process.env.PRIVATE_KEY_DEPLOYER || 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const DEPLOYER_KEY = process.env.PRIVATE_KEY_DEPLOYER || process.env.PRIVATE_KEY;
+const DEPLOYER_ACCOUNTS = DEPLOYER_KEY ? [DEPLOYER_KEY] : [];
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY || '';
 const INFSTONES_KEY = process.env.INFSTONES_KEY || '';
 const INFURA_KEY = process.env.INFURA_KEY || '';
@@ -34,7 +33,24 @@ const SCROLLSCAN_API_KEY = process.env.SCROLLSCAN_API_KEY || '';
 const AVAXSCAN_API_KEY = process.env.AVAXSCAN_API_KEY || '';
 const BLASTSCAN_API_KEY = process.env.BLASTSCAN_API_KEY || '';
 const SONIC_API_KEY = process.env.SONIC_API_KEY || '';
-const ZETA_API_KEY = process.env.ZETA_API_KEY || '123';
+const ZETA_API_KEY = process.env.ZETA_API_KEY || '';
+// Public network entries are enabled when their RPC URL is supplied.
+// This avoids embedding private RPC endpoints or placeholder URLs in the public repository.
+const OPTIONAL_NETWORKS = [
+  ['unichain', 130, 'UNICHAIN_RPC_URL'],
+  ['monad', 143, 'MONAD_RPC_URL'],
+  ['plasma', 9745, 'PLASMA_RPC_URL'],
+  ['pharos', 1672, 'PHAROS_RPC_URL'],
+  ['hyperevm', 999, 'HYPEREVM_RPC_URL'],
+  ['robinhood', 4663, 'ROBINHOOD_RPC_URL'],
+  ['ink', 57073, 'INK_RPC_URL'],
+  ['arc', 5042, 'ARC_RPC_URL'],
+  ['elysium', 99901, 'ELYSIUM_RPC_URL'],
+].reduce((networks, [name, chainId, envName]) => {
+  const url = process.env[envName];
+  if (url) networks[name] = { url, chainId, accounts: DEPLOYER_ACCOUNTS };
+  return networks;
+}, {});
 module.exports = {
   solidity: {
     compilers: [
@@ -61,10 +77,11 @@ module.exports = {
       //   url: "https://rpc.ankr.com/eth"
       // }
     },
+    ...OPTIONAL_NETWORKS,
     okc: {
       url: INFSTONES_KEY == '' ? "https://exchainrpc.okex.org" : `https://api.infstones.com/okc-archive/mainnet/${INFSTONES_KEY}`,
       chainId: 66,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -75,7 +92,7 @@ module.exports = {
     tron: {
       url: "https://api.trongrid.io",
       chainId: 65,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -83,10 +100,10 @@ module.exports = {
         },
       },
     },
-    tron: {
+    okc_test: {
       url: "https://exchaintestrpc.okex.org",
       chainId: 65,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -96,7 +113,7 @@ module.exports = {
     },
     zeta: {
       url: 'https://zetachain-mainnet.public.blastapi.io',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -106,7 +123,7 @@ module.exports = {
     },
     flare: {
       url: "https://flare-api.flare.network/ext/C/rpc",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -117,7 +134,7 @@ module.exports = {
     bsc: {
       url: "https://bsc-dataseed1.defibit.io",
       chainId: 56,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -128,7 +145,7 @@ module.exports = {
     bsc_stg: {
       url: "https://bsc.blockrazor.xyz",
       chainId: 56,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -139,7 +156,7 @@ module.exports = {
     bsc_dev: {
       url: "https://rpc.ankr.com/bsc",
       chainId: 56,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -150,7 +167,7 @@ module.exports = {
     bsc_test: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -160,7 +177,7 @@ module.exports = {
     },
     eth: {
       url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -170,7 +187,7 @@ module.exports = {
     },
     eth_stg: {
       url: ALCHEMY_KEY == '' ? "https://eth.llamarpc.com" : `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -180,7 +197,7 @@ module.exports = {
     },
     goerli: {
       url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -190,7 +207,7 @@ module.exports = {
     },
     sepolia: {
       url: `https://rpc.sepolia.org`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -200,7 +217,7 @@ module.exports = {
     },
     cro: {
       url: "https://cronos.drpc.org",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -210,7 +227,7 @@ module.exports = {
     },
     crotest: {
       url: "https://cronos-testnet-3.crypto.org:8545",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       network_id: "*",
       skipDryRun: true,
       settings: {
@@ -222,7 +239,7 @@ module.exports = {
     },
     avax: {
       url: "https://api.avax.network/ext/bc/C/rpc",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -232,7 +249,7 @@ module.exports = {
     },
     avaxtest: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       gas: 2100000,
       gasPrice: 25000000000,
       settings: {
@@ -244,7 +261,7 @@ module.exports = {
     },
     polygon: {
       url: "https://rpc-mainnet.matic.quiknode.pro",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       gasPrice: 250000000000,
       settings: {
         optimizer: {
@@ -255,7 +272,7 @@ module.exports = {
     },
     polygontest: {
       url: "https://rpc-mumbai.maticvigil.com/",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -265,7 +282,7 @@ module.exports = {
     },
     arb: {
       url: "https://arb1.arbitrum.io/rpc",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -275,7 +292,7 @@ module.exports = {
     },
     arb_stg: {
       url: "https://arb1.arbitrum.io/rpc",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -285,7 +302,7 @@ module.exports = {
     },
     op: {
       url: "https://optimism-mainnet.public.blastapi.io",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -295,7 +312,7 @@ module.exports = {
     },
     ftm: {
       url: "https://fantom-json-rpc.stakely.io",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -305,7 +322,7 @@ module.exports = {
     },
     ethw: {
       url: "https://mainnet.ethereumpow.org",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -315,7 +332,7 @@ module.exports = {
     },
     conflux: {
       url: "https://evm.confluxrpc.com",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -325,7 +342,7 @@ module.exports = {
     },
     polyzkevm: {
       url: "https://zkevm-rpc.com",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -335,7 +352,7 @@ module.exports = {
     },
     zksync: {
       url: "https://mainnet.era.zksync.io",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -345,7 +362,7 @@ module.exports = {
     },
     linea: {
       url: `https://1rpc.io/linea`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -355,7 +372,7 @@ module.exports = {
     },
     mantle: {
       url: `https://rpc.mantle.xyz`,
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -365,7 +382,7 @@ module.exports = {
     },
     base: {
       url: 'https://base-mainnet.public.blastapi.io',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -375,7 +392,7 @@ module.exports = {
     },
     base_stg: {
       url: 'https://mainnet.base.org',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -385,7 +402,7 @@ module.exports = {
     },
     scroll: {
       url: "https://rpc.scroll.io" || "",
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -395,7 +412,7 @@ module.exports = {
     },
     basetest: {
       url: 'https://goerli.base.org',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -405,7 +422,7 @@ module.exports = {
     },
     canto: {
       url: 'https://mainnode.plexnode.org:8545',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -415,7 +432,7 @@ module.exports = {
     },
     manta: {
       url: 'https://pacific-rpc.manta.network/http',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -425,7 +442,7 @@ module.exports = {
     },
     metis: {
       url: 'https://andromeda.metis.io/?owner=1088',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -435,7 +452,7 @@ module.exports = {
     },
     merlin: {
       url: 'https://endpoints.omniatech.io/v1/merlin/mainnet/public',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -445,7 +462,7 @@ module.exports = {
     },
     xlayer: {
       url: 'https://rpc.xlayer.tech',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -455,7 +472,7 @@ module.exports = {
     },
     blast: {
       url: 'https://rpc.blast.io',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -465,7 +482,7 @@ module.exports = {
     },
     mode: {
       url: 'https://mainnet.mode.network',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -475,7 +492,7 @@ module.exports = {
     },
     sei: {
       url: 'https://evm-rpc.sei-apis.com',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -485,7 +502,7 @@ module.exports = {
     },
     moonbeam: {
       url: 'https://rpc.ankr.com/moonbeam',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -495,7 +512,7 @@ module.exports = {
     },
     iotex: {
       url: 'https://babel-api.fastblocks.io',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -505,7 +522,7 @@ module.exports = {
     },
     apechain: {
       url: 'https://rpc.apechain.com/http',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -515,7 +532,7 @@ module.exports = {
     },
     taiko: {
       url: 'https://rpc.mainnet.taiko.xyz',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -525,7 +542,7 @@ module.exports = {
     },
     story: {
       url: 'https://homer.storyrpc.io',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -535,7 +552,7 @@ module.exports = {
     },
     sonic: {
       url: 'https://sonic.drpc.org',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,
@@ -545,7 +562,7 @@ module.exports = {
     },
     berachain: {
       url: 'https://rpc.berachain-apis.com',
-      accounts: [`${PRIVATE_KEY}`],
+      accounts: DEPLOYER_ACCOUNTS,
       settings: {
         optimizer: {
           enabled: true,

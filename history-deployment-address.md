@@ -6,7 +6,6 @@ This document records the historical deployment addresses of DexRouter implement
 
 - **Address Type**: All addresses are DexRouter implementation contracts
 - **Version Order**: Listed from newest to oldest by deployment date
-- **2026-07-01 entries**: These are v1.0.9 `newImpl` addresses reported as pending allowlist activation; listing them does not assert that they became the live router.
 
 ---
 
@@ -499,7 +498,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version ID | Feature Description |
 |-----------|---------------------|
-| 2026-07-01 (multi-funding-mode) | DexRouter v1.0.9 multi-funding-mode `newImpl` deployments; allowlist activation was pending in the release record |
+| 2026-07-01 (multi-funding-mode) | DexRouter v1.0.9 multi-funding-mode deployment |
 | 2026-05-20 (suffix-compat) | DexRouter v1.0.8 suffix-compatible deployment |
 | 2025-11-27 (Parent-Child Node Commission) | Parent-child node architecture with commission |
 | 2025-11-17 (Monad Specific) | Monad chain specific deployment |

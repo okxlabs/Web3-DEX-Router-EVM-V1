@@ -1,6 +1,6 @@
 # DEX Router Deployments
 
-Current DexRouter deployment addresses are listed below. Earlier addresses are preserved in the historical section.
+Current DexRouter deployment addresses are listed below. Earlier addresses are recorded in [history-deployment-address.md](history-deployment-address.md).
 
 ## Latest deployments
 
@@ -41,46 +41,6 @@ Current DexRouter deployment addresses are listed below. Earlier addresses are p
 | Ink | 57073 | `0x8f98a825ac89501afe33299ddb561829a24c0cc4` | `0x4200000000000000000000000000000000000006` | `0xa8D102a83e1C9b19142EC857Cda5f2d2142Ea840` |
 | Arc | 5042 | `0x4E3bcCE28cAf98A143Fd8BD9e4875ccAb3E7bBE0` | N/A | `0xc5eE92E154CF78Eade01AA32E160A5feB467Da88` |
 | Elysium | 99901 | `0x91Ab9c4B07f479D48b60AEFE8F7E31B3760C88c1` | `0xbA876237B0F021A6c6D852d6c26E107997cC5E81` | `0x325Cd5efEc2B40113810585271cBbFc43E691Bf0` |
-
-## DexRouter Historical Deployment Addresses
-
-These addresses include entries from the previous Latest deployments table and earlier v1.0.8 deployments on Robinhood and Ink. Polygon zkEVM (1101) is shut down and has no current deployment in the latest table.
-
-| Network | Chain ID | DexRouter |
-| ---- | ---- | ---- |
-| Ethereum | 1 | `0x5E1f62Dac767b0491e3CE72469C217365D5B48cC` |
-| Arbitrum One | 42161 | `0x368E01160C2244B0363a35B3fF0A971E44a89284` |
-| Base | 8453 | `0x4409921ae43a39a11d90f7b7f96cfd0b8093d9fc` |
-| BNB Smart Chain | 56 | `0x3156020dfF8D99af1dDC523ebDfb1ad2018554a0` |
-| Avalanche | 43114 | `0x8aDFb0D24cdb09c6eB6b001A41820eCe98831B91` |
-| Optimism | 10 | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
-| Polygon | 137 | `0x057cfd839aa88994d1a8a8c6d336cf21550f05ef` |
-| Manta Pacific | 169 | `0x8feB9E84b7E9DC86adc6cD6Eb554C5B4355c8405` |
-| Mode | 34443 | `0x86F752f1F662f39BFbcBeF95EE56B6C20d178969` |
-| Scroll | 534352 | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
-| Sonic | 146 | `0x86F752f1F662f39BFbcBeF95EE56B6C20d178969` |
-| ZetaChain | 7000 | `0x8feB9E84b7E9DC86adc6cD6Eb554C5B4355c8405` |
-| zkSync Era | 324 | `0x3163Ed233a3Cb5E6B7F10A6f02b01F15867a8779` |
-| Fantom | 250 | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
-| Cronos | 25 | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
-| Conflux eSpace | 1030 | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
-| Polygon zkEVM | 1101 | `0x79f7C6C6dc16Ed3154E85A8ef9c1Ef31CEFaEB19` |
-| Linea | 59144 | `0x9EaBF1D34819D9eC9Fe5fd3Db4e9DCD12Fa05284` |
-| Mantle | 5000 | `0xF5402CCC5fC3181B45D7571512999D3Eea0257B6` |
-| Metis | 1088 | `0xDd5E9B947c99Aa60bab00ca4631Dce63b49983E7` |
-| Merlin | 4200 | `0xd3b3e6433d6a7f94c28ce907311fb21b0f0b659e` |
-| Blast | 81457 | `0xc9da86c392101047188bae98ccc192271a136a13` |
-| X Layer | 196 | `0x0efa3a01eb0708f9e40b661c6cd7c56c83b9f45a` |
-| Sei EVM | 1329 | `0xF5402CCC5fC3181B45D7571512999D3Eea0257B6` |
-| APE Chain | 33139 | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
-| IoTeX | 4689 | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
-| Unichain | 1301 | `0x23E2f2FA1967FAffde2e05fDecbb3fa787A5D3E5` |
-| Monad | 13107 | `0x6088d94C5a40CEcd3ae2D4e0710cA687b91c61d0` |
-| Plasma | 13010 | `0x5c1c902e7e04de98b49acd3de68e12bee2d7908d` |
-| EthereumPoW | 10001 | `0x38575264810371C15F0E5744FA2Ab29cdef7245d` |
-| Robinhood | 4663 | `0xE58b3089dF6667fBf99b75595a1671BaF6797D6d` |
-| Ink | 57073 | `0x9bf3f60252be1a2fd3ed38086ed3d02b25b4eead` |
-| TRON | 728126428 | `TU7NYwqhPUMjBBYQYxQJVmnY7KuJCqMFuu` |
 
 ## Exact-Out Router Deployments
 

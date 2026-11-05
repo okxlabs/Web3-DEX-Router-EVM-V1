@@ -6,6 +6,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 - **Address Type**: All addresses are DexRouter implementation contracts
 - **Version Order**: Listed from newest to oldest by deployment date
+- **2026-07-01 entries**: These are v1.0.9 `newImpl` addresses reported as pending allowlist activation; listing them does not assert that they became the live router.
 
 ---
 
@@ -15,6 +16,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xbb8ca112ec75db02f9efec50593f99b7c4a74f3e` |
 | 2026-05-20 (suffix-compat) | `0x28b1Dc1a5E3699A428BC51d234DFab7C9CB2a183` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x5E1f62Dac767b0491e3CE72469C217365D5B48cC` |
 | 2025-10-25 (DAG) | `0xF6801D319497789f934ec7F83E142a9536312B08` |
@@ -29,6 +31,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x41cb7e6f799723405270402bff1fdbb040cfa8c4` |
 | 2026-05-20 (suffix-compat) | `0x7CF6b330b437E9fb432B1400DE17B03357Cf049A` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x368E01160C2244B0363a35B3fF0A971E44a89284` |
 | 2025-10-25 (DAG) | `0x3608c8186fF3dCa322DeEFb8c27162162d581081` |
@@ -43,6 +46,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x84220f7ef461b97eabbb61e3c8a12b7c212454ed` |
 | 2026-05-20 (suffix-compat) | `0xC8F6b8Ba0DC0f175B568B99440B0867F69A29265` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x4409921ae43a39a11d90f7b7f96cfd0b8093d9fc` |
 | 2025-10-25 (DAG) | `0x2bD541Ab3b704F7d4c9DFf79EfaDeaa85EC034f1` |
@@ -57,6 +61,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x57081ea5d9d8769832f967f96a8023b89fdd18cc` |
 | 2026-05-20 (suffix-compat) | `0x62cceF0b4545166f721cAa9fEe13c1d3767E27dc` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x3156020dfF8D99af1dDC523ebDfb1ad2018554a0` |
 | 2025-10-25 (DAG) | `0xd547Eafde2410e63300Fc5308CceA0b356E7b5d8` |
@@ -71,6 +76,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x5f73faff23dd542bd4ef4ec67d7849f31b6662eb` |
 | 2026-05-20 (suffix-compat) | `0xDd5E9B947c99Aa60bab00ca4631Dce63b49983E7` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
 | 2025-10-25 (DAG) | `0xC44C6550a3B13116F6fD593e1ec963d5aE78C4C8` |
@@ -84,6 +90,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xb3382c52b408570a82948c63ada1b6fa745a86f8` |
 | 2026-05-20 (suffix-compat) | `0xa94Fcf9fc56a864f8DE51e6315aee5863AD63C91` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x8aDFb0D24cdb09c6eB6b001A41820eCe98831B91` |
 | 2025-10-25 (DAG) | `0x2e84246828ddae18500bc0cf23dd8a8d1aa5cf1f` |
@@ -97,6 +104,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x172705e8e7d0b52d9378780d617e1d1c32af9fdf` |
 | 2026-05-20 (suffix-compat) | `0xF6E1B4b201e220FC3741bd7a75675ffEA25c02AD` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x057cfd839aa88994d1a8a8c6d336cf21550f05ef` |
 | 2025-10-25 (DAG) | `0x5e11D6A2184c321e69c6443DedB980F943DB7836` |
@@ -110,6 +118,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x974d1cf6ffa4fce5a4d62955afc02f45aac29f35` |
 | 2026-05-20 (suffix-compat) | `0x5e2F47bD7D4B357fCfd0Bb224Eb665773B1B9801` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
 | 2025-10-25 (DAG) | `0x6702E6db3d5cc50E0040E7876A48faA5a4706148` |
@@ -123,6 +132,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9181473DB55A44ff9A934E8879d9E4A2328477C3` |
 | 2026-05-20 (suffix-compat) | `0x6f7c20464258c732577c87a9B467619e03e5C158` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x3163Ed233a3Cb5E6B7F10A6f02b01F15867a8779` |
 | 2025-10-25 (DAG) | `0xa081120347e57EB74DE8a9bE4a0441EbcB0A35F6` |
@@ -136,6 +146,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x69C236E021F5775B0D0328ded5EaC708E3B869DF` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x8feB9E84b7E9DC86adc6cD6Eb554C5B4355c8405` |
 | 2025-10-25 (DAG) | `0x1A2bD99016233a06dbE7D69a30316dB46b7c6511` |
@@ -149,6 +160,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x86F752f1F662f39BFbcBeF95EE56B6C20d178969` |
 | 2025-10-25 (DAG) | `0x4f61d47f5942AD214A0fE93DAE2e82f4cB871D81` |
@@ -162,6 +174,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x79f7C6C6dc16Ed3154E85A8ef9c1Ef31CEFaEB19` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x86F752f1F662f39BFbcBeF95EE56B6C20d178969` |
 | 2025-10-25 (DAG) | `0x49E10cAee23d198CEE1E44b2a222232A85Df62Bb` |
@@ -175,6 +188,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0xF5402CCC5fC3181B45D7571512999D3Eea0257B6` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x8feB9E84b7E9DC86adc6cD6Eb554C5B4355c8405` |
 | 2025-10-25 (DAG) | `0xAE571B4937b42587a4Ab3dcd434d62b09519c831` |
@@ -188,6 +202,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x25e7f77F33206d311A0130D4b5B881E5Db1181b1` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
 | 2025-10-25 (DAG) | `0x4f61d47f5942ad214a0fe93dae2e82f4cb871d81` |
@@ -201,6 +216,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xd72f9af181a0eb1b8550a00124ecdb71bb758c89` |
 | 2026-05-20 (suffix-compat) | `0x25e7f77F33206d311A0130D4b5B881E5Db1181b1` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
 | 2025-10-25 (DAG) | `0xB21A65a68A6abEed1A344AEB69AF146D64B06127` |
@@ -214,6 +230,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x6be7fed39e91f683fbd1f26a6a91ed0a5b7a7872` |
 | 2026-05-20 (suffix-compat) | `0x95418635f012fFd10eAFcDaF4137e90371f06917` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
 | 2025-10-25 (DAG) | `0x1e3143b9cB44170098092e53bfbCE76E1Ce53E00` |
@@ -227,6 +244,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7E4936E546910658F9458Ddfd785B44EC91Ae` |
 | 2026-05-20 (suffix-compat) | `0x6f7c20464258c732577c87a9B467619e03e5C158` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x79f7C6C6dc16Ed3154E85A8ef9c1Ef31CEFaEB19` |
 | 2025-10-25 (DAG) | `0x1A2bD99016233a06dbE7D69a30316dB46b7c6511` |
@@ -240,6 +258,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x8d44d0ab0eeba9923850a864d8c6f85b84fb02bb` |
 | 2026-05-20 (suffix-compat) | `0x2E1Dee213BA8d7af0934C49a23187BabEACa8764` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x9EaBF1D34819D9eC9Fe5fd3Db4e9DCD12Fa05284` |
 | 2025-10-25 (DAG) | `0x5Eb082A0713481d29cDCd19B2Af5736007571472` |
@@ -253,6 +272,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xF5402CCC5fC3181B45D7571512999D3Eea0257B6` |
 | 2025-10-25 (DAG) | `0x1f16A607a7f3F3044E477abFFc8BD33952cE306b` |
@@ -266,6 +286,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9a93a99ae01e1907df6cb94dac122ae29e02f095` |
 | 2026-05-20 (suffix-compat) | `0x25e7f77F33206d311A0130D4b5B881E5Db1181b1` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xDd5E9B947c99Aa60bab00ca4631Dce63b49983E7` |
 | 2025-10-25 (DAG) | `0x49E10cAee23d198CEE1E44b2a222232A85Df62Bb` |
@@ -279,6 +300,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x6f7c20464258c732577c87a9B467619e03e5C158` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xd3b3e6433d6a7f94c28ce907311fb21b0f0b659e` |
 | 2025-10-25 (DAG) | `0x0F315e89c1c8ad9E75fbe434082cF790d481ACC0` |
@@ -292,6 +314,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9a93a99ae01e1907df6cb94dac122ae29e02f095` |
 | 2026-05-20 (suffix-compat) | `0x6F91349e4161068c1cA6BAAce1570621bb00FDeb` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xc9da86c392101047188bae98ccc192271a136a13` |
 | 2025-10-25 (DAG) | `0x5e11D6A2184c321e69c6443DedB980F943DB7836` |
@@ -305,6 +328,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x450a428daab37aa6c492de565c41072e164fa3f7` |
 | 2026-05-20 (suffix-compat) | `0x722db4f285F8bD91ef7AF6DA397e83f7fA4E80a7` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x0efa3a01eb0708f9e40b661c6cd7c56c83b9f45a` |
 | 2025-10-25 (DAG) | `0xC259de94F6bedDec5Ed1C024b0283082ffa50cca` |
@@ -319,6 +343,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0xDd5E9B947c99Aa60bab00ca4631Dce63b49983E7` |
 | 2025-11-27 (Parent-Child Node Commission) | `0xF5402CCC5fC3181B45D7571512999D3Eea0257B6` |
 | 2025-10-25 (DAG) | `0xdCD47934F697890f9D4C3af2B8B42d7336235894` |
@@ -332,6 +357,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9a93a99ae01e1907df6cb94dac122ae29e02f095` |
 | 2026-05-20 (suffix-compat) | `0xcF76984119C7f6ae56fAfE680d39C08278b7eCF4` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
 | 2025-10-25 (DAG) | `0x1e3143b9cB44170098092e53bfbCE76E1Ce53E00` |
@@ -345,6 +371,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xb193874f0c77948d2bcfec2efaf8bc65b4c2ca89` |
 | 2026-05-20 (suffix-compat) | `0x2E1Dee213BA8d7af0934C49a23187BabEACa8764` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x23e2f2fa1967faffde2e05fdecbb3fa787a5d3e5` |
 | 2025-10-25 (DAG) | `0x1e3143b9cb44170098092e53bfbce76e1ce53e00` |
@@ -358,6 +385,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x472fc4f7fd3c9f06f0b8637c5505815ac80938ad` |
 | 2026-05-20 (suffix-compat) | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x23E2f2FA1967FAffde2e05fDecbb3fa787A5D3E5` |
 | 2025-10-25 (DAG) | `0x1e3143b9cb44170098092e53bfbce76e1ce53e00` |
@@ -369,6 +397,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x7A7AD9aa93cd0A2D0255326E5Fb145CEc14997FF` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x6088d94C5a40CEcd3ae2D4e0710cA687b91c61d0` |
 | 2025-11-17 (Monad Specific) | `0xb1E4E25b1938c78Ec0b21cCb2D6a0Be60aA7E63f` |
@@ -377,6 +406,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x19D345f95A80cc136d898f41b490E023cFF78658` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x5c1c902e7e04de98b49acd3de68e12bee2d7908d` |
 | 2025-10-25 (DAG) | `0x509c370da4dc569f45d48a2318a54c5442bc23cf` |
@@ -385,6 +415,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9A93a99ae01e1907dF6cb94dac122ae29E02f095` |
 | 2026-05-20 (suffix-compat) | `0xD1b8997AaC08c619d40Be2e4284c9C72cAB33954` |
 | 2025-11-27 (Parent-Child Node Commission) | `0x38575264810371C15F0E5744FA2Ab29cdef7245d` |
 | 2025-10-25 (DAG) | `0x9b9efa5Efa731EA9Bbb0369E91fA17Abf249CFD4` |
@@ -395,18 +426,21 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0x75f21a97bd89a9a5683a9f46b5d5b4a080708dea` |
 
 ### HyperEVM
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xa8d102a83e1c9b19142ec857cda5f2d2142ea840` |
 | 2026-05-20 (suffix-compat) | `0x9Ac7b1FFEE0f58c0a3c89AA54Afb62efD25DC9fd` |
 
 ### Robinhood
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x61e7e4936e546910658f9458ddfd785b44ec91ae` |
 | 2026-05-20 (suffix-compat) | `0xE58b3089dF6667fBf99b75595a1671BaF6797D6d` |
 
 ### Ink
@@ -419,6 +453,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x69C236E021F5775B0D0328ded5EaC708E3B869DF` |
 | 2025-08-05 (TEE) | `0x69C236E021F5775B0D0328ded5EaC708E3B869DF` |
 | 2025-07-25 (ToB Commission) | `0x6733Eb2E75B1625F1Fe5f18aD2cB2BaBDA510d19` |
 | 2025-05-12 (Decimal=9) | `0xd30D8CA2E7715eE6804a287eB86FAfC0839b1380` |
@@ -429,6 +464,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0xd30D8CA2E7715eE6804a287eB86FAfC0839b1380` |
 | 2025-05-12 (Decimal=9) | `0xd30D8CA2E7715eE6804a287eB86FAfC0839b1380` |
 | 2025-04-29 (Receiver) | `0x411d2C093e4c2e69Bf0D8E94be1bF13DaDD879c6` |
 | 2025-04-16 (Before Stop) | `0x9b9efa5Efa731EA9Bbb0369E91fA17Abf249CFD4` |
@@ -437,6 +473,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version/Date | Address |
 |--------------|---------|
+| 2026-07-01 (multi-funding-mode) | `0x9b9efa5Efa731EA9Bbb0369E91fA17Abf249CFD4` |
 | 2025-04-16 (Before Stop) | `0x9b9efa5Efa731EA9Bbb0369E91fA17Abf249CFD4` |
 
 ---
@@ -462,6 +499,7 @@ This document records the historical deployment addresses of DexRouter implement
 
 | Version ID | Feature Description |
 |-----------|---------------------|
+| 2026-07-01 (multi-funding-mode) | DexRouter v1.0.9 multi-funding-mode `newImpl` deployments; allowlist activation was pending in the release record |
 | 2026-05-20 (suffix-compat) | DexRouter v1.0.8 suffix-compatible deployment |
 | 2025-11-27 (Parent-Child Node Commission) | Parent-child node architecture with commission |
 | 2025-11-17 (Monad Specific) | Monad chain specific deployment |

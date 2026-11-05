@@ -44,7 +44,7 @@ Current DexRouter deployment addresses are listed below. Earlier addresses are p
 
 ## DexRouter Historical Deployment Addresses
 
-These DexRouter addresses were listed in the previous Latest deployments table. Polygon zkEVM (1101) is shut down and has no current deployment in the latest table.
+These addresses include entries from the previous Latest deployments table and earlier v1.0.8 deployments on Robinhood and Ink. Polygon zkEVM (1101) is shut down and has no current deployment in the latest table.
 
 | Network | Chain ID | DexRouter |
 | ---- | ---- | ---- |
@@ -78,6 +78,8 @@ These DexRouter addresses were listed in the previous Latest deployments table. 
 | Monad | 13107 | `0x6088d94C5a40CEcd3ae2D4e0710cA687b91c61d0` |
 | Plasma | 13010 | `0x5c1c902e7e04de98b49acd3de68e12bee2d7908d` |
 | EthereumPoW | 10001 | `0x38575264810371C15F0E5744FA2Ab29cdef7245d` |
+| Robinhood | 4663 | `0xE58b3089dF6667fBf99b75595a1671BaF6797D6d` |
+| Ink | 57073 | `0x9bf3f60252be1a2fd3ed38086ed3d02b25b4eead` |
 | TRON | 728126428 | `TU7NYwqhPUMjBBYQYxQJVmnY7KuJCqMFuu` |
 
 ## Exact-Out Router Deployments

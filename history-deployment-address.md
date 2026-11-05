@@ -361,6 +361,18 @@ This document records the historical deployment addresses of DexRouter implement
 | 2025-08-05 (TEE) | `0x816B2442C843Ac8E43F2997Ff68b6bf8F0C9A819` |
 | 2025-07-25 (ToB Commission) | `0x31699bCc59e84B541bba319dFBACa18E629DD155` |
 
+### Robinhood
+
+| Version/Date | Address |
+|--------------|---------|
+| v1.0.8 | `0xE58b3089dF6667fBf99b75595a1671BaF6797D6d` |
+
+### Ink
+
+| Version/Date | Address |
+|--------------|---------|
+| v1.0.8-suffix-compat | `0x9bf3f60252be1a2fd3ed38086ed3d02b25b4eead` |
+
 ### OKC 
 
 | Version/Date | Address |

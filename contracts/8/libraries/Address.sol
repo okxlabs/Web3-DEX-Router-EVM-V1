@@ -1,5 +1,7 @@
 /// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.0;
+
+import "./Constants.sol";
 
 /**
  * @dev Collection of functions related to the address type
@@ -74,7 +76,7 @@ library Address {
         );
 
         // solhint-disable-next-line avoid-call-value
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success, ) = recipient.call{value: amount, gas: NATIVE_TOKEN_TRANSFER_GAS_LIMIT}("");
         require(
             success,
             "Address: unable to send value, recipient may have reverted"
